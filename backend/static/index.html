@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FMEA Generator</title>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background-color: #f0f0f0; }
+  </style>
+</head>
+<body>
+  <h1>FMEA Generator</h1>
+  <form id="fmeaForm">
+    <label>Component:
+      <input type="text" id="componentInput" required />
+    </label>
+    <button type="submit">Generate FMEA</button>
+  </form>
+
+  <table id="fmeaTable" style="display: none;">
+    <thead>
+      <tr>
+        <th>Failure Mode</th>
+        <th>Effect</th>
+        <th>Cause</th>
+        <th>Severity</th>
+        <th>Probability</th>
+        <th>RPN</th>
+        <th>Mitigation</th>
+        <th>Post Severity</th>
+        <th>Post Probability</th>
+        <th>Post RPN</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    document.getElementById("fmeaForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const component = document.getElementById("componentInput").value;
+      const response = await fetch("http://localhost:8000/generate_fmea/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ component })
+      });
+
+      const result = await response.json();
+      const table = document.getElementById("fmeaTable");
+      const tbody = table.querySelector("tbody");
+      tbody.innerHTML = "";
+
+      if (result.fmea) {
+        table.style.display = "table";
+        result.fmea.forEach(row => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${row["Failure Mode"]}</td>
+            <td>${row["Effect"]}</td>
+            <td>${row["Cause"]}</td>
+            <td>${row["Severity"]}</td>
+            <td>${row["Probability"]}</td>
+            <td>${row["RPN"]}</td>
+            <td>${row["Mitigation"]}</td>
+            <td>${row["Post Severity"]}</td>
+            <td>${row["Post Probability"]}</td>
+            <td>${row["Post RPN"]}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } else {
+        alert("Error: " + (result.error || "Unknown error"));
+      }
+    });
+  </script>
+</body>
+</html>

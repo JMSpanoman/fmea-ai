@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Form & Table Styling */
+.input {
+  @apply border border-gray-300 rounded px-3 py-2 w-full text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+.th {
+  @apply px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 text-left;
+}
+
+.td {
+  @apply px-4 py-2 text-sm text-gray-800;
+}
+
+/* Optional: Consistent Button Styling */
+.btn-primary {
+  @apply bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition duration-200 ease-in-out;
+}
+
+/* Optional: Heading Styling */
+.heading {
+  @apply text-3xl font-bold mb-6 text-center text-gray-800;
+}
