@@ -1,0 +1,2291 @@
+<html>
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=utf-8">
+<meta name=Generator content="Microsoft Word 15 (filtered)">
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;}
+@font-face
+	{font-family:Aptos;
+	panose-1:2 11 0 4 2 2 2 2 2 4;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:8.0pt;
+	margin-left:0in;
+	line-height:115%;
+	font-size:12.0pt;
+	font-family:"Aptos",sans-serif;}
+.MsoChpDefault
+	{font-family:"Aptos",sans-serif;}
+.MsoPapDefault
+	{margin-bottom:8.0pt;
+	line-height:115%;}
+@page WordSection1
+	{size:8.5in 11.0in;
+	margin:1.0in 1.0in 1.0in 1.0in;}
+div.WordSection1
+	{page:WordSection1;}
+-->
+</style>
+
+</head>
+
+<body lang=EN-US style='word-wrap:break-word'>
+
+<div class=WordSection1>
+
+<p class=MsoNormal>&lt;html&gt;&lt;head&gt;</p>
+
+<p class=MsoNormal>    &lt;meta charset=&quot;UTF-8&quot;&gt;</p>
+
+<p class=MsoNormal>    &lt;meta name=&quot;viewport&quot;
+content=&quot;width=device-width, initial-scale=1.0&quot;&gt;</p>
+
+<p class=MsoNormal>    &lt;script
+src=&quot;https://cdn.tailwindcss.com&quot;&gt;&lt;/script&gt;</p>
+
+<p class=MsoNormal>    &lt;script&gt; window.FontAwesomeConfig = {
+autoReplaceSvg: 'nest'};&lt;/script&gt;</p>
+
+<p class=MsoNormal>    &lt;script
+src=&quot;https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js&quot;
+crossorigin=&quot;anonymous&quot;
+referrerpolicy=&quot;no-referrer&quot;&gt;&lt;/script&gt;</p>
+
+<p class=MsoNormal>    &lt;script
+src=&quot;https://code.highcharts.com/highcharts.js&quot;&gt;&lt;/script&gt;</p>
+
+<p class=MsoNormal>    </p>
+
+<p class=MsoNormal>    &lt;style&gt;::-webkit-scrollbar { display:
+none;}&lt;/style&gt;</p>
+
+<p class=MsoNormal>    &lt;script&gt;tailwind.config = {</p>
+
+<p class=MsoNormal>  &quot;theme&quot;: {</p>
+
+<p class=MsoNormal>    &quot;extend&quot;: {</p>
+
+<p class=MsoNormal>      &quot;colors&quot;: {</p>
+
+<p class=MsoNormal>        &quot;primary&quot;: {</p>
+
+<p class=MsoNormal>          &quot;50&quot;: &quot;#f0f9ff&quot;,</p>
+
+<p class=MsoNormal>          &quot;100&quot;: &quot;#e0f2fe&quot;,</p>
+
+<p class=MsoNormal>          &quot;200&quot;: &quot;#bae6fd&quot;,</p>
+
+<p class=MsoNormal>          &quot;300&quot;: &quot;#7dd3fc&quot;,</p>
+
+<p class=MsoNormal>          &quot;400&quot;: &quot;#38bdf8&quot;,</p>
+
+<p class=MsoNormal>          &quot;500&quot;: &quot;#0ea5e9&quot;,</p>
+
+<p class=MsoNormal>          &quot;600&quot;: &quot;#0284c7&quot;,</p>
+
+<p class=MsoNormal>          &quot;700&quot;: &quot;#0369a1&quot;,</p>
+
+<p class=MsoNormal>          &quot;800&quot;: &quot;#075985&quot;,</p>
+
+<p class=MsoNormal>          &quot;900&quot;: &quot;#0c4a6e&quot;</p>
+
+<p class=MsoNormal>        },</p>
+
+<p class=MsoNormal>        &quot;warning&quot;: {</p>
+
+<p class=MsoNormal>          &quot;50&quot;: &quot;#fff7ed&quot;,</p>
+
+<p class=MsoNormal>          &quot;100&quot;: &quot;#ffedd5&quot;,</p>
+
+<p class=MsoNormal>          &quot;200&quot;: &quot;#fed7aa&quot;,</p>
+
+<p class=MsoNormal>          &quot;300&quot;: &quot;#fdba74&quot;,</p>
+
+<p class=MsoNormal>          &quot;400&quot;: &quot;#fb923c&quot;,</p>
+
+<p class=MsoNormal>          &quot;500&quot;: &quot;#f97316&quot;,</p>
+
+<p class=MsoNormal>          &quot;600&quot;: &quot;#ea580c&quot;,</p>
+
+<p class=MsoNormal>          &quot;700&quot;: &quot;#c2410c&quot;,</p>
+
+<p class=MsoNormal>          &quot;800&quot;: &quot;#9a3412&quot;,</p>
+
+<p class=MsoNormal>          &quot;900&quot;: &quot;#7c2d12&quot;</p>
+
+<p class=MsoNormal>        },</p>
+
+<p class=MsoNormal>        &quot;success&quot;: {</p>
+
+<p class=MsoNormal>          &quot;50&quot;: &quot;#f0fdf4&quot;,</p>
+
+<p class=MsoNormal>          &quot;100&quot;: &quot;#dcfce7&quot;,</p>
+
+<p class=MsoNormal>          &quot;200&quot;: &quot;#bbf7d0&quot;,</p>
+
+<p class=MsoNormal>          &quot;300&quot;: &quot;#86efac&quot;,</p>
+
+<p class=MsoNormal>          &quot;400&quot;: &quot;#4ade80&quot;,</p>
+
+<p class=MsoNormal>          &quot;500&quot;: &quot;#22c55e&quot;,</p>
+
+<p class=MsoNormal>          &quot;600&quot;: &quot;#16a34a&quot;,</p>
+
+<p class=MsoNormal>          &quot;700&quot;: &quot;#15803d&quot;,</p>
+
+<p class=MsoNormal>          &quot;800&quot;: &quot;#166534&quot;,</p>
+
+<p class=MsoNormal>          &quot;900&quot;: &quot;#14532d&quot;</p>
+
+<p class=MsoNormal>        },</p>
+
+<p class=MsoNormal>        &quot;danger&quot;: {</p>
+
+<p class=MsoNormal>          &quot;50&quot;: &quot;#fef2f2&quot;,</p>
+
+<p class=MsoNormal>          &quot;100&quot;: &quot;#fee2e2&quot;,</p>
+
+<p class=MsoNormal>          &quot;200&quot;: &quot;#fecaca&quot;,</p>
+
+<p class=MsoNormal>          &quot;300&quot;: &quot;#fca5a5&quot;,</p>
+
+<p class=MsoNormal>          &quot;400&quot;: &quot;#f87171&quot;,</p>
+
+<p class=MsoNormal>          &quot;500&quot;: &quot;#ef4444&quot;,</p>
+
+<p class=MsoNormal>          &quot;600&quot;: &quot;#dc2626&quot;,</p>
+
+<p class=MsoNormal>          &quot;700&quot;: &quot;#b91c1c&quot;,</p>
+
+<p class=MsoNormal>          &quot;800&quot;: &quot;#991b1b&quot;,</p>
+
+<p class=MsoNormal>          &quot;900&quot;: &quot;#7f1d1d&quot;</p>
+
+<p class=MsoNormal>        }</p>
+
+<p class=MsoNormal>      },</p>
+
+<p class=MsoNormal>      &quot;fontFamily&quot;: {</p>
+
+<p class=MsoNormal>        &quot;sans&quot;: [</p>
+
+<p class=MsoNormal>          &quot;Inter&quot;,</p>
+
+<p class=MsoNormal>          &quot;sans-serif&quot;</p>
+
+<p class=MsoNormal>        ]</p>
+
+<p class=MsoNormal>      }</p>
+
+<p class=MsoNormal>    }</p>
+
+<p class=MsoNormal>  }</p>
+
+<p class=MsoNormal>};&lt;/script&gt;</p>
+
+<p class=MsoNormal>&lt;link rel=&quot;preconnect&quot;
+href=&quot;https://fonts.googleapis.com&quot;&gt;&lt;link
+rel=&quot;preconnect&quot; href=&quot;https://fonts.gstatic.com&quot;
+crossorigin=&quot;&quot;&gt;&lt;link rel=&quot;stylesheet&quot;
+href=&quot;https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;500;600;700;800;900&amp;amp;display=swap&quot;&gt;&lt;style&gt;</p>
+
+<p class=MsoNormal>      body {</p>
+
+<p class=MsoNormal>        font-family: 'Inter', sans-serif !important;</p>
+
+<p class=MsoNormal>      }</p>
+
+<p class=MsoNormal>      </p>
+
+<p class=MsoNormal>      /* Preserve Font Awesome icons */</p>
+
+<p class=MsoNormal>      .fa, .fas, .far, .fal, .fab {</p>
+
+<p class=MsoNormal>        font-family: &quot;Font Awesome 6 Free&quot;,
+&quot;Font Awesome 6 Brands&quot; !important;</p>
+
+<p class=MsoNormal>      }</p>
+
+<p class=MsoNormal>    &lt;/style&gt;&lt;style&gt;</p>
+
+<p class=MsoNormal>  .highlighted-section {</p>
+
+<p class=MsoNormal>    outline: 2px solid #3F20FB;</p>
+
+<p class=MsoNormal>    background-color: rgba(63, 32, 251, 0.1);</p>
+
+<p class=MsoNormal>  }</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>  .edit-button {</p>
+
+<p class=MsoNormal>    position: absolute;</p>
+
+<p class=MsoNormal>    z-index: 1000;</p>
+
+<p class=MsoNormal>  }</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>  ::-webkit-scrollbar {</p>
+
+<p class=MsoNormal>    display: none;</p>
+
+<p class=MsoNormal>  }</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>  html, body {</p>
+
+<p class=MsoNormal>    -ms-overflow-style: none;</p>
+
+<p class=MsoNormal>    scrollbar-width: none;</p>
+
+<p class=MsoNormal>  }</p>
+
+<p class=MsoNormal>  &lt;/style&gt;&lt;/head&gt;</p>
+
+<p class=MsoNormal>&lt;body class=&quot;bg-gray-50 font-sans&quot;&gt;</p>
+
+<p class=MsoNormal>    &lt;!-- HEADER --&gt;</p>
+
+<p class=MsoNormal>    &lt;header id=&quot;header&quot; class=&quot;bg-white
+border-b border-gray-200 fixed w-full z-10&quot;&gt;</p>
+
+<p class=MsoNormal>        &lt;div class=&quot;flex items-center
+justify-between px-6 py-3&quot;&gt;</p>
+
+<p class=MsoNormal>            &lt;div class=&quot;flex items-center&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;text-primary-600
+font-bold text-2xl mr-8&quot;&gt;RiskGuard&lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;nav class=&quot;hidden md:flex
+space-x-6&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;span class=&quot;text-gray-800
+font-medium hover:text-primary-600 flex items-center cursor-pointer&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid
+fa-shield-halved mr-2&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                        FMEA</p>
+
+<p class=MsoNormal>                    &lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;span class=&quot;text-gray-800
+font-medium hover:text-primary-600 flex items-center cursor-pointer&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid
+fa-triangle-exclamation mr-2&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                        Nonconformance</p>
+
+<p class=MsoNormal>                    &lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;span class=&quot;text-gray-800
+font-medium hover:text-primary-600 flex items-center cursor-pointer&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid
+fa-check-double mr-2&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                        CAPA</p>
+
+<p class=MsoNormal>                    &lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;span class=&quot;text-gray-800
+font-medium hover:text-primary-600 flex items-center cursor-pointer&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid
+fa-magnifying-glass-chart mr-2&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                        Audit</p>
+
+<p class=MsoNormal>                    &lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;span class=&quot;text-gray-800
+font-medium hover:text-primary-600 flex items-center cursor-pointer&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid
+fa-arrows-rotate mr-2&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                        Change Control</p>
+
+<p class=MsoNormal>                    &lt;/span&gt;</p>
+
+<p class=MsoNormal>                &lt;/nav&gt;</p>
+
+<p class=MsoNormal>            &lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;div class=&quot;flex items-center
+space-x-4&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;button class=&quot;text-gray-500
+hover:text-gray-700&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;i class=&quot;fa-solid
+fa-bell&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                &lt;/button&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;relative&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;button class=&quot;flex items-center
+text-gray-700 hover:text-gray-900&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;img
+src=&quot;https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg&quot;
+alt=&quot;User&quot; class=&quot;w-8 h-8 rounded-full mr-2&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;span
+class=&quot;font-medium&quot;&gt;John Smith&lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid
+fa-chevron-down ml-2 text-xs&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                    &lt;/button&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;/div&gt;</p>
+
+<p class=MsoNormal>        &lt;/div&gt;</p>
+
+<p class=MsoNormal>    &lt;/header&gt;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>    &lt;!-- SIDEBAR --&gt;</p>
+
+<p class=MsoNormal>    &lt;aside id=&quot;sidebar&quot; class=&quot;fixed top-0
+left-0 h-full w-64 bg-gray-800 text-white pt-16 z-0&quot;&gt;</p>
+
+<p class=MsoNormal>        &lt;div class=&quot;p-5&quot;&gt;</p>
+
+<p class=MsoNormal>            &lt;div class=&quot;mb-6&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;flex items-center
+justify-between mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;h3 class=&quot;text-sm font-semibold
+text-gray-400&quot;&gt;CURRENT PROJECT&lt;/h3&gt;</p>
+
+<p class=MsoNormal>                    &lt;button class=&quot;text-gray-400
+hover:text-white&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid fa-cog
+text-sm&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                    &lt;/button&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;bg-gray-700 rounded-md
+p-2 flex items-center justify-between&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex
+items-center&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;div class=&quot;w-2 h-2
+bg-green-500 rounded-full mr-2&quot;&gt;&lt;/div&gt;</p>
+
+<p class=MsoNormal>                        &lt;span
+class=&quot;font-medium&quot;&gt;Medical Device XYZ&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;i class=&quot;fa-solid
+fa-chevron-down text-gray-400 text-xs&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;/div&gt;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>            &lt;div class=&quot;mb-6&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;relative&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;i class=&quot;fa-solid fa-search
+absolute left-3 top-2.5 text-gray-400&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                    &lt;input type=&quot;text&quot;
+placeholder=&quot;Search...&quot; class=&quot;w-full bg-gray-700 rounded-md
+pl-10 pr-4 py-2 text-sm border border-gray-600 focus:outline-none
+focus:border-primary-500&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;/div&gt;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>            &lt;div class=&quot;space-y-6&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;div&gt;</p>
+
+<p class=MsoNormal>                    &lt;h3 class=&quot;text-sm font-semibold
+text-gray-400 mb-3&quot;&gt;MODULES&lt;/h3&gt;</p>
+
+<p class=MsoNormal>                    &lt;ul class=&quot;space-y-1&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;li&gt;</p>
+
+<p class=MsoNormal>                            &lt;span class=&quot;flex
+items-center text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3
+py-2 cursor-pointer&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;i class=&quot;fa-solid
+fa-shield-halved w-5 h-5 mr-3&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                                &lt;span&gt;FMEA Risk
+Matrix&lt;/span&gt;</p>
+
+<p class=MsoNormal>                            &lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;/li&gt;</p>
+
+<p class=MsoNormal>                        &lt;li&gt;</p>
+
+<p class=MsoNormal>                            &lt;span class=&quot;flex
+items-center text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3
+py-2 cursor-pointer&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;i class=&quot;fa-solid
+fa-triangle-exclamation w-5 h-5 mr-3&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                               
+&lt;span&gt;Nonconformance&lt;/span&gt;</p>
+
+<p class=MsoNormal>                            &lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;/li&gt;</p>
+
+<p class=MsoNormal>                        &lt;li&gt;</p>
+
+<p class=MsoNormal>                            &lt;span class=&quot;flex
+items-center text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3
+py-2 cursor-pointer&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;i class=&quot;fa-solid
+fa-check-double w-5 h-5 mr-3&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                                &lt;span&gt;CAPA
+Workflow&lt;/span&gt;</p>
+
+<p class=MsoNormal>                            &lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;/li&gt;</p>
+
+<p class=MsoNormal>                        &lt;li&gt;</p>
+
+<p class=MsoNormal>                            &lt;span class=&quot;flex
+items-center text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3
+py-2 cursor-pointer&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;i class=&quot;fa-solid
+fa-magnifying-glass-chart w-5 h-5 mr-3&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                                &lt;span&gt;Audit
+Findings&lt;/span&gt;</p>
+
+<p class=MsoNormal>                            &lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;/li&gt;</p>
+
+<p class=MsoNormal>                        &lt;li&gt;</p>
+
+<p class=MsoNormal>                            &lt;span class=&quot;flex
+items-center text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3
+py-2 cursor-pointer&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;i class=&quot;fa-solid
+fa-arrows-rotate w-5 h-5 mr-3&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                                &lt;span&gt;Change
+Control&lt;/span&gt;</p>
+
+<p class=MsoNormal>                            &lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;/li&gt;</p>
+
+<p class=MsoNormal>                    &lt;/ul&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>                &lt;div&gt;</p>
+
+<p class=MsoNormal>                    &lt;h3 class=&quot;text-sm font-semibold
+text-gray-400 mb-3&quot;&gt;WORKSPACE&lt;/h3&gt;</p>
+
+<p class=MsoNormal>                    &lt;ul class=&quot;space-y-1&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;li&gt;</p>
+
+<p class=MsoNormal>                            &lt;span class=&quot;flex
+items-center text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3
+py-2 cursor-pointer&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;i class=&quot;fa-solid
+fa-tasks w-5 h-5 mr-3&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                               
+&lt;span&gt;Tasks&lt;/span&gt;</p>
+
+<p class=MsoNormal>                            &lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;/li&gt;</p>
+
+<p class=MsoNormal>                        &lt;li&gt;</p>
+
+<p class=MsoNormal>                            &lt;span class=&quot;flex
+items-center text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3
+py-2 cursor-pointer&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;i class=&quot;fa-solid
+fa-users w-5 h-5 mr-3&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                               
+&lt;span&gt;Team&lt;/span&gt;</p>
+
+<p class=MsoNormal>                            &lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;/li&gt;</p>
+
+<p class=MsoNormal>                        &lt;li&gt;</p>
+
+<p class=MsoNormal>                            &lt;span class=&quot;flex
+items-center text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3
+py-2 cursor-pointer&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;i class=&quot;fa-solid
+fa-file-lines w-5 h-5 mr-3&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                               
+&lt;span&gt;Documents&lt;/span&gt;</p>
+
+<p class=MsoNormal>                            &lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;/li&gt;</p>
+
+<p class=MsoNormal>                    &lt;/ul&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>                &lt;div&gt;</p>
+
+<p class=MsoNormal>                    &lt;h3 class=&quot;text-sm font-semibold
+text-gray-400 mb-3&quot;&gt;SETTINGS&lt;/h3&gt;</p>
+
+<p class=MsoNormal>                    &lt;ul class=&quot;space-y-1&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;li&gt;</p>
+
+<p class=MsoNormal>                            &lt;span class=&quot;flex
+items-center text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3
+py-2 cursor-pointer&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;i class=&quot;fa-solid
+fa-gear w-5 h-5 mr-3&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                               
+&lt;span&gt;Preferences&lt;/span&gt;</p>
+
+<p class=MsoNormal>                            &lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;/li&gt;</p>
+
+<p class=MsoNormal>                        &lt;li&gt;</p>
+
+<p class=MsoNormal>                            &lt;span class=&quot;flex
+items-center text-gray-300 hover:bg-gray-700 hover:text-white rounded-md px-3
+py-2 cursor-pointer&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;i class=&quot;fa-solid
+fa-user-shield w-5 h-5 mr-3&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                               
+&lt;span&gt;Permissions&lt;/span&gt;</p>
+
+<p class=MsoNormal>                            &lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;/li&gt;</p>
+
+<p class=MsoNormal>                    &lt;/ul&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;/div&gt;</p>
+
+<p class=MsoNormal>        &lt;/div&gt;</p>
+
+<p class=MsoNormal>    &lt;/aside&gt;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>    &lt;!-- MAIN CONTENT --&gt;</p>
+
+<p class=MsoNormal>    &lt;main id=&quot;main-content&quot; class=&quot;ml-64
+pt-16 pb-8&quot;&gt;</p>
+
+<p class=MsoNormal>        &lt;!-- Top Panel Widgets --&gt;</p>
+
+<p class=MsoNormal>        &lt;section id=&quot;dashboard-widgets&quot;
+class=&quot;p-6&quot;&gt;</p>
+
+<p class=MsoNormal>            &lt;h1 class=&quot;text-2xl font-bold
+mb-6&quot;&gt;Dashboard&lt;/h1&gt;</p>
+
+<p class=MsoNormal>            </p>
+
+<p class=MsoNormal>            &lt;div class=&quot;grid grid-cols-1
+md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;!-- High-Risk Items Widget --&gt;</p>
+
+<p class=MsoNormal>                &lt;div id=&quot;high-risk-widget&quot;
+class=&quot;bg-white rounded-lg shadow p-4 border-l-4
+border-danger-500&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex justify-between
+items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;h3 class=&quot;text-sm
+font-semibold text-gray-500&quot;&gt;HIGH-RISK ITEMS&lt;/h3&gt;</p>
+
+<p class=MsoNormal>                        &lt;span class=&quot;text-danger-500
+text-xs font-medium px-2 py-0.5 bg-danger-50 rounded-full&quot;&gt;+3
+new&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex
+items-end&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;span class=&quot;text-3xl
+font-bold&quot;&gt;12&lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;span class=&quot;text-sm
+text-gray-500 ml-2&quot;&gt;RPN &amp;gt; 100&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;mt-3 text-xs
+text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;span&gt;Last updated: Today,
+09:45 AM&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                </p>
+
+<p class=MsoNormal>                &lt;!-- Open CAPAs Widget --&gt;</p>
+
+<p class=MsoNormal>                &lt;div id=&quot;capa-widget&quot;
+class=&quot;bg-white rounded-lg shadow p-4 border-l-4
+border-primary-500&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex justify-between
+items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;h3 class=&quot;text-sm
+font-semibold text-gray-500&quot;&gt;OPEN CAPAs&lt;/h3&gt;</p>
+
+<p class=MsoNormal>                        &lt;span
+class=&quot;text-primary-500 text-xs font-medium px-2 py-0.5 bg-primary-50
+rounded-full&quot;&gt;4 due soon&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex
+items-end&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;span class=&quot;text-3xl
+font-bold&quot;&gt;8&lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;span class=&quot;text-sm
+text-gray-500 ml-2&quot;&gt;by project&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;mt-3 text-xs
+text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;span&gt;Last updated: Today,
+10:15 AM&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                </p>
+
+<p class=MsoNormal>                &lt;!-- NC Trends Widget --&gt;</p>
+
+<p class=MsoNormal>                &lt;div id=&quot;nc-trends-widget&quot;
+class=&quot;bg-white rounded-lg shadow p-4 border-l-4
+border-warning-500&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex justify-between
+items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;h3 class=&quot;text-sm
+font-semibold text-gray-500&quot;&gt;NC TRENDS&lt;/h3&gt;</p>
+
+<p class=MsoNormal>                        &lt;span
+class=&quot;text-warning-500 text-xs font-medium px-2 py-0.5 bg-warning-50
+rounded-full&quot;&gt;-12% month&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex
+items-end&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;span class=&quot;text-3xl
+font-bold&quot;&gt;23&lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;span class=&quot;text-sm
+text-gray-500 ml-2&quot;&gt;last 30 days&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;mt-3 text-xs
+text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;span&gt;Last updated: Today,
+08:30 AM&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                </p>
+
+<p class=MsoNormal>                &lt;!-- AI Recommendations Widget --&gt;</p>
+
+<p class=MsoNormal>                &lt;div id=&quot;ai-widget&quot;
+class=&quot;bg-white rounded-lg shadow p-4 border-l-4
+border-indigo-500&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex justify-between
+items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;h3 class=&quot;text-sm
+font-semibold text-gray-500&quot;&gt;AI RECOMMENDATIONS&lt;/h3&gt;</p>
+
+<p class=MsoNormal>                        &lt;span class=&quot;text-indigo-500
+text-xs font-medium px-2 py-0.5 bg-indigo-50 rounded-full&quot;&gt;7
+new&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex
+items-end&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;span class=&quot;text-3xl
+font-bold&quot;&gt;15&lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;span class=&quot;text-sm
+text-gray-500 ml-2&quot;&gt;need review&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;mt-3 text-xs
+text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;span&gt;Last updated: Today,
+11:20 AM&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                </p>
+
+<p class=MsoNormal>                &lt;!-- Change Review Widget --&gt;</p>
+
+<p class=MsoNormal>                &lt;div id=&quot;change-widget&quot;
+class=&quot;bg-white rounded-lg shadow p-4 border-l-4
+border-success-500&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex justify-between
+items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;h3 class=&quot;text-sm
+font-semibold text-gray-500&quot;&gt;CHANGE CONTROL&lt;/h3&gt;</p>
+
+<p class=MsoNormal>                        &lt;span
+class=&quot;text-success-500 text-xs font-medium px-2 py-0.5 bg-success-50
+rounded-full&quot;&gt;2 today&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex
+items-end&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;span class=&quot;text-3xl
+font-bold&quot;&gt;5&lt;/span&gt;</p>
+
+<p class=MsoNormal>                        &lt;span class=&quot;text-sm
+text-gray-500 ml-2&quot;&gt;pending approval&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;mt-3 text-xs
+text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;span&gt;Last updated: Today,
+09:15 AM&lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;/div&gt;</p>
+
+<p class=MsoNormal>            </p>
+
+<p class=MsoNormal>            &lt;!-- Trends Chart --&gt;</p>
+
+<p class=MsoNormal>            &lt;div id=&quot;trends-chart&quot;
+class=&quot;bg-white rounded-lg shadow p-6 mb-8&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;flex justify-between
+items-center mb-6&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;h2 class=&quot;text-lg
+font-semibold&quot;&gt;Risk Trends&lt;/h2&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex
+space-x-2&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;button class=&quot;px-3 py-1
+text-sm bg-gray-100 rounded-md hover:bg-gray-200&quot;&gt;30d&lt;/button&gt;</p>
+
+<p class=MsoNormal>                        &lt;button class=&quot;px-3 py-1
+text-sm bg-primary-500 text-white rounded-md&quot;&gt;60d&lt;/button&gt;</p>
+
+<p class=MsoNormal>                        &lt;button class=&quot;px-3 py-1
+text-sm bg-gray-100 rounded-md hover:bg-gray-200&quot;&gt;90d&lt;/button&gt;</p>
+
+<p class=MsoNormal>                        &lt;button class=&quot;px-3 py-1
+text-sm bg-gray-100 rounded-md hover:bg-gray-200&quot;&gt;All&lt;/button&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;div id=&quot;trend-chart-container&quot;
+class=&quot;h-[300px]&quot;&gt;&lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;/div&gt;</p>
+
+<p class=MsoNormal>        &lt;/section&gt;</p>
+
+<p class=MsoNormal>        </p>
+
+<p class=MsoNormal>        &lt;!-- FMEA Risk Matrix Module --&gt;</p>
+
+<p class=MsoNormal>        &lt;section id=&quot;fmea-module&quot;
+class=&quot;px-6 mb-8&quot;&gt;</p>
+
+<p class=MsoNormal>            &lt;div class=&quot;flex items-center
+justify-between mb-4&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;flex
+items-center&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;i class=&quot;fa-solid
+fa-shield-halved text-2xl text-primary-600 mr-3&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                    &lt;h2 class=&quot;text-xl
+font-bold&quot;&gt;FMEA Risk Matrix&lt;/h2&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;flex space-x-3&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;button class=&quot;px-3 py-2
+bg-white border border-gray-300 rounded-md text-sm flex items-center
+hover:bg-gray-50&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid fa-filter
+mr-2&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                        Filter</p>
+
+<p class=MsoNormal>                    &lt;/button&gt;</p>
+
+<p class=MsoNormal>                    &lt;button class=&quot;px-3 py-2
+bg-white border border-gray-300 rounded-md text-sm flex items-center
+hover:bg-gray-50&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid
+fa-file-export mr-2&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                        Export</p>
+
+<p class=MsoNormal>                    &lt;/button&gt;</p>
+
+<p class=MsoNormal>                    &lt;button class=&quot;px-3 py-2
+bg-primary-600 text-white rounded-md text-sm flex items-center
+hover:bg-primary-700&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid fa-plus
+mr-2&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                        Add Entry</p>
+
+<p class=MsoNormal>                    &lt;/button&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;/div&gt;</p>
+
+<p class=MsoNormal>            </p>
+
+<p class=MsoNormal>            &lt;div class=&quot;bg-white rounded-lg shadow
+overflow-hidden&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;div
+class=&quot;overflow-x-auto&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;table class=&quot;min-w-full
+divide-y divide-gray-200&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;thead
+class=&quot;bg-gray-50&quot;&gt;</p>
+
+<p class=MsoNormal>                            &lt;tr&gt;</p>
+
+<p class=MsoNormal>                                &lt;th scope=&quot;col&quot;
+class=&quot;px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase
+tracking-wider&quot;&gt;ID&lt;/th&gt;</p>
+
+<p class=MsoNormal>                                &lt;th scope=&quot;col&quot;
+class=&quot;px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase
+tracking-wider&quot;&gt;Component&lt;/th&gt;</p>
+
+<p class=MsoNormal>                                &lt;th scope=&quot;col&quot;
+class=&quot;px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase
+tracking-wider&quot;&gt;Failure Mode&lt;/th&gt;</p>
+
+<p class=MsoNormal>                                &lt;th scope=&quot;col&quot;
+class=&quot;px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase
+tracking-wider&quot;&gt;Effect&lt;/th&gt;</p>
+
+<p class=MsoNormal>                                &lt;th scope=&quot;col&quot;
+class=&quot;px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase
+tracking-wider&quot;&gt;S&lt;/th&gt;</p>
+
+<p class=MsoNormal>                                &lt;th scope=&quot;col&quot;
+class=&quot;px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase
+tracking-wider&quot;&gt;O&lt;/th&gt;</p>
+
+<p class=MsoNormal>                                &lt;th scope=&quot;col&quot;
+class=&quot;px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase
+tracking-wider&quot;&gt;D&lt;/th&gt;</p>
+
+<p class=MsoNormal>                                &lt;th scope=&quot;col&quot;
+class=&quot;px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase
+tracking-wider&quot;&gt;RPN&lt;/th&gt;</p>
+
+<p class=MsoNormal>                                &lt;th scope=&quot;col&quot;
+class=&quot;px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase
+tracking-wider&quot;&gt;Mitigation&lt;/th&gt;</p>
+
+<p class=MsoNormal>                                &lt;th scope=&quot;col&quot;
+class=&quot;px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase
+tracking-wider&quot;&gt;Status&lt;/th&gt;</p>
+
+<p class=MsoNormal>                                &lt;th scope=&quot;col&quot;
+class=&quot;px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase
+tracking-wider&quot;&gt;Actions&lt;/th&gt;</p>
+
+<p class=MsoNormal>                            &lt;/tr&gt;</p>
+
+<p class=MsoNormal>                        &lt;/thead&gt;</p>
+
+<p class=MsoNormal>                        &lt;tbody class=&quot;bg-white
+divide-y divide-gray-200&quot;&gt;</p>
+
+<p class=MsoNormal>                            &lt;tr&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm font-medium text-gray-900&quot;&gt;FM-001&lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm text-gray-500&quot;&gt;Sensor Assembly&lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+text-sm text-gray-500&quot;&gt;Signal drift over time&lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+text-sm text-gray-500&quot;&gt;Incorrect readings leading to
+misdiagnosis&lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;input
+type=&quot;number&quot; value=&quot;4&quot; min=&quot;1&quot; max=&quot;5&quot;
+class=&quot;w-12 border border-gray-300 rounded p-1 text-center&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;input
+type=&quot;number&quot; value=&quot;3&quot; min=&quot;1&quot; max=&quot;5&quot;
+class=&quot;w-12 border border-gray-300 rounded p-1 text-center&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;input
+type=&quot;number&quot; value=&quot;2&quot; min=&quot;1&quot; max=&quot;5&quot;
+class=&quot;w-12 border border-gray-300 rounded p-1 text-center&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm font-medium&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;bg-warning-100 text-warning-800 px-2 py-1
+rounded-full&quot;&gt;24&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+text-sm text-gray-500&quot;&gt;Calibration routine, redundant
+sensors&lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+bg-green-100 text-green-800&quot;&gt;Mitigated&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;div class=&quot;flex
+space-x-2&quot;&gt;</p>
+
+<p class=MsoNormal>                                        &lt;button
+class=&quot;text-gray-500 hover:text-primary-600&quot;&gt;</p>
+
+<p class=MsoNormal>                                            &lt;i
+class=&quot;fa-solid fa-pencil&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                                        &lt;/button&gt;</p>
+
+<p class=MsoNormal>                                        &lt;button
+class=&quot;text-gray-500 hover:text-primary-600&quot;&gt;</p>
+
+<p class=MsoNormal>                                            &lt;i
+class=&quot;fa-solid fa-link&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                                        &lt;/button&gt;</p>
+
+<p class=MsoNormal>                                        &lt;button
+class=&quot;text-gray-500 hover:text-danger-600&quot;&gt;</p>
+
+<p class=MsoNormal>                                            &lt;i
+class=&quot;fa-solid fa-trash&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                                        &lt;/button&gt;</p>
+
+<p class=MsoNormal>                                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                            &lt;/tr&gt;</p>
+
+<p class=MsoNormal>                            &lt;tr&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm font-medium text-gray-900&quot;&gt;FM-002&lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm text-gray-500&quot;&gt;Power Supply&lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+text-sm text-gray-500&quot;&gt;Voltage fluctuation&lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+text-sm text-gray-500&quot;&gt;Device resets during operation&lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;input
+type=&quot;number&quot; value=&quot;5&quot; min=&quot;1&quot; max=&quot;5&quot;
+class=&quot;w-12 border border-gray-300 rounded p-1 text-center&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;input
+type=&quot;number&quot; value=&quot;4&quot; min=&quot;1&quot; max=&quot;5&quot;
+class=&quot;w-12 border border-gray-300 rounded p-1 text-center&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;input
+type=&quot;number&quot; value=&quot;2&quot; min=&quot;1&quot; max=&quot;5&quot;
+class=&quot;w-12 border border-gray-300 rounded p-1 text-center&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm font-medium&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;bg-danger-100 text-danger-800 px-2 py-1
+rounded-full&quot;&gt;40&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+text-sm text-gray-500&quot;&gt;Voltage regulator, backup power
+circuit&lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+bg-yellow-100 text-yellow-800&quot;&gt;In Progress&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;div class=&quot;flex
+space-x-2&quot;&gt;</p>
+
+<p class=MsoNormal>                                        &lt;button
+class=&quot;text-gray-500 hover:text-primary-600&quot;&gt;</p>
+
+<p class=MsoNormal>                                            &lt;i
+class=&quot;fa-solid fa-pencil&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                                        &lt;/button&gt;</p>
+
+<p class=MsoNormal>                                        &lt;button
+class=&quot;text-gray-500 hover:text-primary-600&quot;&gt;</p>
+
+<p class=MsoNormal>                                            &lt;i
+class=&quot;fa-solid fa-link&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                                        &lt;/button&gt;</p>
+
+<p class=MsoNormal>                                        &lt;button
+class=&quot;text-gray-500 hover:text-danger-600&quot;&gt;</p>
+
+<p class=MsoNormal>                                            &lt;i
+class=&quot;fa-solid fa-trash&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                                        &lt;/button&gt;</p>
+
+<p class=MsoNormal>                                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                            &lt;/tr&gt;</p>
+
+<p class=MsoNormal>                            &lt;tr&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm font-medium text-gray-900&quot;&gt;FM-003&lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm text-gray-500&quot;&gt;User Interface&lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+text-sm text-gray-500&quot;&gt;Confusing error messages&lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+text-sm text-gray-500&quot;&gt;User misinterpretation of device
+status&lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;input
+type=&quot;number&quot; value=&quot;3&quot; min=&quot;1&quot; max=&quot;5&quot;
+class=&quot;w-12 border border-gray-300 rounded p-1 text-center&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;input
+type=&quot;number&quot; value=&quot;5&quot; min=&quot;1&quot; max=&quot;5&quot;
+class=&quot;w-12 border border-gray-300 rounded p-1 text-center&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;input
+type=&quot;number&quot; value=&quot;3&quot; min=&quot;1&quot; max=&quot;5&quot;
+class=&quot;w-12 border border-gray-300 rounded p-1 text-center&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm font-medium&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;bg-warning-100 text-warning-800 px-2 py-1
+rounded-full&quot;&gt;45&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+text-sm text-gray-500&quot;&gt;Usability testing, improved error
+codes&lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+bg-yellow-100 text-yellow-800&quot;&gt;In Progress&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                                &lt;td class=&quot;px-6 py-4
+whitespace-nowrap text-sm text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;div class=&quot;flex
+space-x-2&quot;&gt;</p>
+
+<p class=MsoNormal>                                        &lt;button
+class=&quot;text-gray-500 hover:text-primary-600&quot;&gt;</p>
+
+<p class=MsoNormal>                                            &lt;i
+class=&quot;fa-solid fa-pencil&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                                        &lt;/button&gt;</p>
+
+<p class=MsoNormal>                                        &lt;button
+class=&quot;text-gray-500 hover:text-primary-600&quot;&gt;</p>
+
+<p class=MsoNormal>                                            &lt;i
+class=&quot;fa-solid fa-link&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                                        &lt;/button&gt;</p>
+
+<p class=MsoNormal>                                        &lt;button
+class=&quot;text-gray-500 hover:text-danger-600&quot;&gt;</p>
+
+<p class=MsoNormal>                                            &lt;i
+class=&quot;fa-solid fa-trash&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                                        &lt;/button&gt;</p>
+
+<p class=MsoNormal>                                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                                &lt;/td&gt;</p>
+
+<p class=MsoNormal>                            &lt;/tr&gt;</p>
+
+<p class=MsoNormal>                        &lt;/tbody&gt;</p>
+
+<p class=MsoNormal>                    &lt;/table&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;px-6 py-3 flex
+items-center justify-between border-t border-gray-200&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex
+items-center&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;span class=&quot;text-sm
+text-gray-700&quot;&gt;</p>
+
+<p class=MsoNormal>                            Showing &lt;span
+class=&quot;font-medium&quot;&gt;1&lt;/span&gt; to &lt;span
+class=&quot;font-medium&quot;&gt;3&lt;/span&gt; of &lt;span
+class=&quot;font-medium&quot;&gt;45&lt;/span&gt; entries</p>
+
+<p class=MsoNormal>                        &lt;/span&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex items-center
+space-x-2&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;button class=&quot;px-3 py-1
+border border-gray-300 rounded-md text-sm text-gray-500 hover:bg-gray-50
+disabled:opacity-50&quot; disabled=&quot;&quot;&gt;</p>
+
+<p class=MsoNormal>                            Previous</p>
+
+<p class=MsoNormal>                        &lt;/button&gt;</p>
+
+<p class=MsoNormal>                        &lt;button class=&quot;px-3 py-1
+bg-primary-50 border border-primary-500 rounded-md text-sm
+text-primary-600&quot;&gt;</p>
+
+<p class=MsoNormal>                            1</p>
+
+<p class=MsoNormal>                        &lt;/button&gt;</p>
+
+<p class=MsoNormal>                        &lt;button class=&quot;px-3 py-1
+border border-gray-300 rounded-md text-sm text-gray-500
+hover:bg-gray-50&quot;&gt;</p>
+
+<p class=MsoNormal>                            2</p>
+
+<p class=MsoNormal>                        &lt;/button&gt;</p>
+
+<p class=MsoNormal>                        &lt;button class=&quot;px-3 py-1
+border border-gray-300 rounded-md text-sm text-gray-500
+hover:bg-gray-50&quot;&gt;</p>
+
+<p class=MsoNormal>                            3</p>
+
+<p class=MsoNormal>                        &lt;/button&gt;</p>
+
+<p class=MsoNormal>                        &lt;button class=&quot;px-3 py-1
+border border-gray-300 rounded-md text-sm text-gray-500
+hover:bg-gray-50&quot;&gt;</p>
+
+<p class=MsoNormal>                            Next</p>
+
+<p class=MsoNormal>                        &lt;/button&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;/div&gt;</p>
+
+<p class=MsoNormal>        &lt;/section&gt;</p>
+
+<p class=MsoNormal>        </p>
+
+<p class=MsoNormal>        &lt;!-- Nonconformance Tracker Module --&gt;</p>
+
+<p class=MsoNormal>        &lt;section id=&quot;nc-module&quot;
+class=&quot;px-6 mb-8&quot;&gt;</p>
+
+<p class=MsoNormal>            &lt;div class=&quot;flex items-center
+justify-between mb-4&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;flex
+items-center&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;i class=&quot;fa-solid
+fa-triangle-exclamation text-2xl text-warning-600 mr-3&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                    &lt;h2 class=&quot;text-xl
+font-bold&quot;&gt;Nonconformance (NC) Tracker&lt;/h2&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;flex space-x-3&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;button class=&quot;px-3 py-2
+bg-white border border-gray-300 rounded-md text-sm flex items-center
+hover:bg-gray-50&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid fa-filter
+mr-2&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                        Filter</p>
+
+<p class=MsoNormal>                    &lt;/button&gt;</p>
+
+<p class=MsoNormal>                    &lt;button class=&quot;px-3 py-2
+bg-white border border-gray-300 rounded-md text-sm flex items-center
+hover:bg-gray-50&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid
+fa-file-export mr-2&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                        Export</p>
+
+<p class=MsoNormal>                    &lt;/button&gt;</p>
+
+<p class=MsoNormal>                    &lt;button class=&quot;px-3 py-2
+bg-warning-600 text-white rounded-md text-sm flex items-center
+hover:bg-warning-700&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid fa-plus
+mr-2&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                        Report NC</p>
+
+<p class=MsoNormal>                    &lt;/button&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;/div&gt;</p>
+
+<p class=MsoNormal>            </p>
+
+<p class=MsoNormal>            &lt;div class=&quot;grid grid-cols-1
+lg:grid-cols-3 gap-6&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;!-- Open NCs --&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;bg-white rounded-lg
+shadow&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;px-4 py-3 bg-gray-50
+border-b border-gray-200 rounded-t-lg&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;h3 class=&quot;font-semibold
+text-gray-700 flex items-center&quot;&gt;</p>
+
+<p class=MsoNormal>                            &lt;span
+class=&quot;inline-block w-3 h-3 bg-danger-500 rounded-full
+mr-2&quot;&gt;&lt;/span&gt;</p>
+
+<p class=MsoNormal>                            Open (4)</p>
+
+<p class=MsoNormal>                        &lt;/h3&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;p-4&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;div
+class=&quot;space-y-4&quot;&gt;</p>
+
+<p class=MsoNormal>                            &lt;div class=&quot;p-3 border
+border-gray-200 rounded-md hover:border-primary-500 cursor-pointer
+transition-colors&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;font-medium text-gray-900&quot;&gt;NC-2023-042&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;text-xs font-medium text-danger-600 bg-danger-50 px-2 py-0.5
+rounded-full&quot;&gt;High&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                                &lt;p class=&quot;text-sm
+text-gray-600 mb-2&quot;&gt;Sensor calibration out of specification&lt;/p&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-center text-xs text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Reported:
+Jul 18, 2023&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Linked:
+FM-002&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            </p>
+
+<p class=MsoNormal>                            &lt;div class=&quot;p-3 border
+border-gray-200 rounded-md hover:border-primary-500 cursor-pointer
+transition-colors&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;font-medium text-gray-900&quot;&gt;NC-2023-041&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;text-xs font-medium text-warning-600 bg-warning-50 px-2 py-0.5
+rounded-full&quot;&gt;Medium&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                                &lt;p class=&quot;text-sm
+text-gray-600 mb-2&quot;&gt;Display freezing during operation&lt;/p&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-center text-xs text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Reported:
+Jul 15, 2023&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Linked:
+FM-003&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            </p>
+
+<p class=MsoNormal>                            &lt;div class=&quot;p-3 border
+border-gray-200 rounded-md hover:border-primary-500 cursor-pointer
+transition-colors&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;font-medium text-gray-900&quot;&gt;NC-2023-039&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;text-xs font-medium text-warning-600 bg-warning-50 px-2 py-0.5
+rounded-full&quot;&gt;Medium&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                                &lt;p class=&quot;text-sm
+text-gray-600 mb-2&quot;&gt;Battery drain faster than expected&lt;/p&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-center text-xs text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Reported:
+Jul 12, 2023&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Linked:
+None&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            </p>
+
+<p class=MsoNormal>                            &lt;div class=&quot;p-3 border
+border-gray-200 rounded-md hover:border-primary-500 cursor-pointer
+transition-colors&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;font-medium text-gray-900&quot;&gt;NC-2023-038&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;text-xs font-medium text-success-600 bg-success-50 px-2 py-0.5
+rounded-full&quot;&gt;Low&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                                &lt;p class=&quot;text-sm
+text-gray-600 mb-2&quot;&gt;Packaging label misalignment&lt;/p&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-center text-xs text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Reported:
+Jul 10, 2023&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Linked:
+None&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            &lt;/div&gt;</p>
+
+<p class=MsoNormal>                        &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                </p>
+
+<p class=MsoNormal>                &lt;!-- Under Review NCs --&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;bg-white rounded-lg
+shadow&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;px-4 py-3 bg-gray-50
+border-b border-gray-200 rounded-t-lg&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;h3 class=&quot;font-semibold
+text-gray-700 flex items-center&quot;&gt;</p>
+
+<p class=MsoNormal>                            &lt;span
+class=&quot;inline-block w-3 h-3 bg-warning-500 rounded-full
+mr-2&quot;&gt;&lt;/span&gt;</p>
+
+<p class=MsoNormal>                            Under Review (3)</p>
+
+<p class=MsoNormal>                        &lt;/h3&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;p-4&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;div
+class=&quot;space-y-4&quot;&gt;</p>
+
+<p class=MsoNormal>                            &lt;div class=&quot;p-3 border
+border-gray-200 rounded-md hover:border-primary-500 cursor-pointer
+transition-colors&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;font-medium text-gray-900&quot;&gt;NC-2023-037&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;text-xs font-medium text-danger-600 bg-danger-50 px-2 py-0.5
+rounded-full&quot;&gt;High&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                                &lt;p class=&quot;text-sm
+text-gray-600 mb-2&quot;&gt;Unexpected device shutdown&lt;/p&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-center text-xs text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Reported:
+Jul 8, 2023&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Linked:
+FM-002&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            </p>
+
+<p class=MsoNormal>                            &lt;div class=&quot;p-3 border
+border-gray-200 rounded-md hover:border-primary-500 cursor-pointer
+transition-colors&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;font-medium text-gray-900&quot;&gt;NC-2023-035&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;text-xs font-medium text-warning-600 bg-warning-50 px-2 py-0.5
+rounded-full&quot;&gt;Medium&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                                &lt;p class=&quot;text-sm
+text-gray-600 mb-2&quot;&gt;Touchscreen unresponsive in certain areas&lt;/p&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-center text-xs text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Reported:
+Jul 5, 2023&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Linked:
+FM-003&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            </p>
+
+<p class=MsoNormal>                            &lt;div class=&quot;p-3 border
+border-gray-200 rounded-md hover:border-primary-500 cursor-pointer
+transition-colors&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;font-medium text-gray-900&quot;&gt;NC-2023-034&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;text-xs font-medium text-success-600 bg-success-50 px-2 py-0.5
+rounded-full&quot;&gt;Low&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                                &lt;p class=&quot;text-sm
+text-gray-600 mb-2&quot;&gt;USB port connection intermittent&lt;/p&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-center text-xs text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Reported:
+Jul 3, 2023&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Linked:
+None&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            &lt;/div&gt;</p>
+
+<p class=MsoNormal>                        &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                </p>
+
+<p class=MsoNormal>                &lt;!-- Closed NCs --&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;bg-white rounded-lg
+shadow&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;px-4 py-3 bg-gray-50
+border-b border-gray-200 rounded-t-lg&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;h3 class=&quot;font-semibold
+text-gray-700 flex items-center&quot;&gt;</p>
+
+<p class=MsoNormal>                            &lt;span
+class=&quot;inline-block w-3 h-3 bg-success-500 rounded-full
+mr-2&quot;&gt;&lt;/span&gt;</p>
+
+<p class=MsoNormal>                            Closed (5)</p>
+
+<p class=MsoNormal>                        &lt;/h3&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;p-4&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;div
+class=&quot;space-y-4&quot;&gt;</p>
+
+<p class=MsoNormal>                            &lt;div class=&quot;p-3 border
+border-gray-200 rounded-md hover:border-primary-500 cursor-pointer
+transition-colors&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;font-medium text-gray-900&quot;&gt;NC-2023-033&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;text-xs font-medium text-warning-600 bg-warning-50 px-2 py-0.5
+rounded-full&quot;&gt;Medium&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                                &lt;p class=&quot;text-sm
+text-gray-600 mb-2&quot;&gt;Error in data export function&lt;/p&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-center text-xs text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Closed: Jul
+17, 2023&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Linked:
+FM-003&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            </p>
+
+<p class=MsoNormal>                            &lt;div class=&quot;p-3 border
+border-gray-200 rounded-md hover:border-primary-500 cursor-pointer
+transition-colors&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;font-medium text-gray-900&quot;&gt;NC-2023-032&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;text-xs font-medium text-success-600 bg-success-50 px-2 py-0.5
+rounded-full&quot;&gt;Low&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                                &lt;p class=&quot;text-sm
+text-gray-600 mb-2&quot;&gt;Inaccurate time display&lt;/p&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-center text-xs text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Closed: Jul
+15, 2023&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Linked:
+None&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            </p>
+
+<p class=MsoNormal>                            &lt;div class=&quot;p-3 border
+border-gray-200 rounded-md hover:border-primary-500 cursor-pointer
+transition-colors&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;font-medium text-gray-900&quot;&gt;NC-2023-031&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;text-xs font-medium text-danger-600 bg-danger-50 px-2 py-0.5
+rounded-full&quot;&gt;High&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                                &lt;p class=&quot;text-sm
+text-gray-600 mb-2&quot;&gt;Incorrect measurement readings&lt;/p&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-center text-xs text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Closed: Jul
+12, 2023&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Linked:
+FM-001&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            </p>
+
+<p class=MsoNormal>                            &lt;div class=&quot;p-3 border
+border-gray-200 rounded-md hover:border-primary-500 cursor-pointer
+transition-colors&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;font-medium text-gray-900&quot;&gt;NC-2023-030&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;text-xs font-medium text-warning-600 bg-warning-50 px-2 py-0.5
+rounded-full&quot;&gt;Medium&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                                &lt;p class=&quot;text-sm
+text-gray-600 mb-2&quot;&gt;Software update failure&lt;/p&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-center text-xs text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Closed: Jul
+10, 2023&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Linked:
+None&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            </p>
+
+<p class=MsoNormal>                            &lt;div class=&quot;p-3 border
+border-gray-200 rounded-md hover:border-primary-500 cursor-pointer
+transition-colors&quot;&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-start mb-2&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;font-medium text-gray-900&quot;&gt;NC-2023-029&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span
+class=&quot;text-xs font-medium text-success-600 bg-success-50 px-2 py-0.5
+rounded-full&quot;&gt;Low&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                                &lt;p class=&quot;text-sm
+text-gray-600 mb-2&quot;&gt;Cosmetic defect on device housing&lt;/p&gt;</p>
+
+<p class=MsoNormal>                                &lt;div class=&quot;flex
+justify-between items-center text-xs text-gray-500&quot;&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Closed: Jul
+8, 2023&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                    &lt;span&gt;Linked:
+None&lt;/span&gt;</p>
+
+<p class=MsoNormal>                                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                            &lt;/div&gt;</p>
+
+<p class=MsoNormal>                        &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;/div&gt;</p>
+
+<p class=MsoNormal>        &lt;/section&gt;</p>
+
+<p class=MsoNormal>        </p>
+
+<p class=MsoNormal>        &lt;!-- AI Assist Panel --&gt;</p>
+
+<p class=MsoNormal>        &lt;div id=&quot;ai-assist-panel&quot;
+class=&quot;fixed bottom-6 right-6 w-96 bg-white rounded-lg shadow-lg border
+border-gray-200 overflow-hidden&quot;&gt;</p>
+
+<p class=MsoNormal>            &lt;div class=&quot;bg-indigo-600 text-white
+px-4 py-3 flex justify-between items-center&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;flex
+items-center&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;i class=&quot;fa-solid fa-robot
+mr-2&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                    &lt;h3
+class=&quot;font-semibold&quot;&gt;AI Assistant&lt;/h3&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;flex items-center
+space-x-2&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;button class=&quot;text-white
+hover:text-indigo-200&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid
+fa-minus&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                    &lt;/button&gt;</p>
+
+<p class=MsoNormal>                    &lt;button class=&quot;text-white
+hover:text-indigo-200&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid
+fa-xmark&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                    &lt;/button&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;div class=&quot;p-4 h-[320px]
+overflow-y-auto&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;flex items-start
+mb-4&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex-shrink-0
+bg-indigo-100 rounded-full p-2&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid fa-robot
+text-indigo-600&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;ml-3 bg-gray-100
+rounded-lg p-3 max-w-[85%]&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;p
+class=&quot;text-sm&quot;&gt;I've analyzed your recent nonconformance reports
+and found a potential pattern related to the power supply. Would you like me to
+suggest a new FMEA entry?&lt;/p&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                </p>
+
+<p class=MsoNormal>                &lt;div class=&quot;flex items-start mb-4
+justify-end&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;mr-3 bg-primary-100
+rounded-lg p-3 max-w-[85%]&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;p
+class=&quot;text-sm&quot;&gt;Yes, please show me the suggested FMEA
+entry.&lt;/p&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex-shrink-0
+bg-primary-500 rounded-full p-2&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid fa-user
+text-white&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>                </p>
+
+<p class=MsoNormal>                &lt;div class=&quot;flex items-start
+mb-4&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;flex-shrink-0
+bg-indigo-100 rounded-full p-2&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid fa-robot
+text-indigo-600&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;div class=&quot;ml-3 bg-gray-100
+rounded-lg p-3 max-w-[85%]&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;p class=&quot;text-sm
+font-medium mb-1&quot;&gt;Suggested FMEA Entry:&lt;/p&gt;</p>
+
+<p class=MsoNormal>                        &lt;p class=&quot;text-sm
+mb-2&quot;&gt;&lt;strong&gt;Component:&lt;/strong&gt; Power Management
+IC&lt;/p&gt;</p>
+
+<p class=MsoNormal>                        &lt;p class=&quot;text-sm
+mb-2&quot;&gt;&lt;strong&gt;Failure Mode:&lt;/strong&gt; Thermal cycling
+induced solder joint fatigue&lt;/p&gt;</p>
+
+<p class=MsoNormal>                        &lt;p class=&quot;text-sm
+mb-2&quot;&gt;&lt;strong&gt;Effect:&lt;/strong&gt; Intermittent power loss
+during operation&lt;/p&gt;</p>
+
+<p class=MsoNormal>                        &lt;p class=&quot;text-sm
+mb-2&quot;&gt;&lt;strong&gt;Suggested S/O/D:&lt;/strong&gt; 4/3/2 (RPN:
+24)&lt;/p&gt;</p>
+
+<p class=MsoNormal>                        &lt;p
+class=&quot;text-sm&quot;&gt;&lt;strong&gt;Mitigation:&lt;/strong&gt; Improved
+solder composition, thermal relief design&lt;/p&gt;</p>
+
+<p class=MsoNormal>                        &lt;div class=&quot;mt-2 flex
+space-x-2&quot;&gt;</p>
+
+<p class=MsoNormal>                            &lt;button
+class=&quot;bg-indigo-500 text-white px-3 py-1 rounded text-xs&quot;&gt;Add to
+FMEA&lt;/button&gt;</p>
+
+<p class=MsoNormal>                            &lt;button
+class=&quot;bg-gray-200 text-gray-700 px-3 py-1 rounded
+text-xs&quot;&gt;Modify&lt;/button&gt;</p>
+
+<p class=MsoNormal>                            &lt;button
+class=&quot;bg-gray-200 text-gray-700 px-3 py-1 rounded
+text-xs&quot;&gt;Dismiss&lt;/button&gt;</p>
+
+<p class=MsoNormal>                        &lt;/div&gt;</p>
+
+<p class=MsoNormal>                    &lt;/div&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;div class=&quot;border-t border-gray-200
+p-3&quot;&gt;</p>
+
+<p class=MsoNormal>                &lt;div class=&quot;relative&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;input type=&quot;text&quot;
+placeholder=&quot;Ask a question...&quot; class=&quot;w-full border
+border-gray-300 rounded-full pl-4 pr-10 py-2 focus:outline-none
+focus:border-indigo-500&quot;&gt;</p>
+
+<p class=MsoNormal>                    &lt;button class=&quot;absolute right-3
+top-2 text-indigo-600&quot;&gt;</p>
+
+<p class=MsoNormal>                        &lt;i class=&quot;fa-solid
+fa-paper-plane&quot;&gt;&lt;/i&gt;</p>
+
+<p class=MsoNormal>                    &lt;/button&gt;</p>
+
+<p class=MsoNormal>                &lt;/div&gt;</p>
+
+<p class=MsoNormal>            &lt;/div&gt;</p>
+
+<p class=MsoNormal>        &lt;/div&gt;</p>
+
+<p class=MsoNormal>    &lt;/main&gt;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>    &lt;script&gt;</p>
+
+<p class=MsoNormal>        // Initialize chart</p>
+
+<p class=MsoNormal>        Highcharts.chart('trend-chart-container', {</p>
+
+<p class=MsoNormal>            chart: {</p>
+
+<p class=MsoNormal>                type: 'line',</p>
+
+<p class=MsoNormal>                style: {</p>
+
+<p class=MsoNormal>                    fontFamily: 'Inter, sans-serif'</p>
+
+<p class=MsoNormal>                }</p>
+
+<p class=MsoNormal>            },</p>
+
+<p class=MsoNormal>            title: {</p>
+
+<p class=MsoNormal>                text: null</p>
+
+<p class=MsoNormal>            },</p>
+
+<p class=MsoNormal>            credits: {</p>
+
+<p class=MsoNormal>                enabled: false</p>
+
+<p class=MsoNormal>            },</p>
+
+<p class=MsoNormal>            xAxis: {</p>
+
+<p class=MsoNormal>                categories: ['Jun 1', 'Jun 15', 'Jul 1',
+'Jul 15', 'Aug 1', 'Aug 15', 'Sep 1'],</p>
+
+<p class=MsoNormal>                labels: {</p>
+
+<p class=MsoNormal>                    style: {</p>
+
+<p class=MsoNormal>                        color: '#6B7280'</p>
+
+<p class=MsoNormal>                    }</p>
+
+<p class=MsoNormal>                }</p>
+
+<p class=MsoNormal>            },</p>
+
+<p class=MsoNormal>            yAxis: {</p>
+
+<p class=MsoNormal>                title: {</p>
+
+<p class=MsoNormal>                    text: null</p>
+
+<p class=MsoNormal>                },</p>
+
+<p class=MsoNormal>                gridLineColor: '#E5E7EB',</p>
+
+<p class=MsoNormal>                labels: {</p>
+
+<p class=MsoNormal>                    style: {</p>
+
+<p class=MsoNormal>                        color: '#6B7280'</p>
+
+<p class=MsoNormal>                    }</p>
+
+<p class=MsoNormal>                }</p>
+
+<p class=MsoNormal>            },</p>
+
+<p class=MsoNormal>            legend: {</p>
+
+<p class=MsoNormal>                itemStyle: {</p>
+
+<p class=MsoNormal>                    color: '#374151',</p>
+
+<p class=MsoNormal>                    fontWeight: '500'</p>
+
+<p class=MsoNormal>                }</p>
+
+<p class=MsoNormal>            },</p>
+
+<p class=MsoNormal>            plotOptions: {</p>
+
+<p class=MsoNormal>                line: {</p>
+
+<p class=MsoNormal>                    marker: {</p>
+
+<p class=MsoNormal>                        radius: 4</p>
+
+<p class=MsoNormal>                    }</p>
+
+<p class=MsoNormal>                }</p>
+
+<p class=MsoNormal>            },</p>
+
+<p class=MsoNormal>            series: [{</p>
+
+<p class=MsoNormal>                name: 'High Risk Items',</p>
+
+<p class=MsoNormal>                color: '#EF4444',</p>
+
+<p class=MsoNormal>                data: [18, 16, 14, 12, 13, 15, 12]</p>
+
+<p class=MsoNormal>            }, {</p>
+
+<p class=MsoNormal>                name: 'Open NCs',</p>
+
+<p class=MsoNormal>                color: '#F97316',</p>
+
+<p class=MsoNormal>                data: [12, 14, 18, 23, 25, 28, 23]</p>
+
+<p class=MsoNormal>            }, {</p>
+
+<p class=MsoNormal>                name: 'Open CAPAs',</p>
+
+<p class=MsoNormal>                color: '#0EA5E9',</p>
+
+<p class=MsoNormal>                data: [8, 7, 9, 11, 10, 9, 8]</p>
+
+<p class=MsoNormal>            }]</p>
+
+<p class=MsoNormal>        });</p>
+
+<p class=MsoNormal>    &lt;/script&gt;</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>&lt;/body&gt;&lt;/html&gt;</p>
+
+</div>
+
+</body>
+
+</html>

@@ -1,0 +1,37 @@
+services:
+  # Backend Service
+  - type: web
+    name: fmea-backend
+    env: docker
+    dockerfilePath: ./fmea_backend/Dockerfile.prod
+    dockerContext: ./fmea_backend
+    plan: starter
+    region: oregon
+    branch: main
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: CORS_ORIGINS
+        value: https://fmea-frontend.onrender.com,https://fmea-ai-frontend.onrender.com
+      - key: DATABASE_URL
+        value: sqlite:////app/db/fmea.db
+      - key: SECRET_KEY
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false  # Set this in Render dashboard
+
+  # Frontend Service
+  - type: web
+    name: fmea-frontend
+    env: docker
+    dockerfilePath: ./frontend/Dockerfile.prod
+    dockerContext: ./frontend
+    plan: starter
+    region: oregon
+    branch: main
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://fmea-backend.onrender.com
+      - key: NODE_ENV
+        value: production

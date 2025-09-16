@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+body {
+  font-family: 'Inter', sans-serif !important;
+}
+
+.fa, .fas, .far, .fal, .fab {
+  font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+}
+
+.highlighted-section {
+  outline: 2px solid #3F20FB;
+  background-color: rgba(63, 32, 251, 0.1);
+}
+
+.edit-button {
+  position: absolute;
+  z-index: 1000;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+html, body {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
