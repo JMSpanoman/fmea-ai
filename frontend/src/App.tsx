@@ -30,6 +30,7 @@ import HelpPage from './pages/HelpPage';
 import MitigationPage from './pages/MitigationPage';
 import AdminPage from './pages/AdminPage';
 import EmailManagement from './components/EmailManagement';
+import EmailListViewer from './components/EmailListViewer';
 
 function App() {
   return (
@@ -66,6 +67,7 @@ function App() {
                 <Route path="/mitigation" element={<MitigationPage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/email-management" element={<EmailManagement />} />
+                <Route path="/email-list" element={<EmailListViewer />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
               </div>
