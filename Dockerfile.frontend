@@ -19,8 +19,7 @@ RUN npm ci --no-audit --no-fund
 
 # Verify installation and show debug info
 RUN npm list --depth=0
-RUN node --version
-RUN npm --version
+RUN node -v && npm -v && node -p "require('./package-lock.json').lockfileVersion"
 
 # Build the application
 RUN npm run build
