@@ -6,13 +6,15 @@ WORKDIR /app
 # Copy package files
 COPY frontend/package*.json ./
 
-# Install dependencies (including dev dependencies for build)
-RUN npm ci
+# Clear npm cache and install dependencies
+RUN npm cache clean --force
+RUN npm install --no-audit --no-fund
 
 # Copy source code
 COPY frontend/ .
 
-# Build the application
+# Clean any existing build and build the application
+RUN rm -rf dist
 RUN npm run build
 
 # Production stage
