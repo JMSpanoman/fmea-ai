@@ -1,24 +1,20 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useProject } from '../contexts/ProjectContext';
+import { useAuth } from '../contexts/AuthContext';
 import ProjectSelector from './ProjectSelector';
-
-// Mock user data - in a real app this would come from authentication context
-const mockUser = {
-  name: 'John Smith',
-  email: 'john.smith@foton.com',
-  role: 'Senior Quality Engineer',
-  level: 3, // Access level: 1=Basic, 2=Intermediate, 3=Advanced
-  avatar: 'JS',
-  department: 'Quality Assurance',
-  lastLogin: '2 hours ago'
-};
 
 const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { currentProject, isProjectSelected } = useProject();
+  const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  // Get user initials for avatar
+  const getUserInitials = (email: string) => {
+    return email.split('@')[0].substring(0, 2).toUpperCase();
+  };
 
   const navItems = [
     { path: '/', label: 'Home', icon: 'fa-home', level: 1 },
@@ -67,7 +63,9 @@ const Sidebar: React.FC = () => {
   };
 
   const canAccess = (itemLevel: number) => {
-    return mockUser.level >= itemLevel;
+    // For now, allow all users to access all features
+    // In a real app, you might have different access levels based on user roles
+    return true;
   };
 
   return (
@@ -110,11 +108,15 @@ const Sidebar: React.FC = () => {
       <div className="p-4 border-b border-gray-200 bg-gray-50">
         <div className="flex items-center space-x-3 mb-3">
           <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-            {mockUser.avatar}
+            {user ? getUserInitials(user.email) : 'U'}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-medium text-gray-900 truncate">{mockUser.name}</h3>
-            <p className="text-xs text-gray-500 truncate">{mockUser.role}</p>
+            <h3 className="text-sm font-medium text-gray-900 truncate">
+              {user ? user.email.split('@')[0] : 'User'}
+            </h3>
+            <p className="text-xs text-gray-500 truncate">
+              {user ? user.email : 'Not logged in'}
+            </p>
           </div>
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
@@ -124,34 +126,20 @@ const Sidebar: React.FC = () => {
           </button>
         </div>
         
-        {/* Access Level Badge */}
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-gray-500">Access Level:</span>
-          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getLevelColor(mockUser.level)}`}>
-            {getLevelLabel(mockUser.level)}
-          </span>
-        </div>
 
         {/* User Menu Dropdown */}
         {showUserMenu && (
           <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
-                <span className="text-gray-500">Department:</span>
-                <span className="font-medium text-gray-900">{mockUser.department}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Last Login:</span>
-                <span className="font-medium text-gray-900">{mockUser.lastLogin}</span>
+                <span className="text-gray-500">Email:</span>
+                <span className="font-medium text-gray-900">{user?.email}</span>
               </div>
               <div className="pt-2 border-t border-gray-100">
-                <button className="w-full text-left text-blue-600 hover:text-blue-800 text-xs">
-                  <i className="fa-solid fa-user-edit mr-2"></i>
-                  Edit Profile
-                </button>
-              </div>
-              <div>
-                <button className="w-full text-left text-red-600 hover:text-red-800 text-xs">
+                <button 
+                  onClick={logout}
+                  className="w-full text-left text-red-600 hover:text-red-800 text-xs"
+                >
                   <i className="fa-solid fa-sign-out-alt mr-2"></i>
                   Sign Out
                 </button>
@@ -247,9 +235,9 @@ const Sidebar: React.FC = () => {
             <span className="text-green-600 font-medium">Online</span>
           </div>
           <div className="flex justify-between">
-            <span>User Level:</span>
-            <span className={`font-medium ${getLevelColor(mockUser.level).replace('bg-', 'text-').replace('-100', '-600')}`}>
-              {getLevelLabel(mockUser.level)}
+            <span>User:</span>
+            <span className="font-medium text-blue-600">
+              {user ? user.email.split('@')[0] : 'Not logged in'}
             </span>
           </div>
           {currentProject && (
