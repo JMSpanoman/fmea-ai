@@ -20,6 +20,8 @@ services:
         generateValue: true
       - key: OPENAI_API_KEY
         sync: false  # Set this in Render dashboard
+      - key: PORT
+        value: 8000
 
   # Frontend Service
   - type: web
@@ -35,3 +37,5 @@ services:
         value: https://fmea-backend.onrender.com
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 80
