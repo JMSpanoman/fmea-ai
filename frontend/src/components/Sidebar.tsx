@@ -34,6 +34,7 @@ const Sidebar: React.FC = () => {
     { path: '/risk-evaluation-report', label: 'Risk Eval', icon: 'fa-chart-bar', level: 3 },
     { path: '/mitigation', label: 'Mitigation', icon: 'fa-tools', level: 2 },
     { path: '/export', label: 'Export', icon: 'fa-download', level: 1 },
+    { path: '/email-management', label: 'Email Management', icon: 'fa-envelope', level: 3 },
     { path: '/help', label: 'Help', icon: 'fa-question-circle', level: 1 }
   ];
 

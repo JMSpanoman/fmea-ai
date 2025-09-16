@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import emailRepository from '../services/emailRepository';
 
 interface User {
   email: string;
@@ -37,6 +38,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       throw new Error('Please enter a valid email address');
+    }
+
+    // Check if email is authorized
+    if (!emailRepository.isEmailAuthorized(email)) {
+      throw new Error('This email address is not authorized to access the system. Please contact your administrator.');
     }
 
     // Store user email in localStorage

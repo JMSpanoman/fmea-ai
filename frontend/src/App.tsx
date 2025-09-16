@@ -29,6 +29,7 @@ import ExportPage from './pages/ExportPage';
 import HelpPage from './pages/HelpPage';
 import MitigationPage from './pages/MitigationPage';
 import AdminPage from './pages/AdminPage';
+import EmailManagement from './components/EmailManagement';
 
 function App() {
   return (
@@ -64,6 +65,7 @@ function App() {
                 <Route path="/help" element={<HelpPage />} />
                 <Route path="/mitigation" element={<MitigationPage />} />
                 <Route path="/admin" element={<AdminPage />} />
+                <Route path="/email-management" element={<EmailManagement />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
               </div>
