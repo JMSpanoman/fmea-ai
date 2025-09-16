@@ -92,6 +92,16 @@ app.add_middleware(
 
 # Security
 
+# Root endpoint
+@app.get("/")
+def root():
+    return {
+        "message": "Smart FMEA Builder API",
+        "version": "1.0.0",
+        "environment": os.getenv("ENVIRONMENT", "development"),
+        "docs": "/docs"
+    }
+
 # Health check endpoint
 @app.get("/health")
 def health_check():

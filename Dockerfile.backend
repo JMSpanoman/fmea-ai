@@ -18,8 +18,8 @@ COPY fmea_backend/ .
 # Create directories for data and logs
 RUN mkdir -p /app/data /app/logs /app/uploads /app/db
 
-# Initialize database with sample data
-RUN python /app/init_db.py
+# Make startup script executable
+RUN chmod +x /app/start.sh
 
 # Expose port (Render will set PORT env var)
 EXPOSE $PORT
@@ -28,5 +28,5 @@ EXPOSE $PORT
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:$PORT/health || exit 1
 
-# Start the application with gunicorn for production
-CMD gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+# Start the application with startup script
+CMD ["/app/start.sh"]
