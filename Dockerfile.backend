@@ -13,13 +13,13 @@ COPY fmea_backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY . .
+COPY fmea_backend/ .
 
 # Create directories for data and logs
 RUN mkdir -p /app/data /app/logs /app/uploads /app/db
 
 # Initialize database with sample data
-RUN python /app/init_sample_data.py
+RUN python /app/init_db.py
 
 # Expose port
 EXPOSE 8000

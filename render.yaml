@@ -3,8 +3,8 @@ services:
   - type: web
     name: fmea-backend
     env: docker
-    dockerfilePath: ./fmea_backend/Dockerfile.prod
-    dockerContext: ./fmea_backend
+    dockerfilePath: ./Dockerfile.backend
+    dockerContext: .
     plan: starter
     region: oregon
     branch: main
@@ -25,8 +25,8 @@ services:
   - type: web
     name: fmea-frontend
     env: docker
-    dockerfilePath: ./frontend/Dockerfile.prod
-    dockerContext: ./frontend
+    dockerfilePath: ./Dockerfile.frontend
+    dockerContext: .
     plan: starter
     region: oregon
     branch: main
