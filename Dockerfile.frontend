@@ -13,8 +13,16 @@ RUN npm install --no-audit --no-fund
 # Copy source code
 COPY frontend/ .
 
-# Clean any existing build and build the application
-RUN rm -rf dist
+# Clean any existing build and ensure clean state
+RUN rm -rf dist node_modules/.vite
+RUN npm ci --no-audit --no-fund
+
+# Verify installation and show debug info
+RUN npm list --depth=0
+RUN node --version
+RUN npm --version
+
+# Build the application
 RUN npm run build
 
 # Production stage
