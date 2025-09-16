@@ -6,16 +6,14 @@ WORKDIR /app
 # Copy package files
 COPY frontend/package*.json ./
 
-# Clear npm cache and install dependencies
-RUN npm cache clean --force
-RUN npm install --no-audit --no-fund
+# Install dependencies using npm ci for reproducible builds
+RUN npm ci --no-audit --no-fund
 
 # Copy source code
 COPY frontend/ .
 
 # Clean any existing build and ensure clean state
 RUN rm -rf dist node_modules/.vite
-RUN npm ci --no-audit --no-fund
 
 # Verify installation and show debug info
 RUN npm list --depth=0

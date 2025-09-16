@@ -8,7 +8,7 @@ import DashboardPage from './pages/DashboardPage';
 import NonConformancePage from './pages/NonConformancePage';
 import CapaPage from './pages/CapaPage';
 import ChangeControlPage from './pages/ChangeControlPage';
-import FmeaPage from './pages/FmeaPage';
+import FmeaPage from './pages/FMEAPage';
 import HazardAnalysisPage from './pages/HazardAnalysisPage';
 import FaultTreeReportPage from './pages/FaultTreeReportPage';
 import RiskManagementReportPage from './pages/RiskManagementReportPage';
