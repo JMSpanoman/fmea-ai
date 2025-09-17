@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import emailRepository from '../services/emailRepository';
+import LocalStorageInfo from './LocalStorageInfo';
 
 interface EmailRecord {
   email: string;
@@ -60,21 +61,21 @@ const EmailManagement: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        if (emailRepository.importEmails(content)) {
-          loadEmails();
-          alert('Emails imported successfully!');
-        } else {
-          alert('Failed to import emails. Please check the file format.');
-        }
-      };
-      reader.readAsText(file);
+      if (await emailRepository.loadFromFile(file)) {
+        loadEmails();
+        alert('Emails loaded from local file successfully!');
+      } else {
+        alert('Failed to load emails from file. Please check the file format.');
+      }
     }
+  };
+
+  const handleSaveToLocalFolder = () => {
+    emailRepository.saveToLocalFolder();
+    alert(`Email list saved to Downloads folder as: ${emailRepository.getFileName()}`);
   };
 
   return (
@@ -90,13 +91,13 @@ const EmailManagement: React.FC = () => {
               Add Email
             </button>
             <button
-              onClick={handleExport}
+              onClick={handleSaveToLocalFolder}
               className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
             >
-              Export
+              Save to PC
             </button>
             <label className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors cursor-pointer">
-              Import
+              Load from PC
               <input
                 type="file"
                 accept=".json"
@@ -104,8 +105,17 @@ const EmailManagement: React.FC = () => {
                 className="hidden"
               />
             </label>
+            <button
+              onClick={handleExport}
+              className="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors"
+            >
+              Export JSON
+            </button>
           </div>
         </div>
+
+        {/* Local Storage Info */}
+        <LocalStorageInfo />
 
         {/* Statistics */}
         <div className="grid grid-cols-3 gap-4 mb-6">
