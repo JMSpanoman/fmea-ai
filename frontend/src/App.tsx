@@ -32,6 +32,8 @@ import AdminPage from './pages/AdminPage';
 import EmailManagement from './components/EmailManagement';
 import EmailListViewer from './components/EmailListViewer';
 import LoginNotifications from './components/LoginNotifications';
+import TrialStatusBanner from './components/TrialStatusBanner';
+import UsageDashboard from './components/UsageDashboard';
 
 function App() {
   return (
@@ -42,6 +44,7 @@ function App() {
             <div className="min-h-screen bg-gray-50 flex">
               <Sidebar />
               <div className="flex-1 ml-64">
+                <TrialStatusBanner />
                 <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
@@ -70,6 +73,7 @@ function App() {
                         <Route path="/email-management" element={<EmailManagement />} />
                         <Route path="/email-list" element={<EmailListViewer />} />
                         <Route path="/login-notifications" element={<LoginNotifications />} />
+                        <Route path="/usage-dashboard" element={<UsageDashboard />} />
                         <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
               </div>

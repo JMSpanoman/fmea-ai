@@ -37,6 +37,7 @@ const Sidebar: React.FC = () => {
           { path: '/email-list', label: 'Email List', icon: 'fa-list', level: 1 },
           { path: '/email-management', label: 'Email Management', icon: 'fa-envelope', level: 3 },
           { path: '/login-notifications', label: 'Login Notifications', icon: 'fa-bell', level: 3 },
+          { path: '/usage-dashboard', label: 'Usage Dashboard', icon: 'fa-chart-pie', level: 3 },
     { path: '/help', label: 'Help', icon: 'fa-question-circle', level: 1 }
   ];
 
