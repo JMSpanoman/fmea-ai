@@ -31,6 +31,7 @@ import MitigationPage from './pages/MitigationPage';
 import AdminPage from './pages/AdminPage';
 import EmailManagement from './components/EmailManagement';
 import EmailListViewer from './components/EmailListViewer';
+import LoginNotifications from './components/LoginNotifications';
 
 function App() {
   return (
@@ -66,9 +67,10 @@ function App() {
                 <Route path="/help" element={<HelpPage />} />
                 <Route path="/mitigation" element={<MitigationPage />} />
                 <Route path="/admin" element={<AdminPage />} />
-                <Route path="/email-management" element={<EmailManagement />} />
-                <Route path="/email-list" element={<EmailListViewer />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
+                        <Route path="/email-management" element={<EmailManagement />} />
+                        <Route path="/email-list" element={<EmailListViewer />} />
+                        <Route path="/login-notifications" element={<LoginNotifications />} />
+                        <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
               </div>
             </div>

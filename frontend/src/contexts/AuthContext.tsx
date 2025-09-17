@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import emailRepository from '../services/emailRepository';
+import emailNotificationService from '../services/emailNotificationService';
 
 interface User {
   email: string;
@@ -41,13 +42,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     // Check if email is authorized
-    if (!emailRepository.isEmailAuthorized(email)) {
-      throw new Error('This email address is not authorized to access the system. Please contact your administrator.');
+    const authorizedUser = emailRepository.getEmailByAddress(email);
+    if (!authorizedUser || !authorizedUser.isActive) {
+      throw new Error('This email address is not authorized to access the system or is inactive. Please contact your administrator.');
     }
 
     // Store user email in localStorage
     localStorage.setItem('userEmail', email);
-    setUser({ email });
+    setUser({ email: authorizedUser.email, name: authorizedUser.name });
+
+    // Send login notification to admin
+    try {
+      await emailNotificationService.sendLoginNotification({
+        userEmail: authorizedUser.email,
+        userName: authorizedUser.name || 'Unknown',
+        userRole: authorizedUser.role || 'User',
+        loginTime: new Date().toLocaleString(),
+        ipAddress: 'Unknown', // In a real app, you'd get this from the request
+        userAgent: navigator.userAgent
+      });
+    } catch (error) {
+      console.error('Failed to send login notification:', error);
+      // Don't fail login if notification fails
+    }
   };
 
   const logout = () => {

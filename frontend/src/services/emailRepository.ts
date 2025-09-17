@@ -42,6 +42,13 @@ class EmailRepository {
             isActive: true
           },
           {
+            email: 'john@fotonconsulting.com',
+            name: 'John Spanomanolis',
+            role: 'Admin',
+            addedDate: new Date().toISOString(),
+            isActive: true
+          },
+          {
             email: 'engineer@foton.com',
             name: 'Quality Engineer',
             role: 'Engineer',
