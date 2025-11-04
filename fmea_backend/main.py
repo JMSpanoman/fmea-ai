@@ -36,6 +36,7 @@ from crud import nonconformance as nonconformance_crud
 
 from auth.dependencies import get_current_user, create_dev_token
 from routers import ai, auth, capa, change_control, fmeas, mitigations, nonconformance, projects, tracibility, templates
+from routes.mastercontrol import router as mastercontrol_router
 
 
 
@@ -78,7 +79,7 @@ app.include_router(mitigations.router, prefix="/fmea", tags=["Mitigations"])
 app.include_router(nonconformance.router, prefix="/fmea", tags=["Non-Conformance"])
 app.include_router(capa.router, prefix="/fmea", tags=["CAPA"])
 app.include_router(change_control.router, prefix="/fmea", tags=["Change Control"])
-
+app.include_router(mastercontrol_router)
 
 
 # CORS middleware
