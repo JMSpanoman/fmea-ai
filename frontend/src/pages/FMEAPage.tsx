@@ -50,6 +50,81 @@ const FmeaPage: React.FC = () => {
   const [showProjectDataViewer, setShowProjectDataViewer] = useState(false);
   const [selectedProjectForViewer, setSelectedProjectForViewer] = useState<any>(null);
 
+  // Helper function to export first 10 FMEA rows to MasterControl (creates 10 separate forms)
+  const exportFirstRowsToMasterControl = async (fmeaRows: FmeaRow[], componentName: string) => {
+    try {
+      const rowsToExport = fmeaRows.slice(0, 10); // Get first 10 rows
+      if (rowsToExport.length === 0) return;
+      
+      console.log(`Auto-exporting first ${rowsToExport.length} FMEA rows to MasterControl (creating ${rowsToExport.length} forms)`);
+      
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+      
+      // Export each row separately to create individual MasterControl forms
+      for (let i = 0; i < rowsToExport.length; i++) {
+        const row = rowsToExport[i];
+        console.log(`Exporting row ${i + 1} of ${rowsToExport.length} to MasterControl:`, row);
+        
+        // Transform FMEA row to MasterControl format
+        const mcRow = {
+          "COMPONENT": row.component || componentName,
+          "FUNCTION": row.function || '',
+          "FAILURE MODE": row.failureMode || '',
+          "EFFECTS": row.potentialEffects || '',
+          "SEVERITY": row.severity || 1,
+          "CAUSES": row.potentialCauses || '',
+          "OCCURRENCE": row.occurrence || 1,
+          "CONTROLS": row.currentControls || '',
+          "DETECTION": row.detection || 1,
+          "RPN": row.rpn || (row.severity || 1) * (row.occurrence || 1) * (row.detection || 1),
+          "ACTIONS": row.recommendedActions || row.actionsTaken || '',
+          "OWNER": row.responsibility || '',
+          "DUE DATE": row.targetDate || '',
+          "STATUS": '',
+          "DOC LINK": ''
+        };
+
+        try {
+          // Call MasterControl export endpoint for this row
+          const response = await fetch(`${apiBaseUrl}/integrations/mastercontrol/export`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              rows: [mcRow],
+              rate_limit_sec: 0.0
+            })
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.summary && result.summary.success > 0) {
+              console.log(`✅ Row ${i + 1} exported to MasterControl (form ${i + 1} created)`);
+            } else {
+              console.warn(`⚠️ Row ${i + 1} export completed but may have issues:`, result);
+            }
+          } else {
+            const errorText = await response.text();
+            console.error(`❌ Row ${i + 1} export failed:`, response.status, errorText);
+          }
+        } catch (rowError) {
+          console.error(`Error exporting row ${i + 1} to MasterControl:`, rowError);
+        }
+        
+        // Small delay between exports to avoid rate limiting
+        if (i < rowsToExport.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
+      console.log(`✅ Completed exporting ${rowsToExport.length} FMEA rows to MasterControl (${rowsToExport.length} forms created)`);
+    } catch (exportError) {
+      // Don't fail FMEA generation if MasterControl export fails
+      console.error('Error exporting to MasterControl (non-blocking):', exportError);
+    }
+  };
+
                 const generateFmea = async () => {
                 if (!componentDescription.trim()) {
                   alert('Please enter a component description');
@@ -148,6 +223,11 @@ const FmeaPage: React.FC = () => {
                   setMockFlag(false);
                   setShowTable(true);
                   setIsGenerating(false);
+
+                  // Automatically export first 10 FMEA rows to MasterControl
+                  if (aiFmeaData && aiFmeaData.length > 0) {
+                    exportFirstRowsToMasterControl(aiFmeaData, componentDescription);
+                  }
                   
                 } catch (error) {
                   console.error('All AI generation attempts failed:', error);
@@ -162,6 +242,11 @@ const FmeaPage: React.FC = () => {
                   setMockFlag(false); // Still mark as AI-generated since it's sophisticated
                   setShowTable(true);
                   setIsGenerating(false);
+
+                  // Automatically export first 10 FMEA rows to MasterControl
+                  if (enhancedFallbackData && enhancedFallbackData.length > 0) {
+                    exportFirstRowsToMasterControl(enhancedFallbackData, componentDescription);
+                  }
                 }
               };
 

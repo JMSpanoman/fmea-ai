@@ -1,50 +1,45 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-class ChangeControlCreate(BaseModel):
-    change_description: str
-    initiator: str
-    date_initiated: str
-    status: str
-    impact_assessment: Optional[str] = None
-    actions_required: Optional[str] = None
-    action_owner: Optional[str] = None
-    due_date: Optional[str] = None
-    closure_summary: Optional[str] = None
-    analysis_timestamp: Optional[str] = None
-    version: Optional[str] = "1.0"
+class ChangeControlBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    reason: Optional[str] = None
+    status: str  # open, in_review, approved, implemented, verified, closed
+    linked_risk_ids: Optional[List[str]] = None
+    ai_metadata: Optional[Dict[str, Any]] = None
+
+class ChangeControlCreate(ChangeControlBase):
+    project_id: str  # UUID
 
 class ChangeControlUpdate(BaseModel):
-    change_description: Optional[str] = None
-    initiator: Optional[str] = None
-    date_initiated: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    reason: Optional[str] = None
     status: Optional[str] = None
-    impact_assessment: Optional[str] = None
-    actions_required: Optional[str] = None
-    action_owner: Optional[str] = None
-    due_date: Optional[str] = None
-    closure_summary: Optional[str] = None
-    analysis_timestamp: Optional[str] = None
-    version: Optional[str] = None
+    risk_impact: Optional[Dict[str, Any]] = None
+    linked_risk_ids: Optional[List[str]] = None
+    ai_metadata: Optional[Dict[str, Any]] = None
 
-class ChangeControlOut(BaseModel):
-    id: int
-    project_id: int
-    user_id: str
-    change_description: str
-    initiator: str
-    date_initiated: str
-    status: str
-    impact_assessment: Optional[str] = None
-    actions_required: Optional[str] = None
-    action_owner: Optional[str] = None
-    due_date: Optional[str] = None
-    closure_summary: Optional[str] = None
-    analysis_timestamp: Optional[str] = None
-    version: str
+class ChangeControlOut(ChangeControlBase):
+    id: str  # UUID
+    project_id: str  # UUID
+    risk_impact: Optional[Dict[str, Any]] = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
+# AI Change Control Impact Analysis
+class ChangeControlImpactRequest(BaseModel):
+    change_control_id: str  # UUID
+
+class ChangeControlImpactResponse(BaseModel):
+    affected_risks: List[str]  # Array of risk IDs
+    affected_design_inputs: List[str]  # Array of design input IDs
+    affected_design_outputs: List[str]  # Array of design output IDs
+    affected_vv_tests: List[str]  # Array of V&V test IDs
+    affected_capas: List[str]  # Array of CAPA IDs
+    affected_pms_signals: List[str]  # Array of PMS signal IDs
+    ai_metadata: Optional[Dict[str, Any]] = None

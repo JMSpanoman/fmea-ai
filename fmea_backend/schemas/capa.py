@@ -1,39 +1,42 @@
 from pydantic import BaseModel
-from typing import Optional
-from datetime import date, datetime
+from typing import Optional, List, Dict, Any
+from datetime import datetime
 
 class CAPABase(BaseModel):
-    issue_description: str
-    source: Optional[str] = None
-    detection_date: Optional[date] = None
-    severity: Optional[str] = None
-    root_cause: Optional[str] = None
-    corrective_action: Optional[str] = None
-    preventive_action: Optional[str] = None
-    action_owner: Optional[str] = None
-    due_date: Optional[date] = None
-    status: Optional[str] = None
-    effectiveness_check_plan: Optional[str] = None
-    fmea_link: Optional[str] = None
-    regulatory_impact: Optional[str] = None
-    closure_summary: Optional[str] = None
-    milestones: Optional[str] = None
-    risk_controls_update: Optional[str] = None
-    analysis_timestamp: Optional[datetime] = None
-    version: Optional[str] = "1.0"
+    root_cause: str
+    capa_plan: str
+    effectiveness_check: Optional[str] = None
+    linked_risk_ids: Optional[List[str]] = None  # Array of UUIDs
+    ai_metadata: Optional[Dict[str, Any]] = None
 
 class CAPACreate(CAPABase):
-    pass
+    project_id: str  # UUID
 
-class CAPAUpdate(CAPABase):
-    pass
+class CAPAUpdate(BaseModel):
+    root_cause: Optional[str] = None
+    capa_plan: Optional[str] = None
+    effectiveness_check: Optional[str] = None
+    linked_risk_ids: Optional[List[str]] = None
+    ai_metadata: Optional[Dict[str, Any]] = None
 
 class CAPAOut(CAPABase):
-    id: int
-    project_id: int
-    user_id: str
+    id: str  # UUID
+    project_id: str  # UUID
     created_at: datetime
-    updated_at: Optional[datetime] = None
 
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
+# AI Generation Request/Response
+class CAPAGenerateRequest(BaseModel):
+    risk_ids: List[str]  # Array of FMEA row UUIDs
+    failure_mode: Optional[str] = None
+    effect: Optional[str] = None
+    cause: Optional[str] = None
+
+class CAPAGenerateResponse(BaseModel):
+    root_cause: str
+    capa_plan: str
+    effectiveness_check: str
+    linked_risk_ids: List[str]
+    ai_metadata: Optional[Dict[str, Any]] = None

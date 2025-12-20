@@ -1,0 +1,2 @@
+Given a design output, generate a verification test method, acceptance criteria, and rationale. Return JSON only.
+

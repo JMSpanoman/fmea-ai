@@ -1,0 +1,2 @@
+Given an NCR, generate root cause, containment, corrective action, and verification. Return JSON.
+

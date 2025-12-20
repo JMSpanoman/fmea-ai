@@ -1,0 +1,2 @@
+Given a PMS signal (complaints, service data, trending, field failure), identify affected risks, propose updates, and predict future risk trends. Return JSON.
+

@@ -1,0 +1,2 @@
+Given risks, failure modes, device purpose, and component description, generate design inputs that address those risks. Then generate design outputs that satisfy the inputs. Return JSON with arrays design_inputs, design_outputs, and trace_links.
+

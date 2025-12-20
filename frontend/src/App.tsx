@@ -1,9 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Sidebar from './components/Sidebar';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import { AppShell } from './components/layout/AppShell';
+import { ToastProvider } from './components/ui/Toast';
 
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
@@ -11,6 +12,14 @@ import NonConformancePage from './pages/NonConformancePage';
 import CapaPage from './pages/CapaPage';
 import ChangeControlPage from './pages/ChangeControlPage';
 import FmeaPage from './pages/FMEAPage';
+// Phase 3 pages
+import DocumentControlPage from './pages/DocumentControlPage';
+import TrainingPage from './pages/TrainingPage';
+import AuditPage from './pages/AuditPage';
+import SupplierQualityPage from './pages/SupplierQualityPage';
+import NCRPage from './pages/NCRPage';
+import ComplaintPage from './pages/ComplaintPage';
+import EquipmentPage from './pages/EquipmentPage';
 import HazardAnalysisPage from './pages/HazardAnalysisPage';
 import FaultTreeReportPage from './pages/FaultTreeReportPage';
 import RiskManagementReportPage from './pages/RiskManagementReportPage';
@@ -34,24 +43,59 @@ import EmailListViewer from './components/EmailListViewer';
 import LoginNotifications from './components/LoginNotifications';
 import TrialStatusBanner from './components/TrialStatusBanner';
 import UsageDashboard from './components/UsageDashboard';
+import DashboardPageNew from './pages/DashboardPageNew';
+import RiskItemListPage from './pages/RiskItems/RiskItemListPage';
+import RiskItemDetailPage from './pages/RiskItems/RiskItemDetailPage';
+import DesignInputDetailPage from './pages/DesignInputs/DesignInputDetailPage';
+import DesignOutputDetailPage from './pages/DesignOutputs/DesignOutputDetailPage';
+import VVTestDetailPage from './pages/VVTests/VVTestDetailPage';
+import CAPADetailPage from './pages/CAPAs/CAPADetailPage';
+import ChangeControlDetailPage from './pages/ChangeControls/ChangeControlDetailPage';
 
 function App() {
   return (
     <AuthProvider>
       <ProjectProvider>
-        <Router>
-          <ProtectedRoute>
-            <div className="min-h-screen bg-gray-50 flex">
-              <Sidebar />
-              <div className="flex-1 ml-64">
-                <TrialStatusBanner />
+        <ToastProvider>
+          <Router>
+            <ProtectedRoute>
+              <AppShell>
                 <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/" element={<DashboardPageNew />} />
+                <Route path="/dashboard" element={<DashboardPageNew />} />
+                <Route path="/home" element={<HomePage />} />
                 <Route path="/nonconformance" element={<NonConformancePage />} />
                 <Route path="/capa" element={<CapaPage />} />
                 <Route path="/change-control" element={<ChangeControlPage />} />
                 <Route path="/dfmea" element={<FmeaPage />} />
+                {/* Phase 3 Routes */}
+                <Route path="/projects/:projectId/documents" element={<DocumentControlPage />} />
+                <Route path="/documents" element={<DocumentControlPage />} />
+                <Route path="/training" element={<TrainingPage />} />
+                <Route path="/projects/:projectId/audits" element={<AuditPage />} />
+                <Route path="/audits" element={<AuditPage />} />
+                <Route path="/projects/:projectId/suppliers" element={<SupplierQualityPage />} />
+                <Route path="/suppliers" element={<SupplierQualityPage />} />
+                <Route path="/projects/:projectId/ncrs" element={<NCRPage />} />
+                <Route path="/ncrs" element={<NCRPage />} />
+                <Route path="/projects/:projectId/complaints" element={<ComplaintPage />} />
+                <Route path="/complaints" element={<ComplaintPage />} />
+                <Route path="/projects/:projectId/equipment" element={<EquipmentPage />} />
+                <Route path="/equipment" element={<EquipmentPage />} />
+                <Route path="/projects/:projectId/risk-items" element={<RiskItemListPage />} />
+                <Route path="/projects/:projectId/risk-items/:riskItemId" element={<RiskItemDetailPage />} />
+                <Route path="/risk-items" element={<RiskItemListPage />} />
+                <Route path="/projects/:projectId/design-inputs/:id" element={<DesignInputDetailPage />} />
+                <Route path="/design-inputs/:id" element={<DesignInputDetailPage />} />
+                <Route path="/projects/:projectId/design-outputs/:id" element={<DesignOutputDetailPage />} />
+                <Route path="/design-outputs/:id" element={<DesignOutputDetailPage />} />
+                <Route path="/projects/:projectId/vv-tests/:id" element={<VVTestDetailPage />} />
+                <Route path="/vv-tests/:id" element={<VVTestDetailPage />} />
+                <Route path="/projects/:projectId/capas/:id" element={<CAPADetailPage />} />
+                <Route path="/capas/:id" element={<CAPADetailPage />} />
+                <Route path="/projects/:projectId/change-controls/:id" element={<ChangeControlDetailPage />} />
+                <Route path="/projects/:projectId/changes/:id" element={<ChangeControlDetailPage />} />
+                <Route path="/change-controls/:id" element={<ChangeControlDetailPage />} />
                 <Route path="/hazard-analysis" element={<HazardAnalysisPage />} />
                 <Route path="/fault-tree-report" element={<FaultTreeReportPage />} />
                 <Route path="/risk-management-report" element={<RiskManagementReportPage />} />
@@ -75,11 +119,11 @@ function App() {
                         <Route path="/login-notifications" element={<LoginNotifications />} />
                         <Route path="/usage-dashboard" element={<UsageDashboard />} />
                         <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-              </div>
-            </div>
-          </ProtectedRoute>
-        </Router>
+                </Routes>
+              </AppShell>
+            </ProtectedRoute>
+          </Router>
+        </ToastProvider>
       </ProjectProvider>
     </AuthProvider>
   );

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useProject } from '../contexts/ProjectContext';
 import ProjectDataViewer from '../components/ProjectDataViewer';
 import { generateCapa as generateCapaAPI } from '../services/apiService';
 import { exportCapaData } from '../utils/exportUtils';
+import { UpstreamLinksPanel } from '../components/Traceability/UpstreamLinksPanel';
 
 interface CapaRow {
   id: string;
@@ -32,6 +34,8 @@ const CAPA_TYPES = [
 
 const CapaPage: React.FC = () => {
   const navigate = useNavigate();
+  const { capaId } = useParams<{ capaId?: string }>();
+  const { currentProject } = useProject();
   const [issueDescription, setIssueDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [capaType, setCapaType] = useState('corrective');
@@ -277,6 +281,18 @@ const CapaPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Create New CAPA</h1>
         <p className="text-gray-600">Enter issue details and generate an AI-powered CAPA analysis</p>
       </div>
+
+      {/* Upstream Links Panel - Show if viewing a specific CAPA */}
+      {capaId && currentProject?.id && (
+        <div className="mb-6">
+          <UpstreamLinksPanel
+            projectId={currentProject.id}
+            artifactType="capa"
+            artifactId={capaId}
+            onNavigate={(route) => navigate(route)}
+          />
+        </div>
+      )}
 
       {/* CAPA Type Tabs - always visible */}
       <div className="flex space-x-2 mb-6">

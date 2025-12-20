@@ -1,0 +1,2 @@
+Given project data, risks, design outputs, and previous audits, generate an audit preparation checklist, likely findings, and regulatory gap warnings. Return JSON.
+

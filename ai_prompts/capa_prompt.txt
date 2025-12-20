@@ -1,0 +1,2 @@
+Given risk data and failure information, generate CAPA content including root cause, CAPA plan, effectiveness check, and risk linkages. Return JSON.
+

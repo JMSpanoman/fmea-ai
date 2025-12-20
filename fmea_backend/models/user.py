@@ -1,24 +1,17 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text
+from sqlalchemy import Column, String, DateTime
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from database import Base
+import uuid
 
 class User(Base):
     __tablename__ = "users"
     
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String(50), unique=True, index=True, nullable=False)
-    email = Column(String(100), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
-    full_name = Column(String(100), nullable=True)
-    role = Column(String(20), default="user")  # admin, user, manager
-    is_active = Column(Boolean, default=True)
-    is_verified = Column(Boolean, default=False)
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    auth0_id = Column(String, unique=True, index=True, nullable=True)
+    email = Column(String, nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    last_login = Column(DateTime(timezone=True), nullable=True)
     
-    # Optional fields
-    company = Column(String(100), nullable=True)
-    department = Column(String(100), nullable=True)
-    phone = Column(String(20), nullable=True)
-    bio = Column(Text, nullable=True) 
+    # Phase 3 relationships
+    training_records = relationship("TrainingRecord", back_populates="user", cascade="all, delete-orphan")
+    approvals = relationship("Approval", back_populates="approver", cascade="all, delete-orphan")

@@ -1,48 +1,45 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Date, JSON
+from sqlalchemy import Column, String, Text, Integer, DateTime, ForeignKey, Numeric, JSON
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from database import Base
+import uuid
 
-class FMEA(Base):
-    __tablename__ = "fmea_entries"
+class FMEARow(Base):
+    __tablename__ = "fmea_rows"
 
-    id = Column(Integer, primary_key=True, index=True)
-    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False, index=True)
-    user_id = Column(String, nullable=False, index=True)
-    component = Column(String(255), nullable=False)
-    function_description = Column(Text, nullable=True)
-    potential_failure_mode = Column(Text, nullable=True)
-    potential_effects = Column(Text, nullable=True)
-    severity = Column(Integer, nullable=True)
-    potential_causes = Column(Text, nullable=True)
-    occurrence = Column(Integer, nullable=True)
-    current_controls = Column(Text, nullable=True)
-    detection = Column(Integer, nullable=True)
-    risk_priority_number = Column(Integer, nullable=True)
-    recommended_actions = Column(Text, nullable=True)
-    responsible_party = Column(String(255), nullable=True)
-    target_completion_date = Column(Date, nullable=True)
-    actions_taken = Column(Text, nullable=True)
-    final_severity = Column(Integer, nullable=True)
-    final_occurrence = Column(Integer, nullable=True)
-    final_detection = Column(Integer, nullable=True)
-    final_risk_priority_number = Column(Integer, nullable=True)
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    project_id = Column(String, ForeignKey("projects.id"), nullable=False, index=True)
+    component_id = Column(String, ForeignKey("components.id"), nullable=True, index=True)
     
-    # Version control fields
-    version_number = Column(String(20), nullable=False, default="1.0")
-    major_version = Column(Integer, nullable=False, default=1)
-    minor_version = Column(Integer, nullable=False, default=0)
-    patch_version = Column(Integer, nullable=False, default=0)
-    version_status = Column(String(50), nullable=False, default="draft")  # draft, review, approved, published
-    version_label = Column(String(100), nullable=True)  # "Draft", "Final", "Review", "Approved"
-    change_summary = Column(Text, nullable=True)  # Summary of changes in this version
-    change_details = Column(JSON, nullable=True)  # Detailed change log
-    content_hash = Column(String(64), nullable=True)  # SHA-256 hash of FMEA content
-    approval_required = Column(String(10), default="false")  # true/false as string for SQLite compatibility
-    approved_by = Column(String(255), nullable=True)
-    approved_at = Column(DateTime(timezone=True), nullable=True)
+    # FMEA fields
+    failure_mode = Column(Text, nullable=True)
+    effect = Column(Text, nullable=True)
+    cause = Column(Text, nullable=True)
+    severity = Column(Integer, nullable=True)
+    probability = Column(Integer, nullable=True)
+    detection = Column(Integer, nullable=True)
+    rpn = Column(Integer, nullable=True)  # Auto-calculated: severity * probability * detection
+    mitigation = Column(Text, nullable=True)
+    
+    # Residual risk fields
+    residual_severity = Column(Integer, nullable=True)
+    residual_probability = Column(Integer, nullable=True)
+    residual_detection = Column(Integer, nullable=True)
+    residual_rpn = Column(Integer, nullable=True)  # Auto-calculated: residual_severity * residual_probability * residual_detection
+    
+    # Financial and AI fields
+    financial_impact = Column(Numeric, nullable=True)
+    ai_metadata = Column(JSON, nullable=True)
+    
+    # Version control
+    version = Column(Integer, default=1, nullable=False)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    version_created_at = Column(DateTime(timezone=True), server_default=func.now())
-    version_updated_at = Column(DateTime(timezone=True), onupdate=func.now()) 
+    
+    # Relationships
+    project = relationship("Project", back_populates="fmea_rows")
+    component = relationship("Component", back_populates="fmea_rows")
+    versions = relationship("FMEAVersion", back_populates="fmea_row", cascade="all, delete-orphan")
+    risk_items = relationship("RiskItem", back_populates="fmea_row", cascade="all, delete-orphan")

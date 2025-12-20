@@ -12,14 +12,11 @@ class ProjectCreate(ProjectBase):
 class ProjectUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
-    status: Optional[str] = None
 
 class ProjectOut(ProjectBase):
-    id: int
-    user_id: str
-    status: str
+    id: str  # UUID
+    user_id: str  # UUID
     created_at: datetime
-    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

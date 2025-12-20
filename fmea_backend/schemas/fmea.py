@@ -1,63 +1,76 @@
 from pydantic import BaseModel
-from typing import Optional
-from datetime import datetime, date
+from typing import Optional, Dict, Any
+from datetime import datetime
+from decimal import Decimal
 
-class FMEABase(BaseModel):
-    component: str
-    function_description: Optional[str] = None
-    potential_failure_mode: Optional[str] = None
-    potential_effects: Optional[str] = None
+class FMEARowBase(BaseModel):
+    failure_mode: Optional[str] = None
+    effect: Optional[str] = None
+    cause: Optional[str] = None
     severity: Optional[int] = None
-    potential_causes: Optional[str] = None
-    occurrence: Optional[int] = None
-    current_controls: Optional[str] = None
+    probability: Optional[int] = None
     detection: Optional[int] = None
-    risk_priority_number: Optional[int] = None
-    recommended_actions: Optional[str] = None
-    responsible_party: Optional[str] = None
-    target_completion_date: Optional[date] = None
-    actions_taken: Optional[str] = None
-    final_severity: Optional[int] = None
-    final_occurrence: Optional[int] = None
-    final_detection: Optional[int] = None
-    final_risk_priority_number: Optional[int] = None
+    mitigation: Optional[str] = None
+    residual_severity: Optional[int] = None
+    residual_probability: Optional[int] = None
+    residual_detection: Optional[int] = None
+    financial_impact: Optional[Decimal] = None
+    ai_metadata: Optional[Dict[str, Any]] = None
 
-class FMEACreate(FMEABase):
-    pass
+class FMEARowCreate(FMEARowBase):
+    project_id: Optional[str] = None  # UUID - will be set from path parameter
+    component_id: Optional[str] = None  # UUID
 
-class FMEAUpdate(BaseModel):
-    component: Optional[str] = None
-    function_description: Optional[str] = None
-    potential_failure_mode: Optional[str] = None
-    potential_effects: Optional[str] = None
+class FMEARowUpdate(BaseModel):
+    failure_mode: Optional[str] = None
+    effect: Optional[str] = None
+    cause: Optional[str] = None
     severity: Optional[int] = None
-    potential_causes: Optional[str] = None
-    occurrence: Optional[int] = None
-    current_controls: Optional[str] = None
+    probability: Optional[int] = None
     detection: Optional[int] = None
-    risk_priority_number: Optional[int] = None
-    recommended_actions: Optional[str] = None
-    responsible_party: Optional[str] = None
-    target_completion_date: Optional[date] = None
-    actions_taken: Optional[str] = None
-    final_severity: Optional[int] = None
-    final_occurrence: Optional[int] = None
-    final_detection: Optional[int] = None
-    final_risk_priority_number: Optional[int] = None
+    mitigation: Optional[str] = None
+    residual_severity: Optional[int] = None
+    residual_probability: Optional[int] = None
+    residual_detection: Optional[int] = None
+    financial_impact: Optional[Decimal] = None
+    ai_metadata: Optional[Dict[str, Any]] = None
+    component_id: Optional[str] = None
 
-class FMEAOut(FMEABase):
-    id: int
-    project_id: int
-    user_id: str
+class FMEARowOut(FMEARowBase):
+    id: str  # UUID
+    project_id: str  # UUID
+    component_id: Optional[str] = None  # UUID
+    rpn: Optional[int] = None
+    residual_rpn: Optional[int] = None
+    version: int
     created_at: datetime
     updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
 
-class AISuggestionRequest(BaseModel):
+# AI Request/Response schemas
+class AIFMEASuggestRequest(BaseModel):
     component: str
-    potential_failure_mode: Optional[str] = None
-    potential_effects: Optional[str] = None
-    potential_causes: Optional[str] = None
-    context: Optional[str] = None 
+    failure_mode: str
+    effect: str
+    cause: str
+
+class AIFMEASuggestResponse(BaseModel):
+    severity: int
+    probability: int
+    detection: int
+    rpn: int
+    mitigation: str
+    financial_impact: Decimal
+    residual_severity: int
+    residual_probability: int
+    residual_detection: int
+    residual_rpn: int
+
+class AIConsistencyCheckRequest(BaseModel):
+    fmea_row: FMEARowOut
+
+class AIConsistencyCheckResponse(BaseModel):
+    issues: list[str]
+    recommendations: list[str]

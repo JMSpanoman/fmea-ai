@@ -1,0 +1,2 @@
+Given component, failure mode, effect, and cause, generate severity (1–10), probability (1–10), detection (1–10), mitigation, residual scores, financial impact. Return JSON only.
+

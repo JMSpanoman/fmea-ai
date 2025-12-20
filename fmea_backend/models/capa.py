@@ -1,30 +1,20 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Date
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, JSON
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from database import Base
+import uuid
 
 class CAPA(Base):
     __tablename__ = "capas"
 
-    id = Column(Integer, primary_key=True, index=True)
-    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
-    user_id = Column(String(255), nullable=False)
-    issue_description = Column(Text, nullable=False)
-    source = Column(String(255), nullable=True)
-    detection_date = Column(Date, nullable=True)
-    severity = Column(String(50), nullable=True)
-    root_cause = Column(Text, nullable=True)
-    corrective_action = Column(Text, nullable=True)
-    preventive_action = Column(Text, nullable=True)
-    action_owner = Column(String(255), nullable=True)
-    due_date = Column(Date, nullable=True)
-    status = Column(String(50), nullable=True)
-    effectiveness_check_plan = Column(Text, nullable=True)
-    fmea_link = Column(String(255), nullable=True)
-    regulatory_impact = Column(Text, nullable=True)
-    closure_summary = Column(Text, nullable=True)
-    milestones = Column(Text, nullable=True)
-    risk_controls_update = Column(Text, nullable=True)
-    analysis_timestamp = Column(DateTime(timezone=True), server_default=func.now())
-    version = Column(String(50), default="1.0")
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    project_id = Column(String, ForeignKey("projects.id"), nullable=False, index=True)
+    root_cause = Column(Text, nullable=False)
+    capa_plan = Column(Text, nullable=False)
+    effectiveness_check = Column(Text, nullable=True)
+    linked_risk_ids = Column(JSON, nullable=True)  # Array of UUIDs
+    ai_metadata = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now()) 
+    
+    # Relationships
+    project = relationship("Project", back_populates="capas")

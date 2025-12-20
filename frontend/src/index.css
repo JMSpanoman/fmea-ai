@@ -2,29 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: 'Inter', sans-serif !important;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background-main text-text-primary font-sans;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: linear-gradient(135deg, #050816 0%, #0B1020 100%);
+    min-height: 100vh;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-surface-primary;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-secondary rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-text-secondary;
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    transition: all 150ms ease-in-out;
+  }
+
+  .transition-smooth-slow {
+    transition: all 250ms ease-in-out;
+  }
+
+  /* Glassmorphism effect */
+  .glass {
+    @apply bg-surface-primary/80 backdrop-blur-glass border border-border;
+  }
 }
 
 .fa, .fas, .far, .fal, .fab {
   font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
-}
-
-.highlighted-section {
-  outline: 2px solid #3F20FB;
-  background-color: rgba(63, 32, 251, 0.1);
-}
-
-.edit-button {
-  position: absolute;
-  z-index: 1000;
-}
-
-::-webkit-scrollbar {
-  display: none;
-}
-
-html, body {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }

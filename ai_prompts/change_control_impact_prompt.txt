@@ -1,0 +1,2 @@
+Analyze a proposed change. Identify all affected risks, design inputs, design outputs, tests, CAPAs, PMS signals. Return JSON.
+

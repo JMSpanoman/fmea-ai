@@ -1,0 +1,2 @@
+Create a complete document of the specified type (DHF, DMR, SOP, WI, form) given the context. Include full structured content. Return JSON: {draft: 'text'}.
+

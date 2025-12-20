@@ -17,10 +17,11 @@ load_dotenv()
 
 from database import get_db
 from models.project import Project
-from models.fmea import FMEA
-from models.change_control import ChangeControl
-from models.capa import CAPA
-from models.nonconformance import NonConformance
+from models.fmea import FMEARow
+# Legacy models (commented out for Phase 1)
+# from models.change_control import ChangeControl
+# from models.capa import CAPA
+# from models.nonconformance import NonConformance
 
 from schemas import project as project_schemas
 from schemas import fmea as fmea_schemas
@@ -37,6 +38,14 @@ from crud import nonconformance as nonconformance_crud
 from auth.dependencies import get_current_user, create_dev_token
 from routers import ai, auth, capa, change_control, fmeas, mitigations, nonconformance, projects, tracibility, templates
 from routes.mastercontrol import router as mastercontrol_router
+# Phase 1 routers
+from routers import projects as projects_phase1, components, fmea as fmea_phase1, ai_phase1, export
+# Phase 2 routers
+from routers import design_controls, vv, capa_phase2, pms, traceability, ai_phase2
+# Phase 3 routers
+from routers import document_control, training_phase3, change_control_phase3, audit_phase3, supplier_phase3, ncr_phase3, complaint_phase3, equipment_phase3, quality_event_phase3, approval_phase3, ai_phase3
+# Risk Items router
+from routers import risk_items
 
 
 
@@ -72,7 +81,40 @@ app = FastAPI(
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(ai.router, prefix="/fmea", tags=["AI"])
+
+# Phase 1 routers (primary)
+app.include_router(projects_phase1.router, tags=["Projects"])
+app.include_router(components.router, tags=["Components"])
+app.include_router(fmea_phase1.router, tags=["FMEA"])
+app.include_router(ai_phase1.router, tags=["AI Phase 1"])
+app.include_router(export.router, tags=["Export"])
+
+# Phase 2 routers
+app.include_router(design_controls.router, tags=["Design Controls"])
+app.include_router(vv.router, tags=["V&V"])
+app.include_router(capa_phase2.router, tags=["CAPA Phase 2"])
+app.include_router(pms.router, tags=["PMS"])
+app.include_router(traceability.router, tags=["Traceability"])
+app.include_router(ai_phase2.router, tags=["AI Phase 2"])
+
+# Phase 3 routers
+app.include_router(document_control.router, tags=["Document Control"])
+app.include_router(training_phase3.router, tags=["Training Phase 3"])
+app.include_router(change_control_phase3.router, tags=["Change Control Phase 3"])
+app.include_router(audit_phase3.router, tags=["Audit Phase 3"])
+app.include_router(supplier_phase3.router, tags=["Supplier Quality Phase 3"])
+app.include_router(ncr_phase3.router, tags=["NCR Phase 3"])
+app.include_router(complaint_phase3.router, tags=["Complaint Handling Phase 3"])
+app.include_router(equipment_phase3.router, tags=["Equipment Phase 3"])
+app.include_router(quality_event_phase3.router, tags=["Quality Events Phase 3"])
+app.include_router(approval_phase3.router, tags=["Approvals Phase 3"])
+app.include_router(ai_phase3.router, tags=["AI Phase 3"])
+
+# Risk Items router
+app.include_router(risk_items.router, tags=["Risk Items"])
+
+# Legacy routers (for backward compatibility - can be removed later)
+app.include_router(ai.router, prefix="/fmea", tags=["AI (Legacy)"])
 app.include_router(tracibility.router, prefix="/api", tags=["Tracibility"])
 app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
 app.include_router(mitigations.router, prefix="/fmea", tags=["Mitigations"])
