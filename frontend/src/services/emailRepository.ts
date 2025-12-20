@@ -102,6 +102,13 @@ class EmailRepository {
     return !!emailRecord;
   }
 
+  // Get email record by address
+  getEmailByAddress(email: string): EmailRecord | undefined {
+    return this.emails.find(
+      record => record.email.toLowerCase() === email.toLowerCase()
+    );
+  }
+
   // Get all authorized emails
   getAllEmails(): EmailRecord[] {
     return this.emails.filter(record => record.isActive);
