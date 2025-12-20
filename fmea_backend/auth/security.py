@@ -3,9 +3,14 @@ from jose.utils import base64url_decode
 import requests
 from typing import Optional, Dict
 import os
+from datetime import datetime, timedelta
+from passlib.context import CryptContext
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Auth0 Configuration
 AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN", "")
@@ -95,3 +100,34 @@ def verify_auth0_token(token: str) -> Optional[Dict]:
 def verify_token(token: str) -> Optional[Dict]:
     """Verify JWT token (Auth0 or fallback)"""
     return verify_auth0_token(token)
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Create a JWT access token"""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=30)
+    to_encode.update({"exp": expire})
+    
+    SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
+    return encoded_jwt
+
+def get_password_hash(password: str) -> str:
+    """Hash a password"""
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a password against a hash"""
+    return pwd_context.verify(plain_password, hashed_password)
+
+def create_dev_token() -> str:
+    """Create a development token for testing"""
+    data = {
+        "sub": "dev-user",
+        "username": "dev-user",
+        "role": "admin",
+        "email": "dev@example.com"
+    }
+    return create_access_token(data, expires_delta=timedelta(days=365))

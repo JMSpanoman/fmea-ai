@@ -6,7 +6,7 @@ from database import get_db
 from models.user import User
 from schemas.user import UserCreate, UserLogin, UserOut, UserProfile, Token, UserUpdate, PasswordChange
 from crud import user as user_crud
-from auth.security import create_access_token, verify_token, get_password_hash
+from auth.security import create_access_token, verify_token, get_password_hash, verify_password
 from auth.dependencies import get_current_user
 from datetime import timedelta
 

@@ -35,7 +35,7 @@ from crud import change_control as change_control_crud
 from crud import capa as capa_crud
 from crud import nonconformance as nonconformance_crud
 
-from auth.dependencies import get_current_user, create_dev_token
+from auth.dependencies import get_current_user
 from routers import ai, auth, capa, change_control, fmeas, mitigations, nonconformance, projects, tracibility, templates
 from routes.mastercontrol import router as mastercontrol_router
 # Phase 1 routers

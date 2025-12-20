@@ -49,6 +49,11 @@ class FMEARowOut(FMEARowBase):
     class Config:
         from_attributes = True
 
+# Backward compatibility aliases
+FMEACreate = FMEARowCreate
+FMEAUpdate = FMEARowUpdate
+FMEAOut = FMEARowOut
+
 # AI Request/Response schemas
 class AIFMEASuggestRequest(BaseModel):
     component: str
@@ -74,3 +79,10 @@ class AIConsistencyCheckRequest(BaseModel):
 class AIConsistencyCheckResponse(BaseModel):
     issues: list[str]
     recommendations: list[str]
+
+# Backward compatibility - additional schemas used in main.py
+class AISuggestionRequest(BaseModel):
+    component: str
+    failure_mode: Optional[str] = None
+    effect: Optional[str] = None
+    cause: Optional[str] = None
