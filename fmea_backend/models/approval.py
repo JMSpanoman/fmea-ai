@@ -8,7 +8,8 @@ class Approval(Base):
     __tablename__ = "approvals"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    artifact_type = Column(String, nullable=False)  # document, change_control, ncr, capa, audit, complaint
+    project_id = Column(String, ForeignKey("projects.id"), nullable=True, index=True)  # SmartQS Risk schema: direct project reference
+    artifact_type = Column(String, nullable=False)  # document, change_control, ncr, capa, audit, complaint, risk_item_version
     artifact_id = Column(String, nullable=False, index=True)
     approver_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
     status = Column(String, nullable=False)  # pending, approved, rejected
@@ -16,5 +17,6 @@ class Approval(Base):
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
+    project = relationship("Project")
     approver = relationship("User", back_populates="approvals")
 

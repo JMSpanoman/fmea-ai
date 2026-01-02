@@ -75,7 +75,7 @@ def create_risk_item(
         risk_item_dict['project_id'] = project_id
         risk_item = risk_item_schemas.RiskItemCreate(**risk_item_dict)
     
-    return risk_item_crud.create_risk_item(db, risk_item)
+    return risk_item_crud.create_risk_item(db, risk_item, created_by=current_user.id)
 
 @router.get("/risk-items/{risk_item_id}", response_model=risk_item_schemas.RiskItemOut)
 def get_risk_item(
@@ -136,7 +136,7 @@ def create_risk_item_version(
         raise HTTPException(status_code=404, detail="Risk item not found")
     
     version = version_crud.create_risk_item_version(
-        db, risk_item_id, version_data, changed_by=current_user.id
+        db, risk_item_id, version_data, changed_by=current_user.id, created_by=current_user.id
     )
     return version
 
@@ -226,7 +226,7 @@ def create_risk_control(
         control_dict['project_id'] = project_id
         control = risk_item_schemas.RiskControlCreate(**control_dict)
     
-    return control_crud.create_risk_control(db, control)
+    return control_crud.create_risk_control(db, control, created_by=current_user.id)
 
 @router.get("/risk-items/{risk_item_id}/controls", response_model=List[risk_item_schemas.RiskControlOut])
 def get_risk_controls(
@@ -334,6 +334,7 @@ def approve_risk_item_version(
     # Create approval record
     from schemas.approval import ApprovalCreate
     approval = ApprovalCreate(
+        project_id=project_id,  # SmartQS Risk schema: direct project reference
         artifact_type="risk_item_version",
         artifact_id=approval_request.version_id,
         approver_id=current_user.id,
@@ -553,7 +554,7 @@ def handoff_control_to_design(
                 source="user",
                 linked_risk_ids=[risk_item_id]
             )
-            created_artifact = dc_crud.create_design_input(db, design_input)
+            created_artifact = dc_crud.create_design_input(db, design_input, created_by=current_user.id)
             trace_link_to_type = "design_input"
             
         elif target_type == "design_output":
@@ -562,7 +563,7 @@ def handoff_control_to_design(
                 text=base_description,
                 source="user"
             )
-            created_artifact = dc_crud.create_design_output(db, design_output)
+            created_artifact = dc_crud.create_design_output(db, design_output, created_by=current_user.id)
             trace_link_to_type = "design_output"
             
         elif target_type == "vv_test":
@@ -578,7 +579,7 @@ def handoff_control_to_design(
                 acceptance_criteria=request.get("acceptance_criteria", "Control effectiveness verified"),
                 rationale=base_description
             )
-            created_artifact = vv_crud.create_vv_test(db, vv_test)
+            created_artifact = vv_crud.create_vv_test(db, vv_test, created_by=current_user.id)
             trace_link_to_type = "vv_test"
         
         # Create trace link: risk_control → artifact (using canonical enum)

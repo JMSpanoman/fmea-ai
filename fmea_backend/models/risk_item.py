@@ -12,6 +12,10 @@ class RiskItem(Base):
     fmea_row_id = Column(String, ForeignKey("fmea_rows.id"), nullable=True, index=True)
     current_version_id = Column(String, nullable=True, index=True)  # FK handled in migration/application
     
+    # SmartQS Risk schema fields
+    risk_key = Column(String(50), nullable=True, index=True)  # Unique per project identifier (e.g., R-023)
+    created_by = Column(String, ForeignKey("users.id"), nullable=True, index=True)  # Creator user ID
+    
     # Risk identification
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
@@ -52,6 +56,7 @@ class RiskItem(Base):
     # Relationships
     project = relationship("Project", back_populates="risk_items")
     fmea_row = relationship("FMEARow", back_populates="risk_items")
+    creator = relationship("User", foreign_keys=[created_by])
     current_version = relationship("RiskItemVersion", foreign_keys=[current_version_id], post_update=True, remote_side="RiskItemVersion.id")
     versions = relationship("RiskItemVersion", back_populates="risk_item", foreign_keys="RiskItemVersion.risk_item_id", cascade="all, delete-orphan", order_by="RiskItemVersion.version_number")
     controls = relationship("RiskControl", back_populates="risk_item", cascade="all, delete-orphan")

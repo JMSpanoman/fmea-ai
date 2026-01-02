@@ -162,6 +162,54 @@ export const generateCapa = async (issueDescription: string, capaType: string = 
   }
 };
 
+// Generate Design Inputs
+export interface DesignInputItem {
+  title: string;
+  requirement: string;
+  description?: string;
+}
+
+export interface DesignInputsGenerateResponse {
+  design_inputs: DesignInputItem[];
+}
+
+export const generateDesignInputs = async (componentName: string, count: number = 5): Promise<DesignInputsGenerateResponse> => {
+  try {
+    const response = await api.post('/ai/design-inputs/generate', {
+      component_name: componentName,
+      count: count
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error generating design inputs:', error);
+    throw error;
+  }
+};
+
+// Generate Design Outputs
+export interface DesignOutputItem {
+  title: string;
+  specification: string;
+  description?: string;
+}
+
+export interface DesignOutputsGenerateResponse {
+  design_outputs: DesignOutputItem[];
+}
+
+export const generateDesignOutputs = async (componentName: string, count: number = 5): Promise<DesignOutputsGenerateResponse> => {
+  try {
+    const response = await api.post('/ai/design-outputs/generate', {
+      component_name: componentName,
+      count: count
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error generating design outputs:', error);
+    throw error;
+  }
+};
+
 // Health check for CAPA
 export const capaHealth = async (): Promise<{ status: string; message: string }> => {
   try {

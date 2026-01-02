@@ -23,8 +23,8 @@ export default {
         success: '#22C55E',
         danger: '#EF4444',
         text: {
-          primary: '#F9FAFB',
-          secondary: '#9CA3AF',
+          primary: '#000000',
+          secondary: '#000000',
         },
         border: 'rgba(148, 163, 184, 0.35)',
       },

@@ -5,14 +5,67 @@ from schemas.design_control import DesignInputCreate, DesignInputUpdate, DesignO
 from typing import List, Optional
 import uuid
 
+def _generate_di_key(db: Session, project_id: str) -> str:
+    """Generate a unique di_key for a project (e.g., DI-001, DI-002)"""
+    existing_keys = db.query(DesignInput.di_key).filter(
+        DesignInput.project_id == project_id,
+        DesignInput.di_key.isnot(None)
+    ).all()
+    
+    max_num = 0
+    for (key,) in existing_keys:
+        if key and key.startswith('DI-'):
+            try:
+                num = int(key[3:])
+                max_num = max(max_num, num)
+            except ValueError:
+                pass
+    
+    next_num = max_num + 1
+    return f"DI-{next_num:03d}"
+
+def _generate_do_key(db: Session, project_id: str) -> str:
+    """Generate a unique do_key for a project (e.g., DO-001, DO-002)"""
+    existing_keys = db.query(DesignOutput.do_key).filter(
+        DesignOutput.project_id == project_id,
+        DesignOutput.do_key.isnot(None)
+    ).all()
+    
+    max_num = 0
+    for (key,) in existing_keys:
+        if key and key.startswith('DO-'):
+            try:
+                num = int(key[3:])
+                max_num = max(max_num, num)
+            except ValueError:
+                pass
+    
+    next_num = max_num + 1
+    return f"DO-{next_num:03d}"
+
 # Design Input CRUD
-def create_design_input(db: Session, design_input: DesignInputCreate) -> DesignInput:
+def create_design_input(db: Session, design_input: DesignInputCreate, created_by: Optional[str] = None) -> DesignInput:
     """Create a new design input"""
+    # Generate di_key if not provided
+    di_key = getattr(design_input, 'di_key', None)
+    if not di_key:
+        di_key = _generate_di_key(db, design_input.project_id)
+    
+    # Get title and requirement from schema (support both text and requirement fields)
+    title = getattr(design_input, 'title', None)
+    requirement = getattr(design_input, 'requirement', None) or design_input.text
+    status = getattr(design_input, 'status', 'draft')
+    
     db_input = DesignInput(
         id=str(uuid.uuid4()),
         project_id=design_input.project_id,
+        di_key=di_key,
+        title=title,
         source=design_input.source,
         text=design_input.text,
+        requirement=requirement,
+        status=status,
+        created_by=created_by,
         linked_risk_ids=design_input.linked_risk_ids or []
     )
     db.add(db_input)
@@ -56,13 +109,30 @@ def delete_design_input(db: Session, input_id: str, project_id: str) -> bool:
     return True
 
 # Design Output CRUD
-def create_design_output(db: Session, design_output: DesignOutputCreate) -> DesignOutput:
+def create_design_output(db: Session, design_output: DesignOutputCreate, created_by: Optional[str] = None) -> DesignOutput:
     """Create a new design output"""
+    # Generate do_key if not provided
+    do_key = getattr(design_output, 'do_key', None)
+    if not do_key:
+        do_key = _generate_do_key(db, design_output.project_id)
+    
+    # Get title and description from schema (support both text and description fields)
+    title = getattr(design_output, 'title', None)
+    description = getattr(design_output, 'description', None) or design_output.text
+    document_ref = getattr(design_output, 'document_ref', None)
+    status = getattr(design_output, 'status', 'draft')
+    
     db_output = DesignOutput(
         id=str(uuid.uuid4()),
         project_id=design_output.project_id,
+        do_key=do_key,
+        title=title,
         source=design_output.source,
         text=design_output.text,
+        description=description,
+        document_ref=document_ref,
+        status=status,
+        created_by=created_by,
         linked_input_id=design_output.linked_input_id
     )
     db.add(db_output)

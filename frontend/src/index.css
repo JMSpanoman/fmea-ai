@@ -10,10 +10,25 @@
   }
   
   body {
-    @apply bg-background-main text-text-primary font-sans;
     font-family: 'Inter', system-ui, sans-serif;
-    background: linear-gradient(135deg, #050816 0%, #0B1020 100%);
+    background: #E5E7EB !important;
+    background-color: #E5E7EB !important;
     min-height: 100vh;
+    color: #000000 !important;
+  }
+  
+  /* Force all text to be black */
+  body * {
+    color: #000000 !important;
+  }
+  
+  /* Force all backgrounds to be light grey */
+  html,
+  html body,
+  #root,
+  #root > * {
+    background: #E5E7EB !important;
+    background-color: #E5E7EB !important;
   }
 
   html {
@@ -29,15 +44,16 @@
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-surface-primary;
+    background-color: #E5E7EB;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-surface-secondary rounded-full;
+    background-color: #9CA3AF;
+    border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-text-secondary;
+    background-color: #6B7280;
   }
 
   /* Smooth transitions */

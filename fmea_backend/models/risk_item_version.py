@@ -57,7 +57,8 @@ class RiskItemVersion(Base):
     
     # Metadata
     change_summary = Column(Text, nullable=True)  # Summary of changes from previous version
-    changed_by = Column(String, nullable=True)  # User ID who made the change
+    changed_by = Column(String, nullable=True)  # User ID who made the change (legacy, kept for backward compatibility)
+    created_by = Column(String, ForeignKey("users.id"), nullable=True, index=True)  # Creator user ID (SmartQS Risk schema)
     ai_metadata = Column(JSON, nullable=True)  # AI suggestions metadata
     
     # Timestamps
@@ -65,4 +66,5 @@ class RiskItemVersion(Base):
     
     # Relationships
     risk_item = relationship("RiskItem", back_populates="versions", foreign_keys=[risk_item_id])
+    creator = relationship("User", foreign_keys=[created_by])
 

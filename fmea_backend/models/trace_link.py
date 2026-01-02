@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from database import Base
@@ -14,6 +14,7 @@ class TraceLink(Base):
     to_type = Column(String, nullable=False)  # Canonical: design_input, design_output, vv_test, capa, etc.
     to_id = Column(String, nullable=False, index=True)
     link_type = Column(String, nullable=True, default="traces_to")  # traces_to, verified_by, generated_from, impacts, mitigates
+    rationale = Column(Text, nullable=True)  # SmartQS Risk schema: justification for trace link
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships

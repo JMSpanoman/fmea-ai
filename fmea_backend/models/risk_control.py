@@ -12,6 +12,10 @@ class RiskControl(Base):
     risk_item_id = Column(String, ForeignKey("risk_items.id"), nullable=False, index=True)
     project_id = Column(String, ForeignKey("projects.id"), nullable=False, index=True)
     
+    # SmartQS Risk schema fields
+    control_key = Column(String(50), nullable=True, index=True)  # Unique within risk item identifier (e.g., RC-003)
+    created_by = Column(String, ForeignKey("users.id"), nullable=True, index=True)  # Creator user ID
+    
     # Control identification
     control_name = Column(String, nullable=False)
     control_description = Column(Text, nullable=True)
@@ -47,4 +51,5 @@ class RiskControl(Base):
     # Relationships
     risk_item = relationship("RiskItem", back_populates="controls", foreign_keys=[risk_item_id])
     project = relationship("Project", foreign_keys=[project_id])
+    creator = relationship("User", foreign_keys=[created_by])
 

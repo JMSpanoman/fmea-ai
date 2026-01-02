@@ -44,7 +44,7 @@ def create_vv_test(
         vv_test_dict['project_id'] = project_id
         vv_test = vv_schemas.VVTestCreate(**vv_test_dict)
     
-    return vv_crud.create_vv_test(db, vv_test)
+    return vv_crud.create_vv_test(db, vv_test, created_by=current_user.id)
 
 @router.get("/vv-tests/{vv_test_id}", response_model=vv_schemas.VVTestOut)
 def get_vv_test(

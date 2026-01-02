@@ -10,6 +10,7 @@ class ApprovalBase(BaseModel):
 
 class ApprovalCreate(ApprovalBase):
     approver_id: str  # UUID
+    project_id: Optional[str] = None  # SmartQS Risk schema: direct project reference
 
 class ApprovalUpdate(BaseModel):
     status: Optional[str] = None

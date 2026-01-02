@@ -25,12 +25,40 @@ def _determine_risk_level(risk_score: Optional[int]) -> Optional[str]:
     else:
         return "Low"
 
-def create_risk_item(db: Session, risk_item: RiskItemCreate) -> RiskItem:
+def _generate_risk_key(db: Session, project_id: str) -> str:
+    """Generate a unique risk_key for a project (e.g., R-001, R-002)"""
+    # Get the highest existing risk_key number for this project
+    existing_keys = db.query(RiskItem.risk_key).filter(
+        RiskItem.project_id == project_id,
+        RiskItem.risk_key.isnot(None)
+    ).all()
+    
+    max_num = 0
+    for (key,) in existing_keys:
+        if key and key.startswith('R-'):
+            try:
+                num = int(key[2:])
+                max_num = max(max_num, num)
+            except ValueError:
+                pass
+    
+    # Generate next key
+    next_num = max_num + 1
+    return f"R-{next_num:03d}"
+
+def create_risk_item(db: Session, risk_item: RiskItemCreate, created_by: Optional[str] = None) -> RiskItem:
     """Create a new risk item with auto-calculated risk score and level"""
+    # Generate risk_key if not provided
+    risk_key = getattr(risk_item, 'risk_key', None)
+    if not risk_key:
+        risk_key = _generate_risk_key(db, risk_item.project_id)
+    
     db_risk_item = RiskItem(
         id=str(uuid.uuid4()),
         project_id=risk_item.project_id,
         fmea_row_id=risk_item.fmea_row_id,
+        risk_key=risk_key,
+        created_by=created_by,
         title=risk_item.title,
         description=risk_item.description,
         category=risk_item.category,
@@ -82,7 +110,8 @@ def create_risk_item(db: Session, risk_item: RiskItemCreate) -> RiskItem:
             db,
             db_risk_item.id,
             version_create,
-            "system"
+            changed_by=created_by or "system",
+            created_by=created_by
         )
     except Exception:
         # If version creation fails, risk item still created for backward compatibility
@@ -187,7 +216,8 @@ def update_risk_item(db: Session, risk_item_id: str, risk_item: RiskItemUpdate, 
             db,
             risk_item_id,
             version_create,
-            changed_by or "system"
+            changed_by=changed_by or "system",
+            created_by=changed_by
         )
     except Exception as e:
         # If version creation fails, still commit the legacy update for backward compatibility

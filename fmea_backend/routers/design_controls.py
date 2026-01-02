@@ -44,7 +44,7 @@ def create_design_input(
         design_input_dict['project_id'] = project_id
         design_input = dc_schemas.DesignInputCreate(**design_input_dict)
     
-    return dc_crud.create_design_input(db, design_input)
+    return dc_crud.create_design_input(db, design_input, created_by=current_user.id)
 
 @router.get("/design-inputs/{design_input_id}", response_model=dc_schemas.DesignInputOut)
 def get_design_input(
@@ -98,7 +98,7 @@ def create_design_output(
         design_output_dict['project_id'] = project_id
         design_output = dc_schemas.DesignOutputCreate(**design_output_dict)
     
-    return dc_crud.create_design_output(db, design_output)
+    return dc_crud.create_design_output(db, design_output, created_by=current_user.id)
 
 @router.get("/design-outputs/{design_output_id}", response_model=dc_schemas.DesignOutputOut)
 def get_design_output(

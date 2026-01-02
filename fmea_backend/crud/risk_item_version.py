@@ -34,7 +34,8 @@ def create_risk_item_version(
     db: Session,
     risk_item_id: str,
     version_data: RiskItemVersionCreate,
-    changed_by: str
+    changed_by: str,
+    created_by: Optional[str] = None
 ) -> RiskItemVersion:
     """Create a new immutable version of a risk item"""
     # Get current version number
@@ -101,6 +102,7 @@ def create_risk_item_version(
         risk_rationale=version_data.risk_rationale,
         change_summary=version_data.change_summary,
         changed_by=changed_by,
+        created_by=created_by or changed_by,  # Use created_by if provided, otherwise use changed_by
         ai_metadata=version_data.ai_metadata
     )
     

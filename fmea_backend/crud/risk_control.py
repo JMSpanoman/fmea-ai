@@ -4,12 +4,40 @@ from schemas.risk_item import RiskControlCreate, RiskControlUpdate
 from typing import List, Optional
 import uuid
 
-def create_risk_control(db: Session, risk_control: RiskControlCreate) -> RiskControl:
+def _generate_control_key(db: Session, risk_item_id: str) -> str:
+    """Generate a unique control_key for a risk item (e.g., RC-001, RC-002)"""
+    # Get the highest existing control_key number for this risk item
+    existing_keys = db.query(RiskControl.control_key).filter(
+        RiskControl.risk_item_id == risk_item_id,
+        RiskControl.control_key.isnot(None)
+    ).all()
+    
+    max_num = 0
+    for (key,) in existing_keys:
+        if key and key.startswith('RC-'):
+            try:
+                num = int(key[3:])
+                max_num = max(max_num, num)
+            except ValueError:
+                pass
+    
+    # Generate next key
+    next_num = max_num + 1
+    return f"RC-{next_num:03d}"
+
+def create_risk_control(db: Session, risk_control: RiskControlCreate, created_by: Optional[str] = None) -> RiskControl:
     """Create a new risk control"""
+    # Generate control_key if not provided
+    control_key = getattr(risk_control, 'control_key', None)
+    if not control_key:
+        control_key = _generate_control_key(db, risk_control.risk_item_id)
+    
     db_control = RiskControl(
         id=str(uuid.uuid4()),
         risk_item_id=risk_control.risk_item_id,
         project_id=risk_control.project_id,
+        control_key=control_key,
+        created_by=created_by,
         control_name=risk_control.control_name,
         control_description=risk_control.control_description,
         control_type=risk_control.control_type,

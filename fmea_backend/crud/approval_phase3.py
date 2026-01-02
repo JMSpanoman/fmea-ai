@@ -8,6 +8,7 @@ def create_approval(db: Session, approval: ApprovalCreate) -> Approval:
     """Create a new approval"""
     db_approval = Approval(
         id=str(uuid.uuid4()),
+        project_id=getattr(approval, 'project_id', None),  # SmartQS Risk schema
         artifact_type=approval.artifact_type,
         artifact_id=approval.artifact_id,
         approver_id=approval.approver_id,
