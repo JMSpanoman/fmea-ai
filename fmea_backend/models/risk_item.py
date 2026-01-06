@@ -10,6 +10,8 @@ class RiskItem(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
     project_id = Column(String, ForeignKey("projects.id"), nullable=False, index=True)
     fmea_row_id = Column(String, ForeignKey("fmea_rows.id"), nullable=True, index=True)
+    component_id = Column(String, ForeignKey("components.id"), nullable=True, index=True)  # For RMF filtering
+    component_name = Column(String, nullable=True)  # Fallback string tag for component filtering
     current_version_id = Column(String, nullable=True, index=True)  # FK handled in migration/application
     
     # SmartQS Risk schema fields
@@ -56,6 +58,7 @@ class RiskItem(Base):
     # Relationships
     project = relationship("Project", back_populates="risk_items")
     fmea_row = relationship("FMEARow", back_populates="risk_items")
+    component = relationship("Component", foreign_keys=[component_id])
     creator = relationship("User", foreign_keys=[created_by])
     current_version = relationship("RiskItemVersion", foreign_keys=[current_version_id], post_update=True, remote_side="RiskItemVersion.id")
     versions = relationship("RiskItemVersion", back_populates="risk_item", foreign_keys="RiskItemVersion.risk_item_id", cascade="all, delete-orphan", order_by="RiskItemVersion.version_number")

@@ -33,3 +33,4 @@ class Project(Base):
     equipment = relationship("Equipment", back_populates="project", cascade="all, delete-orphan")
     quality_events = relationship("QualityEvent", back_populates="project", cascade="all, delete-orphan")
     risk_items = relationship("RiskItem", back_populates="project", cascade="all, delete-orphan")
+    risk_management_plans = relationship("RiskManagementPlan", back_populates="project", cascade="all, delete-orphan")

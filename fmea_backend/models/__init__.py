@@ -25,6 +25,7 @@ from .approval import Approval
 from .risk_item import RiskItem
 from .risk_item_version import RiskItemVersion
 from .risk_control import RiskControl
+from .risk_management_plan import RiskManagementPlan
 from .ai_event import AIEvent
 from .audit_log_event import AuditLogEvent
 from .idempotency_request import IdempotencyRequest
@@ -34,6 +35,6 @@ __all__ = [
     "DesignInput", "DesignOutput", "VVTest", "CAPA", "PMSSignal", "TraceLink",  # Phase 2
     "Document", "DocumentVersion", "TrainingRecord", "ChangeControl", "Audit",  # Phase 3
     "Supplier", "SupplierEvaluation", "NCR", "Complaint", "Equipment", "CalibrationRecord",
-    "QualityEvent", "Approval", "RiskItem", "RiskItemVersion", "RiskControl", "AIEvent",  # Phase 3 continued + Risk Items
+    "QualityEvent", "Approval", "RiskItem", "RiskItemVersion", "RiskControl", "RiskManagementPlan", "AIEvent",  # Phase 3 continued + Risk Items
     "AuditLogEvent", "IdempotencyRequest"  # Handoff infrastructure
 ]

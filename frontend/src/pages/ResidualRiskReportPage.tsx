@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useProject } from '../contexts/ProjectContext';
 import {
-  generateHazardAnalysis,
-  exportHazardAnalysis,
-  getHazardAnalysisData,
+  generateResidualRisk,
+  exportResidualRisk,
+  getResidualRiskData,
   ComponentFilter,
-  HazardAnalysisGenerateRequest,
-  HazardAnalysisRow
+  ResidualRiskGenerateRequest,
+  ResidualRiskRow
 } from '../services/apiService';
 import api from '../axios';
 
-const HazardAnalysisPage: React.FC = () => {
+const ResidualRiskReportPage: React.FC = () => {
   const { currentProject } = useProject();
   const [components, setComponents] = useState<ComponentFilter[]>([]);
   const [selectedComponents, setSelectedComponents] = useState<string[]>([]);
@@ -25,7 +25,7 @@ const HazardAnalysisPage: React.FC = () => {
   // Preview
   const [showPreview, setShowPreview] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string>('');
-  const [previewData, setPreviewData] = useState<HazardAnalysisRow[]>([]);
+  const [previewData, setPreviewData] = useState<ResidualRiskRow[]>([]);
   const [counts, setCounts] = useState<any>(null);
 
   useEffect(() => {
@@ -38,13 +38,11 @@ const HazardAnalysisPage: React.FC = () => {
     if (!currentProject?.id) return;
     
     try {
-      // Try to get project ID as string (UUID)
       const projectId = typeof currentProject.id === 'string' ? currentProject.id : String(currentProject.id);
       const response = await api.get(`/projects/${projectId}/components`);
       setAvailableComponents(response.data || []);
     } catch (err: any) {
       console.error('Error loading components:', err);
-      // If components endpoint doesn't exist or fails, continue without components
       setAvailableComponents([]);
     }
   };
@@ -81,10 +79,9 @@ const HazardAnalysisPage: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Build component filter from both selected and manually entered
+      // Build component filter
       const componentFilter: ComponentFilter[] = [];
       
-      // Add selected components
       for (const compId of selectedComponents) {
         const comp = availableComponents.find(c => c.id === compId);
         if (comp) {
@@ -92,29 +89,28 @@ const HazardAnalysisPage: React.FC = () => {
         }
       }
       
-      // Add manually entered components
       for (const comp of components) {
         if (comp.name.trim()) {
           componentFilter.push(comp);
         }
       }
       
-      const request: HazardAnalysisGenerateRequest = {
+      const request: ResidualRiskGenerateRequest = {
         components: componentFilter.length > 0 ? componentFilter : undefined,
         version_scope: versionScope,
         include_unapproved: includeUnapproved,
-        include_metadata: true,
+        acceptability_profile: 'default_med_device',
         format: 'html'
       };
 
-      const response = await generateHazardAnalysis(currentProject.id, request);
-      setPreviewHtml(response.hazard_analysis_html);
+      const response = await generateResidualRisk(currentProject.id, request);
+      setPreviewHtml(response.residual_risk_html);
       setCounts(response.counts);
       setShowPreview(true);
       
-      // Also get data for table preview
+      // Get data for table preview
       const componentsStr = componentFilter.map(c => c.name).join(',');
-      const data = await getHazardAnalysisData(
+      const data = await getResidualRiskData(
         currentProject.id,
         componentsStr || undefined,
         versionScope,
@@ -122,7 +118,7 @@ const HazardAnalysisPage: React.FC = () => {
       );
       setPreviewData(data);
     } catch (err: any) {
-      setError(err.response?.data?.detail || err.message || 'Failed to generate Hazard Analysis');
+      setError(err.response?.data?.detail || err.message || 'Failed to generate Residual Risk Evaluation');
     } finally {
       setLoading(false);
     }
@@ -135,7 +131,6 @@ const HazardAnalysisPage: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Build component filter
       const componentFilter: ComponentFilter[] = [];
       for (const compId of selectedComponents) {
         const comp = availableComponents.find(c => c.id === compId);
@@ -150,7 +145,7 @@ const HazardAnalysisPage: React.FC = () => {
       }
       
       const componentsStr = componentFilter.map(c => c.name).join(',');
-      const html = await exportHazardAnalysis(
+      const html = await exportResidualRisk(
         currentProject.id,
         componentsStr || undefined,
         versionScope,
@@ -161,13 +156,13 @@ const HazardAnalysisPage: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Hazard_Analysis_${currentProject.name}_${new Date().toISOString().split('T')[0]}.html`;
+      a.download = `Residual_Risk_Evaluation_${currentProject.name}_${new Date().toISOString().split('T')[0]}.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      setError(err.response?.data?.detail || err.message || 'Failed to export Hazard Analysis');
+      setError(err.response?.data?.detail || err.message || 'Failed to export Residual Risk Evaluation');
     } finally {
       setLoading(false);
     }
@@ -177,7 +172,7 @@ const HazardAnalysisPage: React.FC = () => {
     return (
       <div className="p-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-yellow-800">Please select a project first to generate a Hazard Analysis.</p>
+          <p className="text-yellow-800">Please select a project first to generate a Residual Risk Evaluation.</p>
         </div>
       </div>
     );
@@ -186,8 +181,8 @@ const HazardAnalysisPage: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       <div className="bg-gray-200 rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Hazard Analysis</h1>
-        <p className="text-gray-600">Generate a systematic hazard analysis from SmartQS risk data for {currentProject.name}</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Residual Risk Evaluation</h1>
+        <p className="text-gray-600">Generate a residual risk evaluation report from SmartQS risk data for {currentProject.name}</p>
       </div>
 
       {error && (
@@ -199,7 +194,6 @@ const HazardAnalysisPage: React.FC = () => {
       <div className="bg-gray-200 rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Component Selection</h2>
         
-        {/* Available Components */}
         {availableComponents.length > 0 && (
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">Select from Project Components</label>
@@ -219,7 +213,6 @@ const HazardAnalysisPage: React.FC = () => {
           </div>
         )}
         
-        {/* Manual Component Entry */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Or Enter Component Names</label>
           <div className="space-y-2">
@@ -313,18 +306,14 @@ const HazardAnalysisPage: React.FC = () => {
       {counts && (
         <div className="bg-gray-200 rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Summary</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">Risk Items</p>
-              <p className="text-2xl font-bold text-gray-900">{counts.risk_items || 0}</p>
-            </div>
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-gray-600">Versions Included</p>
               <p className="text-2xl font-bold text-gray-900">{counts.versions_included || 0}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Unapproved Excluded</p>
-              <p className="text-2xl font-bold text-gray-900">{counts.unapproved_excluded || 0}</p>
+              <p className="text-sm text-gray-600">Missing Residual Fields</p>
+              <p className="text-2xl font-bold text-gray-900">{counts.missing_residual_fields || 0}</p>
             </div>
           </div>
         </div>
@@ -340,9 +329,11 @@ const HazardAnalysisPage: React.FC = () => {
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Risk Key</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Version</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hazard</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hazardous Situation</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harm</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Residual Severity</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Residual Probability</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Residual Score</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acceptability</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Source</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 </tr>
               </thead>
@@ -351,9 +342,19 @@ const HazardAnalysisPage: React.FC = () => {
                   <tr key={index}>
                     <td className="px-4 py-3 text-sm text-gray-900">{row.risk_key}</td>
                     <td className="px-4 py-3 text-sm text-gray-900">{row.version_no}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{row.hazard || 'N/A'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{row.hazardous_situation || 'N/A'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{row.harm || 'N/A'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{row.residual_severity ?? 'N/A'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{row.residual_probability_of_harm ?? 'N/A'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{row.residual_risk_score ?? 'N/A'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900">{row.residual_acceptability || 'N/A'}</td>
+                    <td className="px-4 py-3 text-sm">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        row.acceptability_source === 'stored'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {row.acceptability_source}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-sm">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                         row.approved 
@@ -403,7 +404,7 @@ const HazardAnalysisPage: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-gray-200 rounded-lg p-6 max-w-6xl w-full max-h-[90vh] overflow-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">Hazard Analysis Preview</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Residual Risk Evaluation Preview</h3>
               <button
                 onClick={() => setShowPreview(false)}
                 className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
@@ -422,4 +423,5 @@ const HazardAnalysisPage: React.FC = () => {
   );
 };
 
-export default HazardAnalysisPage;
+export default ResidualRiskReportPage;
+

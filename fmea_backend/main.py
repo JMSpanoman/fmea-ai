@@ -46,6 +46,16 @@ from routers import design_controls, vv, capa_phase2, pms, traceability, ai_phas
 from routers import document_control, training_phase3, change_control_phase3, audit_phase3, supplier_phase3, ncr_phase3, complaint_phase3, equipment_phase3, quality_event_phase3, approval_phase3, ai_phase3
 # Risk Items router
 from routers import risk_items
+# Risk Management Plan router
+from routers import risk_management_plan
+# Risk Management File router
+from routers import rmf
+# Hazard Analysis router
+from routers import hazard_analysis
+# Residual Risk Evaluation router
+from routers import residual_risk
+# Risk Control Measures Documentation router
+from routers import risk_controls_doc
 
 
 
@@ -112,6 +122,16 @@ app.include_router(ai_phase3.router, tags=["AI Phase 3"])
 
 # Risk Items router
 app.include_router(risk_items.router, tags=["Risk Items"])
+# Risk Management Plan router
+app.include_router(risk_management_plan.router, tags=["Risk Management Plan"])
+# Risk Management File router
+app.include_router(rmf.router, tags=["Risk Management File"])
+# Hazard Analysis router
+app.include_router(hazard_analysis.router, tags=["Hazard Analysis"])
+# Residual Risk Evaluation router
+app.include_router(residual_risk.router, tags=["Residual Risk Evaluation"])
+# Risk Control Measures Documentation router
+app.include_router(risk_controls_doc.router, tags=["Risk Control Measures Documentation"])
 
 # Legacy routers (for backward compatibility - can be removed later)
 app.include_router(ai.router, prefix="/fmea", tags=["AI (Legacy)"])

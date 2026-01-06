@@ -26,6 +26,15 @@ const navItems: NavItem[] = [
   { path: '/dfmea', label: 'FMEA', icon: '🛡️', group: 'SmartQS: Risk' },
   { path: '/capa', label: 'CAPA', icon: '🔧', group: 'SmartQS: Risk' },
   { path: '/pms', label: 'PMS', icon: '📈', group: 'SmartQS: Risk' },
+  { path: '/risk-management-procedure', label: 'Risk Procedure', icon: '📋', group: 'SmartQS: Risk' },
+  { path: '/risk-management-report', label: 'Risk Report', icon: '📊', group: 'SmartQS: Risk' },
+  { path: '/rmf', label: 'Risk Management File (RMF)', icon: '📁', group: 'SmartQS: Risk' },
+  { path: '/hazard-analysis', label: 'Hazard Analysis', icon: '⚠️', group: 'SmartQS: Risk' },
+  { path: '/risk-control-measure', label: 'Risk Control Measure', icon: '🛡️', group: 'SmartQS: Risk' },
+  { path: '/risk-controls-documentation', label: 'Risk Control Documentation', icon: '📋', group: 'SmartQS: Risk' },
+  { path: '/residual-risk-benefit', label: 'Residual Risk Benefit', icon: '⚖️', group: 'SmartQS: Risk' },
+  { path: '/residual-risk', label: 'Residual Risk Evaluation', icon: '📊', group: 'SmartQS: Risk' },
+  { path: '/risk-review', label: 'Risk Review', icon: '📝', group: 'SmartQS: Risk' },
   
   // Quality Intelligence (Phase 2)
   { path: '/design-inputs', label: 'Design Inputs', icon: '📥', group: 'SmartQS: Design' },

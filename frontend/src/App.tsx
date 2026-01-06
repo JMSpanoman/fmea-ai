@@ -25,6 +25,9 @@ import FaultTreeReportPage from './pages/FaultTreeReportPage';
 import RiskManagementReportPage from './pages/RiskManagementReportPage';
 
 import RiskManagementPlanPage from './pages/RiskManagementPlanPage';
+import RmfExportPage from './pages/RmfExportPage';
+import ResidualRiskReportPage from './pages/ResidualRiskReportPage';
+import RiskControlsDocumentationPage from './pages/RiskControlsDocumentationPage';
 import RiskTraceabilityMatrixPage from './pages/RiskTraceabilityMatrixPage';
 import ResidualRiskRiskBenefitPage from './pages/ResidualRiskRiskBenefitPage';
 import RiskControlImplementationPage from './pages/RiskControlImplementationPage';
@@ -101,6 +104,17 @@ function App() {
                 <Route path="/risk-management-report" element={<RiskManagementReportPage />} />
 
                 <Route path="/risk-management-plan" element={<RiskManagementPlanPage />} />
+                <Route path="/risk-management-procedure" element={<RiskManagementPlanPage />} />
+                <Route path="/rmf" element={<RmfExportPage />} />
+                <Route path="/projects/:projectId/rmf" element={<RmfExportPage />} />
+                <Route path="/hazard-analysis" element={<HazardAnalysisPage />} />
+                <Route path="/projects/:projectId/hazard-analysis" element={<HazardAnalysisPage />} />
+                <Route path="/residual-risk" element={<ResidualRiskReportPage />} />
+                <Route path="/projects/:projectId/residual-risk" element={<ResidualRiskReportPage />} />
+                <Route path="/risk-evaluation" element={<ResidualRiskReportPage />} />
+                <Route path="/projects/:projectId/risk-evaluation" element={<ResidualRiskReportPage />} />
+                <Route path="/risk-controls-documentation" element={<RiskControlsDocumentationPage />} />
+                <Route path="/projects/:projectId/risk-controls-documentation" element={<RiskControlsDocumentationPage />} />
                 <Route path="/traceability-matrix" element={<RiskTraceabilityMatrixPage />} />
                 <Route path="/residual-risk" element={<ResidualRiskRiskBenefitPage />} />
                 <Route path="/risk-control-implementation" element={<RiskControlImplementationPage />} />

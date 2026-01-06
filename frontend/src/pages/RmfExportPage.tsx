@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useProject } from '../contexts/ProjectContext';
 import {
-  generateHazardAnalysis,
-  exportHazardAnalysis,
-  getHazardAnalysisData,
+  generateRMF,
+  exportRMF,
+  getRMFEvidence,
   ComponentFilter,
-  HazardAnalysisGenerateRequest,
-  HazardAnalysisRow
+  RMFGenerateRequest
 } from '../services/apiService';
 import api from '../axios';
 
-const HazardAnalysisPage: React.FC = () => {
+const RmfExportPage: React.FC = () => {
   const { currentProject } = useProject();
   const [components, setComponents] = useState<ComponentFilter[]>([]);
   const [selectedComponents, setSelectedComponents] = useState<string[]>([]);
@@ -19,14 +18,15 @@ const HazardAnalysisPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   // Options
-  const [versionScope, setVersionScope] = useState<'approved_only' | 'current' | 'all'>('approved_only');
-  const [includeUnapproved, setIncludeUnapproved] = useState(false);
+  const [includeTraceability, setIncludeTraceability] = useState(true);
+  const [includeApprovals, setIncludeApprovals] = useState(true);
+  const [includeAiEvents, setIncludeAiEvents] = useState(true);
+  const [includeAuditLog, setIncludeAuditLog] = useState(true);
   
   // Preview
   const [showPreview, setShowPreview] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string>('');
-  const [previewData, setPreviewData] = useState<HazardAnalysisRow[]>([]);
-  const [counts, setCounts] = useState<any>(null);
+  const [evidence, setEvidence] = useState<any>(null);
 
   useEffect(() => {
     if (currentProject?.id) {
@@ -99,30 +99,29 @@ const HazardAnalysisPage: React.FC = () => {
         }
       }
       
-      const request: HazardAnalysisGenerateRequest = {
+      const request: RMFGenerateRequest = {
         components: componentFilter.length > 0 ? componentFilter : undefined,
-        version_scope: versionScope,
-        include_unapproved: includeUnapproved,
-        include_metadata: true,
+        include_ai_events: includeAiEvents,
+        include_audit_log: includeAuditLog,
+        include_traceability: includeTraceability,
         format: 'html'
       };
 
-      const response = await generateHazardAnalysis(currentProject.id, request);
-      setPreviewHtml(response.hazard_analysis_html);
-      setCounts(response.counts);
+      const response = await generateRMF(currentProject.id, request);
+      setPreviewHtml(response.rmf_html);
       setShowPreview(true);
       
-      // Also get data for table preview
-      const componentsStr = componentFilter.map(c => c.name).join(',');
-      const data = await getHazardAnalysisData(
+      // Also get evidence for summary
+      const evidenceData = await getRMFEvidence(
         currentProject.id,
-        componentsStr || undefined,
-        versionScope,
-        includeUnapproved
+        componentFilter.map(c => c.name).join(','),
+        includeAiEvents,
+        includeAuditLog,
+        includeTraceability
       );
-      setPreviewData(data);
+      setEvidence(evidenceData);
     } catch (err: any) {
-      setError(err.response?.data?.detail || err.message || 'Failed to generate Hazard Analysis');
+      setError(err.response?.data?.detail || err.message || 'Failed to generate RMF');
     } finally {
       setLoading(false);
     }
@@ -150,24 +149,25 @@ const HazardAnalysisPage: React.FC = () => {
       }
       
       const componentsStr = componentFilter.map(c => c.name).join(',');
-      const html = await exportHazardAnalysis(
+      const html = await exportRMF(
         currentProject.id,
         componentsStr || undefined,
-        versionScope,
-        includeUnapproved
+        includeAiEvents,
+        includeAuditLog,
+        includeTraceability
       );
       
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Hazard_Analysis_${currentProject.name}_${new Date().toISOString().split('T')[0]}.html`;
+      a.download = `RMF_${currentProject.name}_${new Date().toISOString().split('T')[0]}.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      setError(err.response?.data?.detail || err.message || 'Failed to export Hazard Analysis');
+      setError(err.response?.data?.detail || err.message || 'Failed to export RMF');
     } finally {
       setLoading(false);
     }
@@ -177,7 +177,7 @@ const HazardAnalysisPage: React.FC = () => {
     return (
       <div className="p-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-yellow-800">Please select a project first to generate a Hazard Analysis.</p>
+          <p className="text-yellow-800">Please select a project first to generate a Risk Management File.</p>
         </div>
       </div>
     );
@@ -186,8 +186,8 @@ const HazardAnalysisPage: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       <div className="bg-gray-200 rounded-lg shadow p-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Hazard Analysis</h1>
-        <p className="text-gray-600">Generate a systematic hazard analysis from SmartQS risk data for {currentProject.name}</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Risk Management File (RMF) Export</h1>
+        <p className="text-gray-600">Generate an audit-ready Risk Management File package for {currentProject.name}</p>
       </div>
 
       {error && (
@@ -254,119 +254,71 @@ const HazardAnalysisPage: React.FC = () => {
       </div>
 
       <div className="bg-gray-200 rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Version Scope</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Export Options</h2>
         
         <div className="space-y-3">
           <label className="flex items-center space-x-2">
             <input
-              type="radio"
-              name="version_scope"
-              value="approved_only"
-              checked={versionScope === 'approved_only'}
-              onChange={(e) => {
-                setVersionScope('approved_only');
-                setIncludeUnapproved(false);
-              }}
-              className="border-gray-300"
+              type="checkbox"
+              checked={includeTraceability}
+              onChange={(e) => setIncludeTraceability(e.target.checked)}
+              className="rounded border-gray-300"
             />
-            <span className="text-sm text-gray-900">Approved Only (Default)</span>
+            <span className="text-sm text-gray-900">Include Traceability</span>
           </label>
           
           <label className="flex items-center space-x-2">
             <input
-              type="radio"
-              name="version_scope"
-              value="current"
-              checked={versionScope === 'current'}
-              onChange={(e) => setVersionScope('current')}
-              className="border-gray-300"
+              type="checkbox"
+              checked={includeApprovals}
+              onChange={(e) => setIncludeApprovals(e.target.checked)}
+              className="rounded border-gray-300"
             />
-            <span className="text-sm text-gray-900">Current Versions</span>
+            <span className="text-sm text-gray-900">Include Approvals</span>
           </label>
           
           <label className="flex items-center space-x-2">
             <input
-              type="radio"
-              name="version_scope"
-              value="all"
-              checked={versionScope === 'all'}
-              onChange={(e) => setVersionScope('all')}
-              className="border-gray-300"
+              type="checkbox"
+              checked={includeAiEvents}
+              onChange={(e) => setIncludeAiEvents(e.target.checked)}
+              className="rounded border-gray-300"
             />
-            <span className="text-sm text-gray-900">All Versions</span>
+            <span className="text-sm text-gray-900">Include AI Events</span>
           </label>
           
-          {versionScope === 'approved_only' && (
-            <label className="flex items-center space-x-2 ml-6">
-              <input
-                type="checkbox"
-                checked={includeUnapproved}
-                onChange={(e) => setIncludeUnapproved(e.target.checked)}
-                className="rounded border-gray-300"
-              />
-              <span className="text-sm text-gray-900">Include Unapproved (Draft) Entries</span>
-            </label>
-          )}
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={includeAuditLog}
+              onChange={(e) => setIncludeAuditLog(e.target.checked)}
+              className="rounded border-gray-300"
+            />
+            <span className="text-sm text-gray-900">Include Audit Log</span>
+          </label>
         </div>
       </div>
 
-      {counts && (
+      {evidence && (
         <div className="bg-gray-200 rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Summary</h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <p className="text-sm text-gray-600">Risk Items</p>
-              <p className="text-2xl font-bold text-gray-900">{counts.risk_items || 0}</p>
+              <p className="text-2xl font-bold text-gray-900">{evidence.summaries?.risk_count || 0}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Versions Included</p>
-              <p className="text-2xl font-bold text-gray-900">{counts.versions_included || 0}</p>
+              <p className="text-sm text-gray-600">Versions</p>
+              <p className="text-2xl font-bold text-gray-900">{evidence.summaries?.total_versions || 0}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Unapproved Excluded</p>
-              <p className="text-2xl font-bold text-gray-900">{counts.unapproved_excluded || 0}</p>
+              <p className="text-sm text-gray-600">Controls</p>
+              <p className="text-2xl font-bold text-gray-900">{evidence.summaries?.total_controls || 0}</p>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Preview Table */}
-      {previewData.length > 0 && (
-        <div className="bg-gray-200 rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Preview Table</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Risk Key</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Version</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hazard</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hazardous Situation</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harm</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {previewData.map((row, index) => (
-                  <tr key={index}>
-                    <td className="px-4 py-3 text-sm text-gray-900">{row.risk_key}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{row.version_no}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{row.hazard || 'N/A'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{row.hazardous_situation || 'N/A'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{row.harm || 'N/A'}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        row.approved 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {row.approved ? 'Approved' : 'Draft'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div>
+              <p className="text-sm text-gray-600">Approvals</p>
+              <p className="text-2xl font-bold text-gray-900">{evidence.summaries?.total_approvals || 0}</p>
+            </div>
           </div>
         </div>
       )}
@@ -377,33 +329,25 @@ const HazardAnalysisPage: React.FC = () => {
           disabled={loading}
           className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
         >
-          {loading ? 'Generating...' : 'Generate Preview'}
+          {loading ? 'Generating...' : 'Generate RMF Preview'}
         </button>
         {previewHtml && (
-          <>
-            <button
-              onClick={() => setShowPreview(true)}
-              className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-            >
-              View HTML Preview
-            </button>
-            <button
-              onClick={handleDownloadHTML}
-              disabled={loading}
-              className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-            >
-              Download HTML
-            </button>
-          </>
+          <button
+            onClick={handleDownloadHTML}
+            disabled={loading}
+            className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+          >
+            Download HTML
+          </button>
         )}
       </div>
 
-      {/* HTML Preview Dialog */}
+      {/* Preview Dialog */}
       {showPreview && previewHtml && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-gray-200 rounded-lg p-6 max-w-6xl w-full max-h-[90vh] overflow-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">Hazard Analysis Preview</h3>
+              <h3 className="text-xl font-semibold text-gray-900">RMF Preview</h3>
               <button
                 onClick={() => setShowPreview(false)}
                 className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
@@ -422,4 +366,5 @@ const HazardAnalysisPage: React.FC = () => {
   );
 };
 
-export default HazardAnalysisPage;
+export default RmfExportPage;
+
