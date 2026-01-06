@@ -6,16 +6,23 @@ import uuid
 
 def create_project(db: Session, project: ProjectCreate, user_id: str) -> Project:
     """Create a new project"""
-    db_project = Project(
-        id=str(uuid.uuid4()),
-        name=project.name,
-        description=project.description,
-        user_id=user_id
-    )
-    db.add(db_project)
-    db.commit()
-    db.refresh(db_project)
-    return db_project
+    try:
+        db_project = Project(
+            id=str(uuid.uuid4()),
+            name=project.name,
+            description=project.description,
+            user_id=user_id
+        )
+        db.add(db_project)
+        db.commit()
+        db.refresh(db_project)
+        return db_project
+    except Exception as e:
+        db.rollback()
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Database error creating project: {str(e)}", exc_info=True)
+        raise
 
 def get_projects_by_user(db: Session, user_id: str) -> List[Project]:
     """Get all projects for a user"""

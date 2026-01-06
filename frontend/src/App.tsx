@@ -28,6 +28,9 @@ import RiskManagementPlanPage from './pages/RiskManagementPlanPage';
 import RmfExportPage from './pages/RmfExportPage';
 import ResidualRiskReportPage from './pages/ResidualRiskReportPage';
 import RiskControlsDocumentationPage from './pages/RiskControlsDocumentationPage';
+import RiskControlMeasuresReportPage from './pages/Risk/Reports/RiskControlMeasuresReportPage';
+import PmsSignalsPage from './pages/PMS/PmsSignalsPage';
+import PmsSignalReportPage from './pages/PMS/PmsSignalReportPage';
 import RiskTraceabilityMatrixPage from './pages/RiskTraceabilityMatrixPage';
 import ResidualRiskRiskBenefitPage from './pages/ResidualRiskRiskBenefitPage';
 import RiskControlImplementationPage from './pages/RiskControlImplementationPage';
@@ -115,6 +118,12 @@ function App() {
                 <Route path="/projects/:projectId/risk-evaluation" element={<ResidualRiskReportPage />} />
                 <Route path="/risk-controls-documentation" element={<RiskControlsDocumentationPage />} />
                 <Route path="/projects/:projectId/risk-controls-documentation" element={<RiskControlsDocumentationPage />} />
+                <Route path="/projects/:projectId/reports/risk-control-measures" element={<RiskControlMeasuresReportPage />} />
+                <Route path="/reports/risk-control-measures" element={<RiskControlMeasuresReportPage />} />
+                <Route path="/projects/:projectId/pms/signals" element={<PmsSignalsPage />} />
+                <Route path="/pms/signals" element={<PmsSignalsPage />} />
+                <Route path="/projects/:projectId/pms/reports/signal-feedback" element={<PmsSignalReportPage />} />
+                <Route path="/pms/reports/signal-feedback" element={<PmsSignalReportPage />} />
                 <Route path="/traceability-matrix" element={<RiskTraceabilityMatrixPage />} />
                 <Route path="/residual-risk" element={<ResidualRiskRiskBenefitPage />} />
                 <Route path="/risk-control-implementation" element={<RiskControlImplementationPage />} />

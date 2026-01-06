@@ -22,6 +22,10 @@ const navItems: NavItem[] = [
   { path: '/', label: 'Dashboard', icon: '📊', group: 'Core' },
   { path: '/projects', label: 'Projects', icon: '📁', group: 'Core' },
   
+  // PMS
+  { path: '/pms/signals', label: 'Signals', icon: '📡', group: 'PMS' },
+  { path: '/pms/reports/signal-feedback', label: 'Signal Feedback Report', icon: '📊', group: 'PMS' },
+  
   // Risk
   { path: '/dfmea', label: 'FMEA', icon: '🛡️', group: 'SmartQS: Risk' },
   { path: '/capa', label: 'CAPA', icon: '🔧', group: 'SmartQS: Risk' },
@@ -30,11 +34,9 @@ const navItems: NavItem[] = [
   { path: '/risk-management-report', label: 'Risk Report', icon: '📊', group: 'SmartQS: Risk' },
   { path: '/rmf', label: 'Risk Management File (RMF)', icon: '📁', group: 'SmartQS: Risk' },
   { path: '/hazard-analysis', label: 'Hazard Analysis', icon: '⚠️', group: 'SmartQS: Risk' },
-  { path: '/risk-control-measure', label: 'Risk Control Measure', icon: '🛡️', group: 'SmartQS: Risk' },
   { path: '/risk-controls-documentation', label: 'Risk Control Documentation', icon: '📋', group: 'SmartQS: Risk' },
-  { path: '/residual-risk-benefit', label: 'Residual Risk Benefit', icon: '⚖️', group: 'SmartQS: Risk' },
+  { path: '/reports/risk-control-measures', label: 'Risk Control Measures Report', icon: '📊', group: 'SmartQS: Risk' },
   { path: '/residual-risk', label: 'Residual Risk Evaluation', icon: '📊', group: 'SmartQS: Risk' },
-  { path: '/risk-review', label: 'Risk Review', icon: '📝', group: 'SmartQS: Risk' },
   
   // Quality Intelligence (Phase 2)
   { path: '/design-inputs', label: 'Design Inputs', icon: '📥', group: 'SmartQS: Design' },
@@ -85,7 +87,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       {/* Sidebar */}
       <aside
         className={`
-          ${sidebarCollapsed ? 'w-18' : 'w-64'}
+          ${sidebarCollapsed ? 'w-18' : 'w-72'}
           bg-gray-200 border-r border-gray-300
           flex flex-col transition-smooth-slow
           flex-shrink-0
@@ -126,6 +128,22 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                       setShowGenerateDesignInputsModal(true);
                     } else if (item.path === '/design-outputs') {
                       setShowGenerateDesignOutputsModal(true);
+                    } else if (item.path === '/reports/risk-control-measures') {
+                      // Navigate to reports page with current project
+                      const projectId = currentProject?.id;
+                      if (projectId) {
+                        navigate(`/projects/${projectId}/reports/risk-control-measures`);
+                      } else {
+                        navigate('/projects');
+                      }
+                    } else if (item.path.startsWith('/pms/')) {
+                      // Navigate to PMS pages with current project
+                      const projectId = currentProject?.id;
+                      if (projectId) {
+                        navigate(`/projects/${projectId}${item.path}`);
+                      } else {
+                        navigate('/projects');
+                      }
                     } else {
                       navigate(item.path);
                     }

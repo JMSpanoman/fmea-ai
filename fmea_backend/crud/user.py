@@ -18,6 +18,10 @@ def get_user_by_id(db: Session, user_id: str) -> Optional[User]:
 def create_user_from_auth0(db: Session, auth0_id: str, email: str) -> Optional[User]:
     """Create a new user from Auth0 token"""
     try:
+        # Ensure email is not empty (use auth0_id as fallback)
+        if not email or email.strip() == "":
+            email = f"{auth0_id}@auth0.local"
+        
         db_user = User(
             id=str(uuid.uuid4()),
             auth0_id=auth0_id,
@@ -29,7 +33,9 @@ def create_user_from_auth0(db: Session, auth0_id: str, email: str) -> Optional[U
         return db_user
     except Exception as e:
         db.rollback()
-        print(f"Error creating user: {e}")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error creating user from Auth0: {str(e)}", exc_info=True)
         return None
 
 def get_all_users(db: Session, skip: int = 0, limit: int = 100) -> list[User]:

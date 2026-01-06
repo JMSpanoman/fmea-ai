@@ -56,6 +56,10 @@ from routers import hazard_analysis
 from routers import residual_risk
 # Risk Control Measures Documentation router
 from routers import risk_controls_doc
+# Reports - Risk Control Measures router
+from routers import reports_risk_control_measures
+# PMS Signal router
+from routers import pms_signal
 
 
 
@@ -132,6 +136,10 @@ app.include_router(hazard_analysis.router, tags=["Hazard Analysis"])
 app.include_router(residual_risk.router, tags=["Residual Risk Evaluation"])
 # Risk Control Measures Documentation router
 app.include_router(risk_controls_doc.router, tags=["Risk Control Measures Documentation"])
+# Reports - Risk Control Measures router
+app.include_router(reports_risk_control_measures.router, tags=["Reports - Risk Control Measures"])
+# PMS Signal router
+app.include_router(pms_signal.router, tags=["PMS Signals"])
 
 # Legacy routers (for backward compatibility - can be removed later)
 app.include_router(ai.router, prefix="/fmea", tags=["AI (Legacy)"])
@@ -144,14 +152,68 @@ app.include_router(change_control.router, prefix="/fmea", tags=["Change Control"
 app.include_router(mastercontrol_router)
 
 
-# CORS middleware
+# CORS middleware - must be added before other middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+# Exception handlers to ensure CORS headers are included in error responses
+from fastapi import Request
+from fastapi.exceptions import RequestValidationError
+
+def get_cors_headers(request: Request) -> dict:
+    """Get CORS headers for a request"""
+    origin = request.headers.get("origin")
+    allowed_origins = get_cors_origins()
+    
+    if origin and origin in allowed_origins:
+        return {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+    return {}
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Handle HTTP exceptions with CORS headers"""
+    headers = get_cors_headers(request)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=headers
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle validation errors with CORS headers"""
+    headers = get_cors_headers(request)
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()},
+        headers=headers
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler that includes CORS headers"""
+    headers = get_cors_headers(request)
+    
+    # Log the error
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    
+    # Return error response with CORS headers
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "error": str(exc)},
+        headers=headers
+    )
 
 # Security
 

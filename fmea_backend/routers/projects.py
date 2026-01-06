@@ -24,7 +24,17 @@ def create_project(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new project"""
-    return project_crud.create_project(db, project, current_user.id)
+    try:
+        logger.info(f"Creating project '{project.name}' for user {current_user.id}")
+        created_project = project_crud.create_project(db, project, current_user.id)
+        logger.info(f"Successfully created project {created_project.id}")
+        return created_project
+    except Exception as e:
+        logger.error(f"Error creating project: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create project: {str(e)}"
+        )
 
 @router.get("/{project_id}", response_model=project_schemas.ProjectOut)
 def get_project(

@@ -181,6 +181,7 @@ def build_risk_controls_doc_evidence(
                 "component_name": component_name,
                 "hazard": current_version.hazard if current_version and hasattr(current_version, 'hazard') else None,
                 "harm": current_version.harm if current_version and hasattr(current_version, 'harm') else None,
+                "component_id": risk_item.component_id,
                 "control_id": control.id,
                 "control_key": control.control_key or f"RC-{control.id[:8]}",
                 "control_name": control.control_name,

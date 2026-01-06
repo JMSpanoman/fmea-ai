@@ -721,4 +721,338 @@ export const getRiskControlsDocData = async (
     console.error('Error getting Risk Control Measures Documentation data:', error);
     throw error;
   }
+};
+
+// Reports - Risk Control Measures API (alternative endpoint structure)
+export interface RiskControlMeasuresDataResponse {
+  project_id: string;
+  components: ComponentFilter[];
+  generated_at: string;
+  rows: Array<{
+    risk_item_id: string;
+    risk_key: string;
+    control_id: string;
+    control_key: string;
+    control_name: string;
+    control_type: string;
+    control_description: string;
+    control_status: string;
+    implementation_refs: Array<{
+      artifact_type: string;
+      artifact_id: string;
+      display: string;
+      link_type?: string;
+    }>;
+    verification_methods: Array<{
+      artifact_type: string;
+      artifact_id: string;
+      display: string;
+      link_type?: string;
+    }>;
+    flags: {
+      missing_implementation: boolean;
+      missing_verification: boolean;
+    };
+  }>;
+  counts: {
+    controls: number;
+    missing_implementation: number;
+    missing_verification: number;
+  };
+}
+
+export const getRiskControlMeasuresData = async (
+  projectId: string,
+  components?: string,
+  activeOnly: boolean = true
+): Promise<RiskControlMeasuresDataResponse> => {
+  try {
+    const params = new URLSearchParams();
+    if (components) params.append('components', components);
+    params.append('active_only', activeOnly.toString());
+    
+    const response = await api.get(`/projects/${projectId}/reports/risk-control-measures/data?${params.toString()}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error getting Risk Control Measures data:', error);
+    throw error;
+  }
+};
+
+// PMS Signal Types and API
+export interface PMSSignal {
+  id: string;
+  project_id: string;
+  signal_key: string;
+  signal_type: string;
+  component_names_json: string[];
+  title: string;
+  description?: string;
+  source_ref?: string;
+  date_detected: string;
+  severity_observed?: number;
+  frequency_observed?: number;
+  rate_observed?: number;
+  trend_status: string;
+  trigger_status: string;
+  recommended_action?: string;
+  owner?: string;
+  status: string;
+  created_by: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface PMSSignalCreate {
+  signal_key: string;
+  signal_type: string;
+  component_names_json: string[];
+  title: string;
+  description?: string;
+  source_ref?: string;
+  date_detected: string;
+  severity_observed?: number;
+  frequency_observed?: number;
+  rate_observed?: number;
+  trend_status?: string;
+  trigger_status?: string;
+  recommended_action?: string;
+  owner?: string;
+  status?: string;
+}
+
+export interface PMSSignalUpdate {
+  signal_key?: string;
+  signal_type?: string;
+  component_names_json?: string[];
+  title?: string;
+  description?: string;
+  source_ref?: string;
+  date_detected?: string;
+  severity_observed?: number;
+  frequency_observed?: number;
+  rate_observed?: number;
+  trend_status?: string;
+  trigger_status?: string;
+  recommended_action?: string;
+  owner?: string;
+  status?: string;
+}
+
+export interface PMSSignalLinkRiskRequest {
+  risk_item_id: string;
+  link_type?: string;
+}
+
+export interface PMSSignalHandoffCAPARequest {
+  capa_title?: string;
+  capa_description?: string;
+}
+
+export interface PMSSignalHandoffChangeRequest {
+  change_title?: string;
+  change_description?: string;
+}
+
+export interface PMSSignalReportGenerateRequest {
+  components?: ComponentFilter[];
+  date_from?: string;
+  date_to?: string;
+  include_open_only?: boolean;
+  include_traceability?: boolean;
+  include_actions?: boolean;
+  format?: string;
+}
+
+export interface PMSSignalReportGenerateResponse {
+  project_id: string;
+  components: ComponentFilter[];
+  generated_at: string;
+  pms_report_html: string;
+  counts: any;
+  summary: any;
+}
+
+// PMS Signal CRUD API methods
+export const createPMSSignal = async (
+  projectId: string,
+  signal: PMSSignalCreate
+): Promise<PMSSignal> => {
+  try {
+    const response = await api.post(`/projects/${projectId}/pms/signals`, signal);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error creating PMS signal:', error);
+    throw error;
+  }
+};
+
+export const getPMSSignals = async (
+  projectId: string,
+  component?: string,
+  signalType?: string,
+  status?: string,
+  dateFrom?: string,
+  dateTo?: string
+): Promise<PMSSignal[]> => {
+  try {
+    const params = new URLSearchParams();
+    if (component) params.append('component', component);
+    if (signalType) params.append('signal_type', signalType);
+    if (status) params.append('status', status);
+    if (dateFrom) params.append('date_from', dateFrom);
+    if (dateTo) params.append('date_to', dateTo);
+    
+    const response = await api.get(`/projects/${projectId}/pms/signals?${params.toString()}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error getting PMS signals:', error);
+    throw error;
+  }
+};
+
+export const getPMSSignal = async (
+  projectId: string,
+  signalId: string
+): Promise<PMSSignal> => {
+  try {
+    const response = await api.get(`/projects/${projectId}/pms/signals/${signalId}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error getting PMS signal:', error);
+    throw error;
+  }
+};
+
+export const updatePMSSignal = async (
+  projectId: string,
+  signalId: string,
+  signalUpdate: PMSSignalUpdate
+): Promise<PMSSignal> => {
+  try {
+    const response = await api.put(`/projects/${projectId}/pms/signals/${signalId}`, signalUpdate);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating PMS signal:', error);
+    throw error;
+  }
+};
+
+export const deletePMSSignal = async (
+  projectId: string,
+  signalId: string
+): Promise<void> => {
+  try {
+    await api.delete(`/projects/${projectId}/pms/signals/${signalId}`);
+  } catch (error: any) {
+    console.error('Error deleting PMS signal:', error);
+    throw error;
+  }
+};
+
+// PMS Signal Handoff API methods
+export const linkPMSSignalToRisk = async (
+  projectId: string,
+  signalId: string,
+  request: PMSSignalLinkRiskRequest
+): Promise<any> => {
+  try {
+    const response = await api.post(`/projects/${projectId}/pms/signals/${signalId}/link/risk-item`, request);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error linking PMS signal to risk:', error);
+    throw error;
+  }
+};
+
+export const handoffPMSSignalToCAPA = async (
+  projectId: string,
+  signalId: string,
+  request: PMSSignalHandoffCAPARequest
+): Promise<any> => {
+  try {
+    const response = await api.post(`/projects/${projectId}/pms/signals/${signalId}/handoff/capa`, request);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error creating CAPA from PMS signal:', error);
+    throw error;
+  }
+};
+
+export const handoffPMSSignalToChange = async (
+  projectId: string,
+  signalId: string,
+  request: PMSSignalHandoffChangeRequest
+): Promise<any> => {
+  try {
+    const response = await api.post(`/projects/${projectId}/pms/signals/${signalId}/handoff/change`, request);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error creating Change Control from PMS signal:', error);
+    throw error;
+  }
+};
+
+// PMS Signal Report API methods
+export const generatePMSSignalReport = async (
+  projectId: string,
+  request: PMSSignalReportGenerateRequest
+): Promise<PMSSignalReportGenerateResponse> => {
+  try {
+    const response = await api.post(`/projects/${projectId}/pms/reports/signal-feedback/generate`, request);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error generating PMS Signal Report:', error);
+    throw error;
+  }
+};
+
+export const exportPMSSignalReport = async (
+  projectId: string,
+  components?: string,
+  dateFrom?: string,
+  dateTo?: string,
+  includeOpenOnly: boolean = false,
+  includeTraceability: boolean = true,
+  includeActions: boolean = true
+): Promise<string> => {
+  try {
+    const params = new URLSearchParams();
+    if (components) params.append('components', components);
+    if (dateFrom) params.append('date_from', dateFrom);
+    if (dateTo) params.append('date_to', dateTo);
+    params.append('include_open_only', includeOpenOnly.toString());
+    params.append('include_traceability', includeTraceability.toString());
+    params.append('include_actions', includeActions.toString());
+    params.append('format', 'html');
+    
+    const response = await api.get(`/projects/${projectId}/pms/reports/signal-feedback/export?${params.toString()}`, {
+      responseType: 'text'
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('Error exporting PMS Signal Report HTML:', error);
+    throw error;
+  }
+};
+
+export const exportRiskControlMeasuresHtml = async (
+  projectId: string,
+  components?: string,
+  activeOnly: boolean = true
+): Promise<string> => {
+  try {
+    const params = new URLSearchParams();
+    if (components) params.append('components', components);
+    params.append('active_only', activeOnly.toString());
+    params.append('format', 'html');
+    
+    const response = await api.get(`/projects/${projectId}/reports/risk-control-measures/export?${params.toString()}`, {
+      responseType: 'text'
+    });
+    return response.data;
+  } catch (error: any) {
+    console.error('Error exporting Risk Control Measures HTML:', error);
+    throw error;
+  }
 }; 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './CreateProjectModal.css';
+import { createProject } from '../services/apiService';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -39,45 +40,31 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     setSuccess('');
 
     try {
-      const token = localStorage.getItem('token');
-      const userData = localStorage.getItem('user');
-      
-      if (!token || !userData) {
-        setError('Authentication required. Please log in again.');
+      if (!formData.name.trim()) {
+        setError('Project name is required.');
+        setIsLoading(false);
         return;
       }
 
-      const user = JSON.parse(userData);
-      
-      const response = await fetch('http://localhost:8000/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          description: formData.description,
-          user_id: user.username // Using username as user_id for now
-        })
-      });
+      const projectData = {
+        name: formData.name.trim(),
+        description: formData.description.trim() || undefined
+      };
 
-      const data = await response.json();
+      const data = await createProject(projectData);
 
-      if (response.ok) {
-        setSuccess('Project created successfully!');
-        onProjectCreated(data);
-        // Reset form
-        setFormData({ name: '', description: '' });
-        // Close modal after a short delay
-        setTimeout(() => {
-          onClose();
-        }, 1500);
-      } else {
-        setError(data.detail || 'Failed to create project. Please try again.');
-      }
-    } catch (err) {
-      setError('Network error. Please check your connection and try again.');
+      setSuccess('Project created successfully!');
+      onProjectCreated(data);
+      // Reset form
+      setFormData({ name: '', description: '' });
+      // Close modal after a short delay
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } catch (err: any) {
+      console.error('Error creating project:', err);
+      const errorMessage = err.response?.data?.detail || err.message || 'Failed to create project. Please try again.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
