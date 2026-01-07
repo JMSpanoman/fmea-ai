@@ -467,6 +467,74 @@ class FMEAApi {
             throw error;
         }
     }
+
+    // Get all projects
+    async getProjects() {
+        try {
+            await this.ensureValidToken();
+            
+            const response = await fetch(`${this.baseURL}/projects`, {
+                method: 'GET',
+                headers: this.getHeaders(),
+            });
+
+            if (response.ok) {
+                return await response.json();
+            } else {
+                const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+                throw new Error(errorData.detail || 'Failed to fetch projects');
+            }
+        } catch (error) {
+            console.error('Get projects error:', error);
+            throw error;
+        }
+    }
+
+    // Create a new project
+    async createProject(projectData) {
+        try {
+            await this.ensureValidToken();
+            
+            const response = await fetch(`${this.baseURL}/projects`, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify(projectData),
+            });
+
+            if (response.ok) {
+                return await response.json();
+            } else {
+                const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+                throw new Error(errorData.detail || 'Failed to create project');
+            }
+        } catch (error) {
+            console.error('Create project error:', error);
+            throw error;
+        }
+    }
+
+    // Create FMEA row
+    async createFMEA(projectId, fmeaData) {
+        try {
+            await this.ensureValidToken();
+            
+            const response = await fetch(`${this.baseURL}/projects/${projectId}/fmea`, {
+                method: 'POST',
+                headers: this.getHeaders(),
+                body: JSON.stringify(fmeaData),
+            });
+
+            if (response.ok) {
+                return await response.json();
+            } else {
+                const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+                throw new Error(errorData.detail || 'Failed to create FMEA');
+            }
+        } catch (error) {
+            console.error('Create FMEA error:', error);
+            throw error;
+        }
+    }
 }
 
 // Create a global instance

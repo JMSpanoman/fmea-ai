@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+import logging
 from database import get_db
 from auth.dependencies import get_current_user
 from models.user import User
 from schemas import project as project_schemas
 from crud import project as project_crud
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 

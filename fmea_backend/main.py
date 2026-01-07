@@ -81,6 +81,12 @@ def get_cors_origins():
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting Smart FMEA Builder API")
+    # Create database tables if they don't exist
+    from database import engine, Base
+    # Import all models to ensure they're registered
+    from models import user, project, fmea, component, risk_item, risk_item_version, risk_control, approval, trace_link, ai_event, audit_log_event, design_input, design_output, vv_test, risk_management_plan, pms_signal
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables initialized")
     yield
     # Shutdown
     logger.info("Shutting down Smart FMEA Builder API")

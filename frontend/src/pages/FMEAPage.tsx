@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProjectDataViewer from '../components/ProjectDataViewer';
 import { exportFmeaData } from '../utils/exportUtils';
+import { getProjects, createProject, Project } from '../services/apiService';
 
 interface FmeaRow {
   id: string;
@@ -40,12 +41,13 @@ const FmeaPage: React.FC = () => {
   const [fmeaData, setFmeaData] = useState<{ [key: string]: FmeaRow[] }>({});
   const [showTable, setShowTable] = useState(false);
   const [showProjectModal, setShowProjectModal] = useState(false);
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [newProjectName, setNewProjectName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [creatingNew, setCreatingNew] = useState(false);
+  const [loadingProjects, setLoadingProjects] = useState(false);
   const [mockFlag, setMockFlag] = useState<boolean | null>(null);
   const [showProjectDataViewer, setShowProjectDataViewer] = useState(false);
   const [selectedProjectForViewer, setSelectedProjectForViewer] = useState<any>(null);
@@ -2490,9 +2492,55 @@ const FmeaPage: React.FC = () => {
     }
   };
 
+  const handleOpenProjectModal = async () => {
+    if (!fmeaData[fmeaType] || fmeaData[fmeaType].length === 0) {
+      setSaveError('Please generate FMEA data first');
+      return;
+    }
+
+    // Check if window.fmeaApi is available
+    if (!window.fmeaApi) {
+      setSaveError('FMEA API is not available. Please refresh the page.');
+      return;
+    }
+
+    try {
+      setLoadingProjects(true);
+      setSaveError('');
+      
+      const api = window.fmeaApi;
+      
+      // Ensure API has a valid token
+      if (!api.token) {
+        console.log('No token found, attempting dev login...');
+        await api.devLogin();
+      }
+      
+      const projectList = await api.getProjects();
+      setProjects(Array.isArray(projectList) ? projectList : []);
+      setShowProjectModal(true);
+    } catch (err: any) {
+      console.error('Error loading projects:', err);
+      setSaveError(err.message || 'Failed to load projects. Please try again.');
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
   const handleSaveToProject = async () => {
+    if (!fmeaData[fmeaType] || fmeaData[fmeaType].length === 0) {
+      setSaveError('No FMEA data to save. Please generate FMEA data first.');
+      return;
+    }
+
     if (!selectedProjectId && !newProjectName.trim()) {
       setSaveError('Please select a project or enter a new project name');
+      return;
+    }
+
+    // Check if window.fmeaApi is available
+    if (!window.fmeaApi) {
+      setSaveError('FMEA API is not available. Please refresh the page.');
       return;
     }
 
@@ -2500,21 +2548,71 @@ const FmeaPage: React.FC = () => {
     setSaveError('');
 
     try {
-      if (creatingNew && newProjectName.trim()) {
-        // Create new project logic here
-        console.log('Creating new project:', newProjectName);
+      let targetProjectId = selectedProjectId;
+      const api = window.fmeaApi;
+
+      // Ensure API has a valid token
+      if (!api.token) {
+        console.log('No token found, attempting dev login...');
+        await api.devLogin();
       }
 
-      // Save FMEA data to project logic here
-      console.log('Saving FMEA data to project:', selectedProjectId || newProjectName);
+      // Create new project if needed
+      if (creatingNew && newProjectName.trim()) {
+        const newProject = await api.createProject({
+          name: newProjectName.trim(),
+          description: `FMEA Analysis for ${componentDescription || newProjectName}`
+        });
+        targetProjectId = newProject.id;
+      }
+
+      if (!targetProjectId) {
+        setSaveError('Please select or create a project');
+        setIsSaving(false);
+        return;
+      }
+
+      // Save each FMEA row to the project
+      let savedCount = 0;
+      let failedCount = 0;
       
-      setShowProjectModal(false);
-      setNewProjectName('');
-      setSelectedProjectId('');
-      setCreatingNew(false);
-    } catch (error) {
+      for (const row of fmeaData[fmeaType]) {
+        // Map frontend row to backend schema
+        const backendRow = {
+          failure_mode: row.failureMode || '',
+          effect: row.potentialEffects || '',
+          cause: row.potentialCauses || '',
+          severity: row.severity || 1,
+          probability: row.occurrence || 1,  // Backend uses 'probability' not 'occurrence'
+          detection: row.detection || 1,
+          mitigation: row.currentControls || row.recommendedActions || '',
+          residual_severity: row.newSeverity || row.severity || 1,
+          residual_probability: row.newOccurrence || row.occurrence || 1,
+          residual_detection: row.newDetection || row.detection || 1,
+        };
+        
+        try {
+          await api.createFMEA(targetProjectId, backendRow);
+          savedCount++;
+        } catch (error: any) {
+          console.error(`Error saving FMEA row:`, error);
+          failedCount++;
+          // Continue with other rows even if one fails
+        }
+      }
+
+      if (failedCount > 0) {
+        setSaveError(`${savedCount} rows saved, ${failedCount} rows failed. Please check the console for details.`);
+      } else {
+        alert(`Successfully saved ${savedCount} FMEA row${savedCount !== 1 ? 's' : ''} to project!`);
+        setShowProjectModal(false);
+        setNewProjectName('');
+        setSelectedProjectId('');
+        setCreatingNew(false);
+      }
+    } catch (error: any) {
       console.error('Error saving to project:', error);
-      setSaveError('Failed to save to project. Please try again.');
+      setSaveError(error.message || 'Failed to save FMEA data to project. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -2621,7 +2719,7 @@ const FmeaPage: React.FC = () => {
               </div>
               <div className="flex space-x-3">
                 <button
-                  onClick={() => setShowProjectModal(true)}
+                  onClick={handleOpenProjectModal}
                   className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
                 >
                   Save to Project
@@ -2755,29 +2853,54 @@ const FmeaPage: React.FC = () => {
             <div className="mt-3">
               <h3 className="text-lg font-medium text-gray-900 mb-4">Save FMEA to Project</h3>
               
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Select Project</label>
-                <select
-                  value={selectedProjectId}
-                  onChange={(e) => setSelectedProjectId(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Choose a project...</option>
-                  {projects.map(project => (
-                    <option key={project.id} value={project.id}>{project.name}</option>
-                  ))}
-                </select>
-              </div>
+              {loadingProjects && (
+                <div className="mb-4 text-sm text-gray-600">Loading projects...</div>
+              )}
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Or Create New Project</label>
-                <input
-                  type="text"
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
-                  placeholder="Enter new project name"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {creatingNew ? 'New Project Name' : 'Select Project'}
+                </label>
+                
+                {!creatingNew ? (
+                  <>
+                    <select
+                      value={selectedProjectId}
+                      onChange={(e) => setSelectedProjectId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Choose a project...</option>
+                      {projects.map(project => (
+                        <option key={project.id} value={project.id}>{project.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => setCreatingNew(true)}
+                      className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+                    >
+                      + Create New Project
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      value={newProjectName}
+                      onChange={(e) => setNewProjectName(e.target.value)}
+                      placeholder="Enter new project name"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={() => {
+                        setCreatingNew(false);
+                        setNewProjectName('');
+                      }}
+                      className="mt-2 text-sm text-gray-600 hover:text-gray-800"
+                    >
+                      ← Select Existing Project
+                    </button>
+                  </>
+                )}
               </div>
 
               {saveError && (
@@ -2786,14 +2909,20 @@ const FmeaPage: React.FC = () => {
 
               <div className="flex justify-end space-x-3">
                 <button
-                  onClick={() => setShowProjectModal(false)}
+                  onClick={() => {
+                    setShowProjectModal(false);
+                    setSelectedProjectId('');
+                    setNewProjectName('');
+                    setCreatingNew(false);
+                    setSaveError('');
+                  }}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveToProject}
-                  disabled={isSaving}
+                  disabled={isSaving || loadingProjects}
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                 >
                   {isSaving ? 'Saving...' : 'Save'}

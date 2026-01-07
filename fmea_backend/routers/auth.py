@@ -103,32 +103,43 @@ def dev_login():
     """Development login endpoint"""
     from auth.security import create_dev_token
     from crud import project as project_crud
+    from crud import user as user_crud
     from schemas import project as project_schemas
     from database import get_db
-    from sqlalchemy.orm import Session
     
     access_token = create_dev_token()
     
-    # Create default project for dev user if it doesn't exist
+    # Get or create dev user and their default project
     db = next(get_db())
+    user_id = None
     try:
-        existing_projects = project_crud.get_projects_by_user(db, "dev-user")
-        if not existing_projects:
-            default_project = project_schemas.ProjectCreate(
-                name="Default Project",
-                description="Your first project - get started by creating FMEA, CAPA, or other quality management documents.",
-                user_id="dev-user"
-            )
-            project_crud.create_project(db, default_project, "dev-user")
+        # Find or create the dev user
+        dev_user = user_crud.get_user_by_auth0_id(db, "dev-user")
+        if not dev_user:
+            dev_user = user_crud.create_user_from_auth0(db, "dev-user", "dev@example.com")
+        
+        if dev_user:
+            user_id = dev_user.id
+            # Create default project if none exist
+            existing_projects = project_crud.get_projects_by_user(db, user_id)
+            if not existing_projects:
+                default_project = project_schemas.ProjectCreate(
+                    name="Default Project",
+                    description="Your first project - get started by creating FMEA, CAPA, or other quality management documents.",
+                    user_id=user_id
+                )
+                project_crud.create_project(db, default_project, user_id)
     except Exception as e:
         # If project creation fails, continue with login
-        pass
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in dev-login setup: {str(e)}", exc_info=True)
     
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "user": {
-            "id": 123,
+            "id": user_id or "dev-user",
             "username": "dev-user",
             "email": "dev@example.com",
             "full_name": "Development User",

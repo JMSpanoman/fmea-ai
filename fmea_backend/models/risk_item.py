@@ -60,7 +60,13 @@ class RiskItem(Base):
     fmea_row = relationship("FMEARow", back_populates="risk_items")
     component = relationship("Component", foreign_keys=[component_id])
     creator = relationship("User", foreign_keys=[created_by])
-    current_version = relationship("RiskItemVersion", foreign_keys=[current_version_id], post_update=True, remote_side="RiskItemVersion.id")
+    current_version = relationship(
+        "RiskItemVersion",
+        primaryjoin="RiskItem.current_version_id == RiskItemVersion.id",
+        foreign_keys=[current_version_id],
+        post_update=True,
+        uselist=False
+    )
     versions = relationship("RiskItemVersion", back_populates="risk_item", foreign_keys="RiskItemVersion.risk_item_id", cascade="all, delete-orphan", order_by="RiskItemVersion.version_number")
     controls = relationship("RiskControl", back_populates="risk_item", cascade="all, delete-orphan")
 

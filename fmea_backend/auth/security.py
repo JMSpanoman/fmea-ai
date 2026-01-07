@@ -74,12 +74,18 @@ def verify_auth0_token(token: str) -> Optional[Dict]:
             try:
                 payload = jose_jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
                 return payload
-            except JWTError:
+            except JWTError as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"JWT decode error (fallback): {str(e)}")
                 return None
         
         # Get signing key from JWKS
         signing_key = get_signing_key(token)
         if not signing_key:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning("Failed to get signing key from JWKS")
             return None
         
         # Verify token
@@ -91,10 +97,15 @@ def verify_auth0_token(token: str) -> Optional[Dict]:
             issuer=f"https://{AUTH0_DOMAIN}/"
         )
         return payload
-    except JWTError:
+    except JWTError as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"JWT verification error: {str(e)}")
         return None
     except Exception as e:
-        print(f"Token verification error: {e}")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Token verification error: {str(e)}", exc_info=True)
         return None
 
 def verify_token(token: str) -> Optional[Dict]:

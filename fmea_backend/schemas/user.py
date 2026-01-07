@@ -27,7 +27,7 @@ class UserLogin(BaseModel):
     password: str
 
 class UserOut(UserBase):
-    id: int
+    id: str
     role: str
     is_active: bool
     is_verified: bool
@@ -39,7 +39,7 @@ class UserOut(UserBase):
         from_attributes = True
 
 class UserProfile(BaseModel):
-    id: int
+    id: str
     username: str
     email: str
     full_name: Optional[str] = None
@@ -49,7 +49,7 @@ class UserProfile(BaseModel):
     phone: Optional[str] = None
     bio: Optional[str] = None
     is_verified: bool
-    created_at: datetime
+    created_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
 
     class Config:

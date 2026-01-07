@@ -4,9 +4,12 @@ import {
   generateRiskControlsDoc,
   exportRiskControlsDoc,
   getRiskControlsDocData,
+  getProjects,
+  createProject,
   ComponentFilter,
   RiskControlsDocGenerateRequest,
-  RiskControlsDocRow
+  RiskControlsDocRow,
+  Project
 } from '../services/apiService';
 import api from '../axios';
 
@@ -26,6 +29,15 @@ const RiskControlsDocumentationPage: React.FC = () => {
   const [previewHtml, setPreviewHtml] = useState<string>('');
   const [previewData, setPreviewData] = useState<RiskControlsDocRow[]>([]);
   const [counts, setCounts] = useState<any>(null);
+  
+  // Save to Project
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [newProjectName, setNewProjectName] = useState('');
+  const [creatingNew, setCreatingNew] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string>('');
 
   useEffect(() => {
     if (currentProject?.id) {
@@ -162,6 +174,76 @@ const RiskControlsDocumentationPage: React.FC = () => {
       setError(err.response?.data?.detail || err.message || 'Failed to export Risk Control Measures Documentation');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenProjectModal = async () => {
+    if (!previewHtml) {
+      setError('Please generate the Risk Control Measures Documentation preview first');
+      return;
+    }
+    try {
+      const projectList = await getProjects();
+      setProjects(projectList);
+      setShowProjectModal(true);
+    } catch (err: any) {
+      setError('Failed to load projects');
+    }
+  };
+
+  const handleSaveToProject = async () => {
+    if (!previewHtml) {
+      setSaveError('No Risk Control Measures Documentation content to save. Please generate preview first.');
+      return;
+    }
+
+    if (!selectedProjectId && !newProjectName.trim()) {
+      setSaveError('Please select a project or enter a new project name');
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError('');
+
+    try {
+      let targetProjectId = selectedProjectId;
+
+      if (creatingNew && newProjectName.trim()) {
+        const newProject = await createProject({
+          name: newProjectName,
+          description: `Risk Control Measures Documentation for ${newProjectName}`
+        });
+        targetProjectId = newProject.id;
+      }
+
+      if (!targetProjectId) {
+        setSaveError('Please select or create a project');
+        setIsSaving(false);
+        return;
+      }
+
+      const reportData = {
+        projectId: targetProjectId,
+        html: previewHtml,
+        data: previewData,
+        generatedAt: new Date().toISOString(),
+        components: components.map(c => c.name).filter(n => n),
+        options: {
+          activeOnly
+        }
+      };
+      localStorage.setItem(`risk_controls_doc_${targetProjectId}_${Date.now()}`, JSON.stringify(reportData));
+      
+      alert('Risk Control Measures Documentation saved to project successfully!');
+      setShowProjectModal(false);
+      setSelectedProjectId('');
+      setNewProjectName('');
+      setCreatingNew(false);
+    } catch (error: any) {
+      console.error('Error saving to project:', error);
+      setSaveError('Failed to save to project. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -373,11 +455,18 @@ const RiskControlsDocumentationPage: React.FC = () => {
               View HTML Preview
             </button>
             <button
+              onClick={handleOpenProjectModal}
+              disabled={loading}
+              className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
+            >
+              Save to Project
+            </button>
+            <button
               onClick={handleDownloadHTML}
               disabled={loading}
               className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
             >
-              Download HTML
+              Export HTML
             </button>
           </>
         )}
@@ -400,6 +489,91 @@ const RiskControlsDocumentationPage: React.FC = () => {
               className="bg-white p-6 rounded-lg"
               dangerouslySetInnerHTML={{ __html: previewHtml }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Save to Project Modal */}
+      {showProjectModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-semibold text-gray-900 mb-4">Save Risk Control Measures Documentation to Project</h3>
+            
+            {saveError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                <p className="text-red-800 text-sm">{saveError}</p>
+              </div>
+            )}
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {creatingNew ? 'New Project Name' : 'Select Project'}
+              </label>
+              
+              {!creatingNew ? (
+                <>
+                  <select
+                    value={selectedProjectId}
+                    onChange={(e) => setSelectedProjectId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a project...</option>
+                    {projects.map((project) => (
+                      <option key={project.id} value={project.id}>
+                        {project.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => setCreatingNew(true)}
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-800"
+                  >
+                    + Create New Project
+                  </button>
+                </>
+              ) : (
+                <>
+                  <input
+                    type="text"
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                    placeholder="Enter project name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={() => {
+                      setCreatingNew(false);
+                      setNewProjectName('');
+                    }}
+                    className="mt-2 text-sm text-gray-600 hover:text-gray-800"
+                  >
+                    ← Select Existing Project
+                  </button>
+                </>
+              )}
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowProjectModal(false);
+                  setSelectedProjectId('');
+                  setNewProjectName('');
+                  setCreatingNew(false);
+                  setSaveError('');
+                }}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveToProject}
+                disabled={isSaving}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
           </div>
         </div>
       )}
