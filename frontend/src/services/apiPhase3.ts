@@ -8,37 +8,31 @@ import {
   SupplierRiskRequest, SupplierRiskResponse
 } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-
-const getAuthToken = (): string | null => {
-  return localStorage.getItem('auth_token') || localStorage.getItem('auth0_access_token') || null;
-};
+import api from '../axios';
 
 const apiRequest = async <T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  const token = getAuthToken();
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
+  const method = (options.method || 'GET').toUpperCase();
+  const rawBody = options.body;
+  const data =
+    typeof rawBody === 'string' && rawBody.length > 0 ? JSON.parse(rawBody) : undefined;
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  try {
+    const res = await api.request<T>({
+      url: endpoint,
+      method: method as any,
+      data,
+    });
+    return res.data;
+  } catch (err: any) {
+    const detail =
+      err?.response?.data?.detail ||
+      err?.message ||
+      'Request failed';
+    throw new Error(detail);
   }
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: response.statusText }));
-    throw new Error(error.detail || `HTTP error! status: ${response.status}`);
-  }
-
-  return response.json();
 };
 
 // Document Control API

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import projectService, { Project, ProjectCreate } from '../services/projectService';
+import authService from '../services/authService';
+import { useProject } from '../contexts/ProjectContext';
 
 interface ProjectFormData {
   name: string;
@@ -20,17 +22,49 @@ const ProjectPage: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
 
   const navigate = useNavigate();
+  const { setCurrentProject } = useProject();
 
   // Load projects from service
   useEffect(() => {
     const loadProjects = async () => {
       try {
         setLoading(true);
+        setError(null);
+        
+        // Ensure authentication before loading projects
+        if (!authService.isAuthenticated()) {
+          console.log('[ProjectPage] Not authenticated, attempting to authenticate...');
+          try {
+            await authService.authenticate();
+            console.log('[ProjectPage] Authentication successful');
+          } catch (authError) {
+            console.error('[ProjectPage] Authentication failed:', authError);
+            setError('Failed to authenticate. Please refresh the page.');
+            setLoading(false);
+            return;
+          }
+        } else {
+          console.log('[ProjectPage] Already authenticated');
+        }
+        
+        // Small delay to ensure token is in localStorage
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        console.log('[ProjectPage] Loading projects...');
+        const token = localStorage.getItem('token');
+        console.log('[ProjectPage] Token available:', !!token);
+        
         const projects = await projectService.getProjects();
-        setProjects(projects);
-      } catch (error) {
-        console.error('Error loading projects:', error);
-        setError('Failed to load projects');
+        console.log('[ProjectPage] Projects loaded:', projects?.length || 0, 'projects');
+        setProjects(projects || []);
+      } catch (error: any) {
+        console.error('[ProjectPage] Error loading projects:', error);
+        const errorMessage = error.message || error.response?.data?.detail || 'Unknown error';
+        if (errorMessage.includes('not logged in') || errorMessage.includes('session expired') || error.response?.status === 401) {
+          setError('You\'re not logged in or your session expired. Please refresh the page.');
+        } else {
+          setError(`Failed to load projects: ${errorMessage}. Please try refreshing the page.`);
+        }
       } finally {
         setLoading(false);
       }
@@ -57,9 +91,17 @@ const ProjectPage: React.FC = () => {
       setShowCreateForm(false);
       setSuccess('Project created successfully!');
       setTimeout(() => setSuccess(null), 3000);
-    } catch (error) {
-      console.error('Error creating project:', error);
-      setError('Failed to create project');
+
+      // Project-first workflow: select + persist + navigate into project dashboard
+      setCurrentProject(newProject as any);
+      navigate(`/projects/${newProject.id}/dashboard`);
+    } catch (error: any) {
+      console.error('[ProjectPage] Error creating project:', error);
+      if (error.message?.includes('not logged in') || error.message?.includes('session expired') || error.response?.status === 401) {
+        setError('You\'re not logged in or your session expired. Please refresh the page.');
+      } else {
+        setError(error.message || 'Failed to create project');
+      }
     }
   };
 
@@ -99,7 +141,7 @@ const ProjectPage: React.FC = () => {
     }
   };
 
-  const handleDeleteProject = async (projectId: number) => {
+  const handleDeleteProject = async (projectId: string) => {
     if (window.confirm('Are you sure you want to delete this project?')) {
       try {
         await projectService.deleteProject(projectId);
@@ -115,17 +157,19 @@ const ProjectPage: React.FC = () => {
 
   const handleOpenProject = (project: Project) => {
     // Navigate to project-specific page or open project
-    navigate(`/dashboard?project=${project.id}`);
+    setCurrentProject(project as any);
+    navigate(`/projects/${project.id}/dashboard`);
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status?: string) => {
     const statusConfig = {
       draft: { color: 'bg-yellow-100 text-yellow-800', label: 'Draft' },
       final: { color: 'bg-green-100 text-green-800', label: 'Final' },
       exported: { color: 'bg-blue-100 text-blue-800', label: 'Exported' }
     };
     
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
+    const key = (status || 'draft') as keyof typeof statusConfig;
+    const config = statusConfig[key] || statusConfig.draft;
     
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>

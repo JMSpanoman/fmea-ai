@@ -1,31 +1,31 @@
-// Using fetch instead of axios to match existing codebase
+// Using authenticated axios client
+import api from '../axios';
 
 export interface Project {
-  id: number;
+  id: string; // UUID
   name: string;
   description: string | null;
-  status: string;
   user_id: string;
   
-  // Version control fields
-  version_number: string;
-  major_version: number;
-  minor_version: number;
-  patch_version: number;
-  version_status: string;
-  version_label: string | null;
-  change_summary: string | null;
-  change_details: any | null;
-  content_hash: string | null;
-  approval_required: string;
-  approved_by: string | null;
-  approved_at: string | null;
-  
-  // Timestamps
   created_at: string;
-  updated_at: string | null;
-  version_created_at: string;
-  version_updated_at: string;
+  updated_at?: string | null;
+
+  // Backward-compatible optional fields (legacy UI expectations)
+  status?: string;
+  version_number?: string;
+  major_version?: number;
+  minor_version?: number;
+  patch_version?: number;
+  version_status?: string;
+  version_label?: string | null;
+  change_summary?: string | null;
+  change_details?: any | null;
+  content_hash?: string | null;
+  approval_required?: string;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  version_created_at?: string;
+  version_updated_at?: string;
 }
 
 export interface ProjectCreate {
@@ -62,139 +62,73 @@ export interface ProjectUpdate {
 }
 
 class ProjectService {
-  private baseUrl = 'http://localhost:8000/projects';
-  private authUrl = 'http://localhost:8000/auth/dev-login';
-  private token: string | null = null;
-
-  private async getAuthToken(): Promise<string> {
-    if (this.token) {
-      return this.token;
-    }
-
-    try {
-      const response = await fetch(this.authUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Auth failed: ${response.status}`);
-      }
-
-      const authData = await response.json();
-      this.token = authData.access_token;
-      return authData.access_token;
-    } catch (error) {
-      console.error('Error getting auth token:', error);
-      throw error;
-    }
-  }
-
   async getProjects(): Promise<Project[]> {
     try {
-      const token = await this.getAuthToken();
-      
-      const response = await fetch(`${this.baseUrl}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Use authenticated axios client - interceptor handles auth header
+      const response = await api.get('/projects');
+      return response.data;
+    } catch (error: any) {
+      console.error('[projectService] Error fetching projects:', error);
+      if (error.response?.status === 401) {
+        throw new Error('You\'re not logged in or your session expired. Please refresh the page.');
       }
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-      throw error;
+      throw new Error(error.response?.data?.detail || error.message || 'Failed to fetch projects');
     }
   }
 
-  async getProject(id: number): Promise<Project> {
+  async getProject(id: string): Promise<Project> {
     try {
-      const token = await this.getAuthToken();
-      
-      const response = await fetch(`${this.baseUrl}/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Use authenticated axios client - interceptor handles auth header
+      const response = await api.get(`/projects/${id}`);
+      return response.data;
+    } catch (error: any) {
+      console.error(`[projectService] Error fetching project ${id}:`, error);
+      if (error.response?.status === 401) {
+        throw new Error('You\'re not logged in or your session expired. Please refresh the page.');
       }
-      return await response.json();
-    } catch (error) {
-      console.error(`Error fetching project ${id}:`, error);
-      throw error;
+      throw new Error(error.response?.data?.detail || error.message || `Failed to fetch project ${id}`);
     }
   }
 
   async createProject(project: ProjectCreate): Promise<Project> {
     try {
-      const token = await this.getAuthToken();
-      
-      const response = await fetch(this.baseUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(project),
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Use authenticated axios client - interceptor handles auth header
+      const response = await api.post('/projects', project);
+      return response.data;
+    } catch (error: any) {
+      console.error('[projectService] Error creating project:', error);
+      if (error.response?.status === 401) {
+        throw new Error('You\'re not logged in or your session expired. Please refresh the page.');
       }
-      return await response.json();
-    } catch (error) {
-      console.error('Error creating project:', error);
-      throw error;
+      throw new Error(error.response?.data?.detail || error.message || 'Failed to create project');
     }
   }
 
-  async updateProject(id: number, project: ProjectUpdate): Promise<Project> {
+  async updateProject(id: string, project: ProjectUpdate): Promise<Project> {
     try {
-      const token = await this.getAuthToken();
-      
-      const response = await fetch(`${this.baseUrl}/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(project),
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Use authenticated axios client - interceptor handles auth header
+      const response = await api.put(`/projects/${id}`, project);
+      return response.data;
+    } catch (error: any) {
+      console.error(`[projectService] Error updating project ${id}:`, error);
+      if (error.response?.status === 401) {
+        throw new Error('You\'re not logged in or your session expired. Please refresh the page.');
       }
-      return await response.json();
-    } catch (error) {
-      console.error(`Error updating project ${id}:`, error);
-      throw error;
+      throw new Error(error.response?.data?.detail || error.message || `Failed to update project ${id}`);
     }
   }
 
-  async deleteProject(id: number): Promise<boolean> {
+  async deleteProject(id: string): Promise<boolean> {
     try {
-      const token = await this.getAuthToken();
-      
-      const response = await fetch(`${this.baseUrl}/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      // Use authenticated axios client - interceptor handles auth header
+      await api.delete(`/projects/${id}`);
       return true;
-    } catch (error) {
-      console.error(`Error deleting project ${id}:`, error);
-      throw error;
+    } catch (error: any) {
+      console.error(`[projectService] Error deleting project ${id}:`, error);
+      if (error.response?.status === 401) {
+        throw new Error('You\'re not logged in or your session expired. Please refresh the page.');
+      }
+      throw new Error(error.response?.data?.detail || error.message || `Failed to delete project ${id}`);
     }
   }
 
@@ -202,10 +136,9 @@ class ProjectService {
   getMockProjects(): Project[] {
     return [
       {
-        id: 1,
+        id: "1",
         name: "Medical Device FMEA",
         description: "Failure Mode and Effects Analysis for new medical device",
-        status: "draft",
         user_id: "user123",
         version_number: "1.0",
         major_version: 1,
@@ -225,10 +158,9 @@ class ProjectService {
         version_updated_at: "2024-01-15T10:00:00Z"
       },
       {
-        id: 2,
+        id: "2",
         name: "Process Improvement CAPA",
         description: "Corrective and Preventive Actions for manufacturing process",
-        status: "final",
         user_id: "user123",
         version_number: "2.1",
         major_version: 2,
@@ -248,10 +180,9 @@ class ProjectService {
         version_updated_at: "2024-01-12T09:15:00Z"
       },
       {
-        id: 3,
+        id: "3",
         name: "Design Change Control",
         description: "Managing design changes for product improvement",
-        status: "draft",
         user_id: "user123",
         version_number: "1.0",
         major_version: 1,

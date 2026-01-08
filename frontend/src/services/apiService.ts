@@ -3,31 +3,29 @@ import api from '../axios';
 
 // Types
 export interface Project {
-  id: number;
+  id: string; // UUID
   name: string;
-  description?: string;
-  status: string;
-  user_id: string;
-  
-  // Version control fields
-  version_number: string;
-  major_version: number;
-  minor_version: number;
-  patch_version: number;
-  version_status: string;
-  version_label: string | null;
-  change_summary: string | null;
-  change_details: any | null;
-  content_hash: string | null;
-  approval_required: string;
-  approved_by: string | null;
-  approved_at: string | null;
-  
-  // Timestamps
+  description?: string | null;
+  user_id: string; // UUID
   created_at: string;
-  updated_at: string;
-  version_created_at: string;
-  version_updated_at: string;
+  updated_at?: string | null;
+
+  // Backward-compatible optional fields (some legacy pages expect these)
+  status?: string;
+  version_number?: string;
+  major_version?: number;
+  minor_version?: number;
+  patch_version?: number;
+  version_status?: string;
+  version_label?: string | null;
+  change_summary?: string | null;
+  change_details?: any | null;
+  content_hash?: string | null;
+  approval_required?: string;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  version_created_at?: string;
+  version_updated_at?: string;
 }
 
 export interface FMEA {

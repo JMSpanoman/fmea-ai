@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
@@ -6,7 +6,9 @@ from models.user import User
 from schemas import document as doc_schemas
 from crud import document as doc_crud
 from crud import project as project_crud
-from typing import List
+from typing import List, Optional
+from fastapi.responses import HTMLResponse
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/projects/{project_id}", tags=["Document Control"])
 
@@ -125,4 +127,214 @@ def get_document_versions(
     
     versions = doc_crud.get_document_versions(db, document_id)
     return versions
+
+
+@router.get("/documents/{document_id}/versions/{version_no}", response_model=doc_schemas.DocumentVersionOut)
+def get_document_version(
+    project_id: str,
+    document_id: str,
+    version_no: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get a specific version of a document"""
+    project = project_crud.get_project(db, project_id, current_user.id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    document = doc_crud.get_document(db, document_id, project_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    v = doc_crud.get_document_version_by_no(db, document_id, version_no)
+    if not v:
+        raise HTTPException(status_code=404, detail="Document version not found")
+    return v
+
+
+@router.post("/documents/{document_id}/generate", response_model=doc_schemas.DocumentGenerateResponse)
+def generate_document_version(
+    project_id: str,
+    document_id: str,
+    request: doc_schemas.DocumentGenerateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Generate a new document version (audit-friendly)."""
+    project = project_crud.get_project(db, project_id, current_user.id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    document = doc_crud.get_document(db, document_id, project_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    component_filter = None
+    if request.components:
+        component_filter = [{"id": c.id, "name": c.name} for c in request.components]
+
+    version_scope = request.version_scope or "approved_only"
+    options = request.options or {}
+
+    # Build deterministic HTML by doc.type using existing evidence builders/renderers
+    doc_type = (document.type or "").lower()
+    rendered_html: str
+
+    if doc_type == "rmf":
+        from business_logic import rmf_builder, rmf_renderer
+        evidence = rmf_builder.build_rmf_evidence(
+            db=db,
+            project_id=project_id,
+            component_filter=component_filter,
+            include_ai_events=bool(options.get("include_ai_events", False)),
+            include_audit_log=bool(options.get("include_audit_log", False)),
+            include_traceability=bool(options.get("include_traceability", True)),
+        )
+        rendered_html = rmf_renderer.render_rmf_html(evidence, project.name)
+    elif doc_type == "hazard_analysis":
+        from business_logic import hazard_analysis_builder, hazard_analysis_renderer
+        evidence = hazard_analysis_builder.build_hazard_analysis(
+            db=db,
+            project_id=project_id,
+            component_filter=component_filter,
+            version_scope=version_scope,
+            include_unapproved=bool(options.get("include_unapproved", False)),
+        )
+        rendered_html = hazard_analysis_renderer.render_hazard_analysis_html(evidence, project.name)
+    elif doc_type == "residual_risk":
+        from business_logic import residual_risk_builder, residual_risk_renderer
+        evidence = residual_risk_builder.build_residual_risk_evidence(
+            db=db,
+            project_id=project_id,
+            component_filter=component_filter,
+            version_scope=version_scope,
+            include_unapproved=bool(options.get("include_unapproved", False)),
+            acceptability_profile=str(options.get("acceptability_profile", "default_med_device")),
+            custom_thresholds=options.get("custom_thresholds"),
+        )
+        rendered_html = residual_risk_renderer.render_residual_risk_html(evidence, project.name)
+    elif doc_type == "risk_controls_doc":
+        from business_logic import risk_controls_doc_builder, risk_controls_doc_renderer
+        evidence = risk_controls_doc_builder.build_risk_controls_doc_evidence(
+            db=db,
+            project_id=project_id,
+            component_filter=component_filter,
+            include_only_active_controls=bool(options.get("active_controls_only", True)),
+            version_scope=str(options.get("version_scope", "current")),
+            include_traceability_details=bool(options.get("include_traceability", True)),
+        )
+        rendered_html = risk_controls_doc_renderer.render_risk_controls_doc_html(evidence, project.name)
+    elif doc_type == "fmea":
+        # Deterministic table export from persisted FMEA rows
+        from models.fmea import FMEARow
+        rows = db.query(FMEARow).filter(FMEARow.project_id == project_id).all()
+        trs = []
+        for r in rows:
+            trs.append(
+                f"<tr><td>{r.id}</td><td>{r.failure_mode or ''}</td><td>{r.effect or ''}</td><td>{r.cause or ''}</td>"
+                f"<td>{r.severity or ''}</td><td>{r.probability or ''}</td><td>{r.detection or ''}</td>"
+                f"<td>{r.rpn or ''}</td><td>{r.mitigation or ''}</td></tr>"
+            )
+        rendered_html = f"""<!doctype html>
+<html><head><meta charset="utf-8"/><title>FMEA — {project.name}</title>
+<style>body{{font-family:Arial,sans-serif;margin:24px}} table{{border-collapse:collapse;width:100%}} th,td{{border:1px solid #ddd;padding:8px}} th{{background:#f3f4f6}}</style>
+</head><body>
+<h1>FMEA</h1>
+<div>Project: {project.name}</div>
+<div>Generated: {datetime.now(timezone.utc).isoformat()}</div>
+<table><thead><tr><th>ID</th><th>Failure Mode</th><th>Effect</th><th>Cause</th><th>S</th><th>P</th><th>D</th><th>RPN</th><th>Mitigation</th></tr></thead>
+<tbody>{''.join(trs) if trs else ''}</tbody></table>
+</body></html>"""
+    else:
+        # Minimal deterministic fallback
+        rendered_html = f"""<!doctype html>
+<html><head><meta charset="utf-8"/><title>{document.name} — {project.name}</title></head>
+<body><h1>{document.name}</h1><p>Project: {project.name}</p><pre>{document.content or ''}</pre></body></html>"""
+
+    # Create new version (do not overwrite silently)
+    document.version += 1
+    document.content = rendered_html
+    document.status = "draft"  # generation creates a new draft version
+    document.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(document)
+
+    doc_crud.create_document_version(
+        db,
+        document.id,
+        document.version,
+        rendered_html,
+        {
+            "generated": True,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "version_scope": version_scope,
+            "components": component_filter or [],
+            "options": options,
+        },
+    )
+
+    return {
+        "doc_id": document.id,
+        "new_version_no": document.version,
+        "rendered_html": rendered_html,
+        "updated_at": document.updated_at,
+    }
+
+
+@router.get("/documents/{document_id}/export/html", response_class=HTMLResponse)
+def export_document_html(
+    project_id: str,
+    document_id: str,
+    version: Optional[int] = Query(None, description="Export a specific version number"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Export a document as deterministic HTML (MVP)."""
+    project = project_crud.get_project(db, project_id, current_user.id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    document = doc_crud.get_document(db, document_id, project_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    content = document.content or ""
+    export_version = version or document.version
+
+    if version is not None:
+        v = doc_crud.get_document_version_by_no(db, document_id, export_version)
+        if not v:
+            raise HTTPException(status_code=404, detail="Document version not found")
+        content = v.content or ""
+
+    # If content already looks like full HTML, return as-is
+    lowered = content.lstrip().lower()
+    if lowered.startswith("<!doctype") or lowered.startswith("<html") or lowered.startswith("<!doctype html"):
+        return HTMLResponse(content=content)
+
+    # Otherwise wrap as readable HTML with escaped content
+    safe_content = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    html = f"""<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>{document.name} — v{export_version}</title>
+    <style>
+      body {{ font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 32px; }}
+      h1 {{ margin: 0 0 8px 0; }}
+      .meta {{ color: #555; margin-bottom: 16px; }}
+      pre {{ background: #f7f7f7; padding: 16px; border-radius: 8px; white-space: pre-wrap; }}
+      .badge {{ display: inline-block; padding: 2px 10px; border-radius: 999px; background: #eef2ff; color: #3730a3; font-size: 12px; }}
+    </style>
+  </head>
+  <body>
+    <h1>{document.name}</h1>
+    <div class="meta">
+      <span class="badge">{document.type}</span>
+      &nbsp; Project: {project.name} &nbsp;|&nbsp; Status: {document.status} &nbsp;|&nbsp; Version: {export_version}
+    </div>
+    <pre>{safe_content}</pre>
+  </body>
+</html>"""
+    return HTMLResponse(content=html)
 

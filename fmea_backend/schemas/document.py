@@ -2,6 +2,21 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
+class ComponentFilter(BaseModel):
+    id: Optional[str] = None
+    name: str
+
+class DocumentGenerateRequest(BaseModel):
+    components: Optional[List[ComponentFilter]] = None
+    version_scope: str = "approved_only"  # approved_only, current, all
+    options: Optional[Dict[str, Any]] = None
+
+class DocumentGenerateResponse(BaseModel):
+    doc_id: str
+    new_version_no: int
+    rendered_html: str
+    updated_at: datetime
+
 class DocumentBase(BaseModel):
     name: str
     type: str  # dhf, dmr, sop, form, work_instruction, record

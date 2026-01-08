@@ -13,10 +13,14 @@ def get_current_user(
     db: Session = Depends(get_db)
 ) -> User:
     """Get current user from Auth0 JWT token"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     token = credentials.credentials
     payload = verify_token(token)
     
     if payload is None:
+        logger.warning("[auth] Token validation failed - returning 401")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",

@@ -1,35 +1,38 @@
+// Import the authenticated axios client
+import api from '../axios';
+
 class FMEAApi {
     constructor() {
-        this.baseURL = 'http://localhost:8000';
+        // Token management is now handled by the axios interceptor
         this.token = null;
     }
 
     setToken(token) {
         this.token = token;
-    }
-
-    getHeaders() {
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        
-        if (this.token) {
-            headers['Authorization'] = `Bearer ${this.token}`;
+        // Store in localStorage for axios interceptor
+        if (token) {
+            localStorage.setItem('token', token);
         }
-        
-        return headers;
     }
 
     async ensureValidToken() {
-        if (!this.token) {
+        // Check if token exists in localStorage
+        let token = localStorage.getItem('token');
+        if (!token) {
             await this.devLogin();
         }
+        return token;
     }
 
     // Development login
     async devLogin() {
         try {
-            const response = await fetch(`${this.baseURL}/auth/dev-login`, {
+            // Use native fetch for dev-login to avoid circular dependency
+            const baseURL = import.meta.env.VITE_API_URL || 
+                           import.meta.env.VITE_API_BASE_URL || 
+                           'http://localhost:8000';
+            
+            const response = await fetch(`${baseURL}/auth/dev-login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -38,27 +41,31 @@ class FMEAApi {
 
             if (response.ok) {
                 const data = await response.json();
-                this.setToken(data.access_token);
+                const token = data.access_token;
                 
-                // Store token in localStorage
-                localStorage.setItem('token', data.access_token);
-                
-                // Store user object in localStorage (create default if not provided)
-                const user = data.user || {
-                    id: 'dev-user-123',
-                    username: 'dev-user',
-                    role: 'admin',
-                    email: 'dev@example.com'
-                };
-                localStorage.setItem('user', JSON.stringify(user));
-                
-                console.log('devLogin: Token and user stored successfully');
-                return data;
+                if (token) {
+                    this.setToken(token);
+                    
+                    // Store user object in localStorage (create default if not provided)
+                    const user = data.user || {
+                        id: 'dev-user-123',
+                        username: 'dev-user',
+                        role: 'admin',
+                        email: 'dev@example.com'
+                    };
+                    localStorage.setItem('user', JSON.stringify(user));
+                    
+                    console.log('[fmea.js] devLogin: Token and user stored successfully');
+                    return data;
+                } else {
+                    throw new Error('No access token received');
+                }
             } else {
-                throw new Error('Dev login failed');
+                const errorText = await response.text();
+                throw new Error(`Dev login failed: ${response.status} ${errorText}`);
             }
         } catch (error) {
-            console.error('Dev login error:', error);
+            console.error('[fmea.js] Dev login error:', error);
             throw error;
         }
     }
@@ -468,71 +475,54 @@ class FMEAApi {
         }
     }
 
-    // Get all projects
+    // Get all projects - uses authenticated axios client
     async getProjects() {
         try {
             await this.ensureValidToken();
             
-            const response = await fetch(`${this.baseURL}/projects`, {
-                method: 'GET',
-                headers: this.getHeaders(),
-            });
-
-            if (response.ok) {
-                return await response.json();
-            } else {
-                const errorData = await response.json().catch(() => ({ detail: response.statusText }));
-                throw new Error(errorData.detail || 'Failed to fetch projects');
-            }
+            // Use the authenticated axios client - interceptor handles auth header
+            const response = await api.get('/projects');
+            return response.data;
         } catch (error) {
-            console.error('Get projects error:', error);
-            throw error;
+            console.error('[fmea.js] Get projects error:', error);
+            if (error.response?.status === 401) {
+                throw new Error('You\'re not logged in or your session expired. Please refresh the page.');
+            }
+            throw new Error(error.response?.data?.detail || error.message || 'Failed to fetch projects');
         }
     }
 
-    // Create a new project
+    // Create a new project - uses authenticated axios client
     async createProject(projectData) {
         try {
             await this.ensureValidToken();
             
-            const response = await fetch(`${this.baseURL}/projects`, {
-                method: 'POST',
-                headers: this.getHeaders(),
-                body: JSON.stringify(projectData),
-            });
-
-            if (response.ok) {
-                return await response.json();
-            } else {
-                const errorData = await response.json().catch(() => ({ detail: response.statusText }));
-                throw new Error(errorData.detail || 'Failed to create project');
-            }
+            // Use the authenticated axios client - interceptor handles auth header
+            const response = await api.post('/projects', projectData);
+            return response.data;
         } catch (error) {
-            console.error('Create project error:', error);
-            throw error;
+            console.error('[fmea.js] Create project error:', error);
+            if (error.response?.status === 401) {
+                throw new Error('You\'re not logged in or your session expired. Please refresh the page.');
+            }
+            throw new Error(error.response?.data?.detail || error.message || 'Failed to create project');
         }
     }
 
-    // Create FMEA row
+    // Create FMEA row - uses authenticated axios client
     async createFMEA(projectId, fmeaData) {
         try {
             await this.ensureValidToken();
             
-            const response = await fetch(`${this.baseURL}/projects/${projectId}/fmea`, {
-                method: 'POST',
-                headers: this.getHeaders(),
-                body: JSON.stringify(fmeaData),
-            });
-
-            if (response.ok) {
-                return await response.json();
-            } else {
-                const errorData = await response.json().catch(() => ({ detail: response.statusText }));
-                throw new Error(errorData.detail || 'Failed to create FMEA');
-            }
+            // Use the authenticated axios client - interceptor handles auth header
+            const response = await api.post(`/projects/${projectId}/fmea`, fmeaData);
+            return response.data;
         } catch (error) {
-            console.error('Create FMEA error:', error);
-            throw error;
+            console.error('[fmea.js] Create FMEA error:', error);
+            if (error.response?.status === 401) {
+                throw new Error('You\'re not logged in or your session expired. Please refresh the page.');
+            }
+            throw new Error(error.response?.data?.detail || error.message || 'Failed to create FMEA');
         }
     }
 }

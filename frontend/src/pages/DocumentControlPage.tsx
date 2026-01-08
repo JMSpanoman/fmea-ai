@@ -13,7 +13,7 @@ import DocumentList from '../components/DocumentControl/DocumentList';
 import DocumentEditor from '../components/DocumentControl/DocumentEditor';
 import AiDocumentSidebar from '../components/DocumentControl/AiDocumentSidebar';
 import { Document } from '../types';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 
 const DocumentControlPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();

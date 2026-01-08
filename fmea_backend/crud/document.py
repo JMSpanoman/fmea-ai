@@ -52,6 +52,9 @@ def update_document(db: Session, document_id: str, document: DocumentUpdate, pro
     # If content changed, create new version
     if 'content' in update_data and update_data['content'] != old_content:
         db_doc.version += 1
+        # Guardrail: editing an approved document creates a new draft version
+        if db_doc.status == "approved":
+            db_doc.status = "draft"
         changes = {"field": "content", "old": old_content, "new": update_data['content']}
         create_document_version(db, document_id, db_doc.version, update_data['content'], changes)
     
@@ -59,6 +62,14 @@ def update_document(db: Session, document_id: str, document: DocumentUpdate, pro
     db.commit()
     db.refresh(db_doc)
     return db_doc
+
+
+def get_document_version_by_no(db: Session, document_id: str, version: int) -> Optional[DocumentVersion]:
+    """Get a specific document version"""
+    return db.query(DocumentVersion).filter(
+        DocumentVersion.document_id == document_id,
+        DocumentVersion.version == version
+    ).first()
 
 def delete_document(db: Session, document_id: str, project_id: str) -> bool:
     """Delete a document"""

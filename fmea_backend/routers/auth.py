@@ -129,6 +129,17 @@ def dev_login():
                     user_id=user_id
                 )
                 project_crud.create_project(db, default_project, user_id)
+
+            # Backfill required docs for all existing projects (dev convenience, idempotent)
+            try:
+                from business_logic.project_initializer import initialize_project_required_docs
+                existing_projects = project_crud.get_projects_by_user(db, user_id)
+                for p in existing_projects:
+                    initialize_project_required_docs(db, p.id)
+            except Exception as init_err:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to initialize required docs during dev-login: {init_err}", exc_info=True)
     except Exception as e:
         # If project creation fails, continue with login
         import logging

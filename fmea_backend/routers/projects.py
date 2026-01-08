@@ -31,6 +31,21 @@ def create_project(
         logger.info(f"Creating project '{project.name}' for user {current_user.id}")
         created_project = project_crud.create_project(db, project, current_user.id)
         logger.info(f"Successfully created project {created_project.id}")
+
+        # Auto-create required SmartQS documents for project-first workflow
+        try:
+            from business_logic.project_initializer import initialize_project_required_docs
+            created_doc_ids = initialize_project_required_docs(db, created_project.id)
+            logger.info(
+                f"Initialized required docs for project {created_project.id}: created={len(created_doc_ids)}"
+            )
+        except Exception as init_err:
+            logger.error(
+                f"Failed initializing required docs for project {created_project.id}: {init_err}",
+                exc_info=True,
+            )
+            raise
+
         return created_project
     except Exception as e:
         logger.error(f"Error creating project: {str(e)}", exc_info=True)

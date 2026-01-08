@@ -258,109 +258,15 @@ def test_endpoint():
 #     token = create_dev_token()
 #     return {"access_token": token, "token_type": "bearer"}
 
+#
 # Project endpoints
-@app.post("/projects", response_model=project_schemas.ProjectOut, status_code=status.HTTP_201_CREATED)
-def create_project(
-    project: project_schemas.ProjectCreate,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """Create a new FMEA project"""
-    try:
-        # Get user ID from the authenticated user
-        user_id = str(current_user.id if hasattr(current_user, 'id') else current_user.username)
-        return project_crud.create_project(db=db, project=project, user_id=user_id)
-    except Exception as e:
-        logger.error(f"Error creating project: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.get("/projects", response_model=List[project_schemas.ProjectOut])
-def get_projects(
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """Get all projects for the authenticated user"""
-    try:
-        # Get user ID from the authenticated user
-        user_id = str(current_user.id if hasattr(current_user, 'id') else current_user.username)
-        projects = project_crud.get_projects_by_user(db=db, user_id=user_id)
-        
-        # Convert SQLAlchemy models to Pydantic schemas
-        project_outputs = []
-        for project in projects:
-            project_out = project_schemas.ProjectOut(
-                id=project.id,
-                name=project.name,
-                description=project.description,
-                user_id=project.user_id,
-                status=project.status,
-                created_at=project.created_at,
-                updated_at=project.updated_at
-            )
-            project_outputs.append(project_out)
-        
-        return project_outputs
-    except Exception as e:
-        logger.error(f"Error getting projects: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.get("/projects/{project_id}", response_model=project_schemas.ProjectOut)
-def get_project(
-    project_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """Get a specific project by ID"""
-    try:
-        # Get user ID from the authenticated user
-        user_id = str(current_user.id if hasattr(current_user, "id") else current_user.username)
-        project = project_crud.get_project(db=db, project_id=project_id, user_id=user_id)
-        if not project:
-            raise HTTPException(status_code=404, detail="Project not found")
-        return project
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.put("/projects/{project_id}", response_model=project_schemas.ProjectOut)
-def update_project(
-    project_id: int,
-    project: project_schemas.ProjectUpdate,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """Update a project"""
-    try:
-        # Get user ID from the authenticated user
-        user_id = str(current_user.id if hasattr(current_user, "id") else current_user.username)
-        updated_project = project_crud.update_project(db=db, project_id=project_id, project=project, user_id=user_id)
-        if not updated_project:
-            raise HTTPException(status_code=404, detail="Project not found")
-        return updated_project
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.delete("/projects/{project_id}")
-def delete_project(
-    project_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """Delete a project"""
-    try:
-        # Get user ID from the authenticated user
-        user_id = str(current_user.id if hasattr(current_user, "id") else current_user.username)
-        success = project_crud.delete_project(db=db, project_id=project_id, user_id=user_id)
-        if not success:
-            raise HTTPException(status_code=404, detail="Project not found")
-        return {"message": "Project deleted successfully"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+#
+# NOTE: These were legacy/duplicate route definitions that conflicted with
+# `routers/projects.py` (the canonical UUID-based project API). Keeping both
+# resulted in inconsistent behavior and hard-to-debug failures.
+#
+# The active Project API is implemented in `fmea_backend/routers/projects.py`
+# and is included via `app.include_router(projects_phase1.router, ...)`.
 
 # FMEA endpoints
 @app.post("/projects/{project_id}/fmeas", status_code=status.HTTP_201_CREATED)

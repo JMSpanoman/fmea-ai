@@ -50,6 +50,8 @@ import LoginNotifications from './components/LoginNotifications';
 import TrialStatusBanner from './components/TrialStatusBanner';
 import UsageDashboard from './components/UsageDashboard';
 import DashboardPageNew from './pages/DashboardPageNew';
+import ProjectDashboardPage from './pages/ProjectDashboardPage';
+import ProjectDocumentPage from './pages/ProjectDocumentPage';
 import RiskItemListPage from './pages/RiskItems/RiskItemListPage';
 import RiskItemDetailPage from './pages/RiskItems/RiskItemDetailPage';
 import DesignInputDetailPage from './pages/DesignInputs/DesignInputDetailPage';
@@ -74,8 +76,10 @@ function App() {
                 <Route path="/capa" element={<CapaPage />} />
                 <Route path="/change-control" element={<ChangeControlPage />} />
                 <Route path="/dfmea" element={<FmeaPage />} />
+                <Route path="/projects/:projectId/dashboard" element={<ProjectDashboardPage />} />
                 {/* Phase 3 Routes */}
                 <Route path="/projects/:projectId/documents" element={<DocumentControlPage />} />
+                <Route path="/projects/:projectId/documents/:docId" element={<ProjectDocumentPage />} />
                 <Route path="/documents" element={<DocumentControlPage />} />
                 <Route path="/training" element={<TrainingPage />} />
                 <Route path="/projects/:projectId/audits" element={<AuditPage />} />

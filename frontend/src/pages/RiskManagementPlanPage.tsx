@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useProject } from '../contexts/ProjectContext';
+import authService from '../services/authService';
 import {
   generateRMP,
   getRMP,
@@ -17,6 +18,7 @@ const RiskManagementPlanPage: React.FC = () => {
   const [rmp, setRmp] = useState<RMPOut | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(true);
   
   // Form state
   const [scope, setScope] = useState('');
@@ -40,13 +42,40 @@ const RiskManagementPlanPage: React.FC = () => {
   const [previewHtml, setPreviewHtml] = useState<string>('');
 
   useEffect(() => {
-    if (currentProject?.id) {
+    const initAuth = async () => {
+      try {
+        if (!authService.isAuthenticated()) {
+          await authService.authenticate();
+        }
+      } catch (error) {
+        console.error('Failed to authenticate:', error);
+        setError('Failed to authenticate. Please refresh the page.');
+      } finally {
+        setIsAuthenticating(false);
+      }
+    };
+
+    initAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthenticating && currentProject?.id) {
       loadRMP();
     }
-  }, [currentProject?.id]);
+  }, [currentProject?.id, isAuthenticating]);
 
   const loadRMP = async () => {
     if (!currentProject?.id) return;
+    
+    // Ensure authentication before making API calls
+    if (!authService.isAuthenticated()) {
+      try {
+        await authService.authenticate();
+      } catch (error) {
+        setError('Failed to authenticate. Please refresh the page.');
+        return;
+      }
+    }
     
     try {
       setLoading(true);
@@ -215,6 +244,17 @@ const RiskManagementPlanPage: React.FC = () => {
     setPreviewHtml(rmp.rendered_html);
     setShowPreview(true);
   };
+
+  if (isAuthenticating) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <span className="ml-4 text-gray-600">Authenticating...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentProject) {
     return (

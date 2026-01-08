@@ -2520,8 +2520,13 @@ const FmeaPage: React.FC = () => {
       setProjects(Array.isArray(projectList) ? projectList : []);
       setShowProjectModal(true);
     } catch (err: any) {
-      console.error('Error loading projects:', err);
-      setSaveError(err.message || 'Failed to load projects. Please try again.');
+      console.error('[FMEAPage] Error loading projects:', err);
+      // Check if it's an authentication error
+      if (err.message?.includes('not logged in') || err.message?.includes('session expired') || err.response?.status === 401) {
+        setSaveError('You\'re not logged in or your session expired. Please refresh the page.');
+      } else {
+        setSaveError(err.message || 'Failed to load projects. Please try again.');
+      }
     } finally {
       setLoadingProjects(false);
     }

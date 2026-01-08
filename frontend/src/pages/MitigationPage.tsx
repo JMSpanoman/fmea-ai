@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../axios';
 
 interface Mitigation {
   id: number;
@@ -19,7 +19,7 @@ const MitigationPage: React.FC = () => {
     const fetchMitigations = async () => {
       setLoading(true);
       try {
-        const res = await axios.get('/fmea/mitigations');
+        const res = await api.get('/fmea/mitigations');
         setMitigations(res.data);
         setError(null);
       } catch (err: any) {
