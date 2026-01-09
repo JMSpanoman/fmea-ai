@@ -58,8 +58,12 @@ from routers import residual_risk
 from routers import risk_controls_doc
 # Reports - Risk Control Measures router
 from routers import reports_risk_control_measures
+# Reports - Design Inputs router
+from routers import reports_design_inputs
 # PMS Signal router
 from routers import pms_signal
+# Reports - V&V Evidence router
+from routers import reports_vv_evidence
 
 
 
@@ -144,8 +148,12 @@ app.include_router(residual_risk.router, tags=["Residual Risk Evaluation"])
 app.include_router(risk_controls_doc.router, tags=["Risk Control Measures Documentation"])
 # Reports - Risk Control Measures router
 app.include_router(reports_risk_control_measures.router, tags=["Reports - Risk Control Measures"])
+# Reports - Design Inputs router
+app.include_router(reports_design_inputs.router, tags=["Reports - Design Inputs"])
 # PMS Signal router
 app.include_router(pms_signal.router, tags=["PMS Signals"])
+# Reports - V&V Evidence router
+app.include_router(reports_vv_evidence.router, tags=["Reports - V&V Evidence"])
 
 # Legacy routers (for backward compatibility - can be removed later)
 app.include_router(ai.router, prefix="/fmea", tags=["AI (Legacy)"])

@@ -57,6 +57,8 @@ def create_risk_item(db: Session, risk_item: RiskItemCreate, created_by: Optiona
         id=str(uuid.uuid4()),
         project_id=risk_item.project_id,
         fmea_row_id=risk_item.fmea_row_id,
+        component_id=getattr(risk_item, "component_id", None),
+        component_name=getattr(risk_item, "component_name", None),
         risk_key=risk_key,
         created_by=created_by,
         title=risk_item.title,
@@ -179,7 +181,7 @@ def update_risk_item(db: Session, risk_item_id: str, risk_item: RiskItemUpdate, 
     version_data_dict.update(update_data)
     
     # Update legacy fields on risk_item for backward compatibility
-    for field in ['title', 'description', 'category', 'risk_type', 'owner', 'status', 'priority', 'source', 'detected_date', 'due_date', 'ai_metadata']:
+    for field in ['title', 'description', 'category', 'risk_type', 'owner', 'status', 'priority', 'source', 'detected_date', 'due_date', 'ai_metadata', 'component_id', 'component_name']:
         if field in update_data:
             setattr(db_risk_item, field, update_data[field])
     

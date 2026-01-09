@@ -302,6 +302,41 @@ def generate_document_version(
             component_filter=component_filter,
         )
         rendered_html = traceability_matrix_renderer.render_traceability_matrix_html(evidence, project.name)
+    elif doc_type == "design_inputs_doc":
+        from business_logic import design_inputs_report_builder, design_inputs_report_renderer
+        evidence = design_inputs_report_builder.build_design_inputs_report_evidence(
+            db=db,
+            project_id=project_id,
+            component_filter=component_filter,
+            status_filter=options.get("status"),
+            search=options.get("search"),
+            missing_output=options.get("missing_output"),
+            missing_verification=options.get("missing_verification"),
+            include_unlinked=bool(options.get("include_unlinked", False)),
+        )
+        rendered_html = design_inputs_report_renderer.render_design_inputs_html(evidence, project.name)
+    elif doc_type == "vv_evidence":
+        from business_logic import vv_evidence_report_builder, vv_evidence_report_renderer
+        evidence = vv_evidence_report_builder.build_vv_evidence_report_evidence(
+            db=db,
+            project_id=project_id,
+            component_filter=component_filter,
+            test_type=options.get("test_type"),
+            status=options.get("status"),
+            unlinked_only=options.get("unlinked_only"),
+            missing_acceptance_criteria=options.get("missing_acceptance_criteria"),
+            missing_design_output_link=options.get("missing_design_output_link"),
+            search=options.get("search"),
+        )
+        rendered_html = vv_evidence_report_renderer.render_vv_evidence_html(evidence, project.name)
+    elif doc_type == "design_outputs_doc":
+        from business_logic import design_outputs_doc_builder, design_outputs_doc_renderer
+        evidence = design_outputs_doc_builder.build_design_outputs_doc_evidence(
+            db=db,
+            project_id=project_id,
+            component_filter=component_filter,
+        )
+        rendered_html = design_outputs_doc_renderer.render_design_outputs_doc_html(evidence)
     else:
         # Minimal deterministic fallback
         rendered_html = f"""<!doctype html>

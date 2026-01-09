@@ -51,10 +51,14 @@ def create_design_input(db: Session, design_input: DesignInputCreate, created_by
     if not di_key:
         di_key = _generate_di_key(db, design_input.project_id)
     
-    # Get title and requirement from schema (support both text and requirement fields)
+    # Normalize fields from schema (support both legacy and new names)
     title = getattr(design_input, 'title', None)
-    requirement = getattr(design_input, 'requirement', None) or design_input.text
+    requirement_text = getattr(design_input, 'requirement_text', None)
+    requirement = getattr(design_input, 'requirement', None) or requirement_text or design_input.text
     status = getattr(design_input, 'status', 'draft')
+
+    # Ensure legacy text is populated so older UIs still work
+    text = design_input.text or requirement_text or requirement or ""
     
     db_input = DesignInput(
         id=str(uuid.uuid4()),
@@ -62,7 +66,7 @@ def create_design_input(db: Session, design_input: DesignInputCreate, created_by
         di_key=di_key,
         title=title,
         source=design_input.source,
-        text=design_input.text,
+        text=text,
         requirement=requirement,
         status=status,
         created_by=created_by,

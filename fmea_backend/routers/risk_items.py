@@ -501,7 +501,7 @@ def handoff_control_to_design(
     project_id: str,
     risk_item_id: str,
     control_id: str,
-    request: dict,  # { target_type: "design_input"|"design_output"|"vv_test", name: str, description: str, ... }
+    request: dict,  # Back-compat: { target_type/to_type: "...", title, requirement_text, description, status, ... }
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key")
@@ -531,14 +531,25 @@ def handoff_control_to_design(
     if not control:
         raise HTTPException(status_code=404, detail="Risk control not found")
     
-    target_type = request.get("target_type")
+    target_type = request.get("to_type") or request.get("target_type")
     if target_type not in ["design_input", "design_output", "vv_test"]:
         raise HTTPException(status_code=400, detail="Invalid target_type. Must be design_input, design_output, or vv_test")
     
-    # Build description with risk context
-    risk_key = risk_item.title or risk_item.id[:8]
-    control_key = control.control_name or control.id[:8]
-    base_description = f"{request.get('description', '')}\n\nMitigates risk {risk_key} via control {control_key}."
+    # Build text with risk context (deterministic)
+    risk_key = getattr(risk_item, "risk_key", None) or getattr(risk_item, "title", None) or risk_item.id[:8]
+    control_key = getattr(control, "control_key", None) or getattr(control, "control_name", None) or control.id[:8]
+
+    provided_description = request.get("description") or ""
+    provided_requirement = request.get("requirement_text") or request.get("requirement") or request.get("text") or ""
+
+    base_text = (provided_requirement or provided_description).strip()
+    if not base_text:
+        # Auto-fill from control description/details
+        base_text = (getattr(control, "control_description", None) or getattr(control, "implementation_details", None) or "").strip()
+    if not base_text:
+        base_text = f"Requirement derived from risk control {control_key}."
+
+    base_text = f"{base_text}\n\nDerived from risk {risk_key} via control {control_key}."
     
     created_artifact = None
     trace_link_to_type = None
@@ -548,11 +559,15 @@ def handoff_control_to_design(
     try:
         # Create the artifact based on target_type
         if target_type == "design_input":
+            title = (request.get("title") or getattr(control, "control_name", None) or f"Design input from {control_key}").strip()
+            status_val = request.get("status") or "draft"
             design_input = dc_schemas.DesignInputCreate(
                 project_id=project_id,
-                text=base_description,
+                title=title,
+                requirement_text=base_text,
+                status=status_val,
                 source="user",
-                linked_risk_ids=[risk_item_id]
+                linked_risk_ids=[risk_item_id],
             )
             created_artifact = dc_crud.create_design_input(db, design_input, created_by=current_user.id)
             trace_link_to_type = "design_input"
@@ -614,10 +629,25 @@ def handoff_control_to_design(
             )
         )
         
+        # JSON-safe response (idempotency storage requires serializable payloads)
         response = {
-            "created_artifact": created_artifact,
-            "trace_link": trace_link,
-            "message": f"Created {target_type} and linked from risk control"
+            "created_artifact": {
+                "id": created_artifact.id,
+                "type": target_type,
+                "project_id": project_id,
+                "key": getattr(created_artifact, "di_key", None) or getattr(created_artifact, "do_key", None),
+                "title": getattr(created_artifact, "title", None),
+                "status": getattr(created_artifact, "status", None),
+            },
+            "trace_link": {
+                "id": trace_link.id,
+                "from_type": trace_link.from_type,
+                "from_id": trace_link.from_id,
+                "to_type": trace_link.to_type,
+                "to_id": trace_link.to_id,
+                "link_type": trace_link.link_type,
+            },
+            "message": f"Created {target_type} and linked from risk control",
         }
         
         # Store for idempotency

@@ -31,6 +31,7 @@ ToType = Literal[
 
 LinkType = Literal[
     "traces_to",
+    "implements",
     "verified_by",
     "generated_from",
     "impacts",

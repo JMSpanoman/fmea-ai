@@ -24,7 +24,7 @@ CANONICAL_FROM_TYPES = {
 CANONICAL_TO_TYPES = CANONICAL_FROM_TYPES  # Same set
 
 CANONICAL_LINK_TYPES = {
-    "traces_to", "verified_by", "generated_from",
+    "traces_to", "implements", "verified_by", "generated_from",
     "impacts", "mitigates", "links_to"
 }
 

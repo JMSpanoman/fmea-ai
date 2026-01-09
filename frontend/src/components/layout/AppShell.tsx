@@ -40,9 +40,11 @@ const navItems: NavItem[] = [
   
   // Quality Intelligence (Phase 2)
   { path: '/design-inputs', label: 'Design Inputs', icon: '📥', group: 'SmartQS: Design' },
+  { path: '/reports/design-inputs', label: 'Design Inputs Report', icon: '📄', group: 'SmartQS: Design' },
   { path: '/design-outputs', label: 'Design Outputs', icon: '📤', group: 'SmartQS: Design' },
   { path: '/design-controls', label: 'Design Controls', icon: '📋', group: 'SmartQS: Design' },
   { path: '/vv', label: 'V&V Tests', icon: '✅', group: 'SmartQS: Design' },
+  { path: '/reports/vv-evidence', label: 'V&V Evidence Report', icon: '🧪', group: 'SmartQS: Design' },
   { path: '/traceability-matrix', label: 'Traceability', icon: '🔗', group: 'SmartQS: Design' },
   
   // QMS (Phase 3)
@@ -128,11 +130,11 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                       setShowGenerateDesignInputsModal(true);
                     } else if (item.path === '/design-outputs') {
                       setShowGenerateDesignOutputsModal(true);
-                    } else if (item.path === '/reports/risk-control-measures') {
-                      // Navigate to reports page with current project
-                      const projectId = currentProject?.id;
-                      if (projectId) {
-                        navigate(`/projects/${projectId}/reports/risk-control-measures`);
+                    } else if (item.path.startsWith('/reports/')) {
+                      // Reports should be project-scoped whenever a project is selected
+                      const pid = currentProject?.id;
+                      if (pid) {
+                        navigate(`/projects/${pid}${item.path}`);
                       } else {
                         navigate('/projects');
                       }

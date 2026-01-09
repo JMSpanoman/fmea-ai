@@ -1054,3 +1054,194 @@ export const exportRiskControlMeasuresHtml = async (
     throw error;
   }
 }; 
+
+// -----------------------------
+// Design Inputs Documentation Report (Risk Control → Requirement)
+// -----------------------------
+
+export interface DesignInputsReportRow {
+  di_id: string;
+  di_key: string;
+  title: string;
+  requirement_text: string;
+  status: string;
+  acceptance_criteria?: string | null;
+  updated_at?: string | null;
+  upstream: {
+    risk_controls: Array<{
+      control_id: string;
+      control_key: string;
+      control_name: string;
+      name?: string;
+      link_type?: string;
+      created_at?: string | null;
+    }>;
+    risks: Array<{
+      risk_item_id: string;
+      risk_key: string;
+      hazard?: string | null;
+      harm?: string | null;
+    }>;
+  };
+  downstream: {
+    design_outputs: Array<{
+      id: string;
+      do_key: string;
+      title: string;
+    }>;
+    vv_tests: Array<{
+      id: string;
+      vv_key: string;
+      title: string;
+    }>;
+  };
+  completeness: {
+    has_upstream_control: boolean;
+    has_output: boolean;
+    has_verification: boolean;
+  };
+}
+
+export interface DesignInputsReportDataResponse {
+  project_id: string;
+  components: Array<{ id?: string; name?: string }>;
+  generated_at?: string | null;
+  rows: DesignInputsReportRow[];
+  counts: {
+    design_inputs: number;
+    missing_output: number;
+    missing_verification: number;
+    missing_upstream_control: number;
+  };
+}
+
+export const getDesignInputsReportData = async (
+  projectId: string,
+  components?: string,
+  status?: string,
+  includeUnlinked: boolean = false,
+  missingOutput?: boolean,
+  missingVerification?: boolean,
+  search?: string
+): Promise<DesignInputsReportDataResponse> => {
+  const params = new URLSearchParams();
+  if (components) params.append('components', components);
+  if (status) params.append('status', status);
+  params.append('include_unlinked', includeUnlinked.toString());
+  if (missingOutput !== undefined) params.append('missing_output', String(missingOutput));
+  if (missingVerification !== undefined) params.append('missing_verification', String(missingVerification));
+  if (search) params.append('search', search);
+
+  const res = await api.get(`/projects/${projectId}/reports/design-inputs/data?${params.toString()}`);
+  return res.data;
+};
+
+export const exportDesignInputsReportHtml = async (
+  projectId: string,
+  components?: string,
+  status?: string,
+  includeUnlinked: boolean = false,
+  missingOutput?: boolean,
+  missingVerification?: boolean,
+  search?: string
+): Promise<string> => {
+  const params = new URLSearchParams();
+  if (components) params.append('components', components);
+  if (status) params.append('status', status);
+  params.append('format', 'html');
+  params.append('include_unlinked', includeUnlinked.toString());
+  if (missingOutput !== undefined) params.append('missing_output', String(missingOutput));
+  if (missingVerification !== undefined) params.append('missing_verification', String(missingVerification));
+  if (search) params.append('search', search);
+
+  const res = await api.get(`/projects/${projectId}/reports/design-inputs/export?${params.toString()}`);
+  return res.data;
+};
+
+// -----------------------------
+// V&V Evidence Report (component-scoped)
+// -----------------------------
+
+export interface VVEvidenceReportRow {
+  vv_test_id: string;
+  vv_key: string;
+  title: string;
+  test_type: string; // verification|validation (MVP: inferred)
+  method: string; // inspection|test|analysis|simulation|other (MVP: inferred)
+  acceptance_criteria: string;
+  status: string;
+  updated_at?: string | null;
+  upstream: {
+    design_outputs: Array<{ id: string; do_key: string; title: string }>;
+    design_inputs: Array<{ id: string; di_key: string; title: string }>;
+    risk_controls: Array<{ id: string; control_key: string; name: string }>;
+    risk_items: Array<{ id: string; risk_key: string; hazard?: string | null; harm?: string | null }>;
+  };
+  evidence_strength: "preferred" | "allowed" | "shortcut";
+  completeness: {
+    has_design_output_link: boolean;
+    has_acceptance_criteria: boolean;
+    has_upstream_links: boolean;
+  };
+}
+
+export interface VVEvidenceReportDataResponse {
+  project_id: string;
+  components: Array<{ id?: string; name?: string }>;
+  generated_at?: string | null;
+  rows: VVEvidenceReportRow[];
+  counts: {
+    tests: number;
+    unlinked: number;
+    missing_design_output_link: number;
+    missing_acceptance_criteria: number;
+    strength: { preferred: number; allowed: number; shortcut: number };
+  };
+}
+
+export const getVVEvidenceReportData = async (
+  projectId: string,
+  components?: string,
+  testType?: string,
+  status?: string,
+  unlinkedOnly?: boolean,
+  missingAcceptanceCriteria?: boolean,
+  missingDesignOutputLink?: boolean,
+  search?: string
+): Promise<VVEvidenceReportDataResponse> => {
+  const params = new URLSearchParams();
+  if (components) params.append('components', components);
+  if (testType) params.append('test_type', testType);
+  if (status) params.append('status', status);
+  if (unlinkedOnly !== undefined) params.append('unlinked_only', String(unlinkedOnly));
+  if (missingAcceptanceCriteria !== undefined) params.append('missing_acceptance_criteria', String(missingAcceptanceCriteria));
+  if (missingDesignOutputLink !== undefined) params.append('missing_design_output_link', String(missingDesignOutputLink));
+  if (search) params.append('search', search);
+
+  const res = await api.get(`/projects/${projectId}/reports/vv-evidence/data?${params.toString()}`);
+  return res.data;
+};
+
+export const exportVVEvidenceReportHtml = async (
+  projectId: string,
+  components?: string,
+  testType?: string,
+  status?: string,
+  unlinkedOnly?: boolean,
+  missingAcceptanceCriteria?: boolean,
+  missingDesignOutputLink?: boolean,
+  search?: string
+): Promise<string> => {
+  const params = new URLSearchParams();
+  if (components) params.append('components', components);
+  if (testType) params.append('test_type', testType);
+  if (status) params.append('status', status);
+  if (unlinkedOnly !== undefined) params.append('unlinked_only', String(unlinkedOnly));
+  if (missingAcceptanceCriteria !== undefined) params.append('missing_acceptance_criteria', String(missingAcceptanceCriteria));
+  if (missingDesignOutputLink !== undefined) params.append('missing_design_output_link', String(missingDesignOutputLink));
+  if (search) params.append('search', search);
+  params.append('format', 'html');
+
+  const res = await api.get(`/projects/${projectId}/reports/vv-evidence/export?${params.toString()}`);
+  return res.data;
+};

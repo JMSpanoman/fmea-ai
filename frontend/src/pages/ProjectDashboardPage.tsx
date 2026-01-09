@@ -22,6 +22,12 @@ const typeLabel = (t: string) => {
       return 'Risk Controls Doc';
     case 'fmea':
       return 'FMEA';
+    case 'design_inputs_doc':
+      return 'Design Inputs';
+    case 'design_outputs_doc':
+      return 'Design Outputs';
+    case 'vv_evidence':
+      return 'V&V Evidence';
     case 'traceability_matrix':
       return 'Traceability Matrix';
     default:

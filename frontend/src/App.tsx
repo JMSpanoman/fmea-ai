@@ -29,6 +29,8 @@ import RmfExportPage from './pages/RmfExportPage';
 import ResidualRiskReportPage from './pages/ResidualRiskReportPage';
 import RiskControlsDocumentationPage from './pages/RiskControlsDocumentationPage';
 import RiskControlMeasuresReportPage from './pages/Risk/Reports/RiskControlMeasuresReportPage';
+import DesignInputsReportPage from './pages/Design/Reports/DesignInputsReportPage';
+import VVEvidenceReportPage from './pages/VV/Reports/VVEvidenceReportPage';
 import PmsSignalsPage from './pages/PMS/PmsSignalsPage';
 import PmsSignalReportPage from './pages/PMS/PmsSignalReportPage';
 import RiskTraceabilityMatrixPage from './pages/RiskTraceabilityMatrixPage';
@@ -124,6 +126,10 @@ function App() {
                 <Route path="/projects/:projectId/risk-controls-documentation" element={<RiskControlsDocumentationPage />} />
                 <Route path="/projects/:projectId/reports/risk-control-measures" element={<RiskControlMeasuresReportPage />} />
                 <Route path="/reports/risk-control-measures" element={<RiskControlMeasuresReportPage />} />
+                <Route path="/projects/:projectId/reports/design-inputs" element={<DesignInputsReportPage />} />
+                <Route path="/reports/design-inputs" element={<DesignInputsReportPage />} />
+                <Route path="/projects/:projectId/reports/vv-evidence" element={<VVEvidenceReportPage />} />
+                <Route path="/reports/vv-evidence" element={<VVEvidenceReportPage />} />
                 <Route path="/projects/:projectId/pms/signals" element={<PmsSignalsPage />} />
                 <Route path="/pms/signals" element={<PmsSignalsPage />} />
                 <Route path="/projects/:projectId/pms/reports/signal-feedback" element={<PmsSignalReportPage />} />

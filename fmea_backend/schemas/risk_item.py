@@ -28,6 +28,8 @@ class RiskItemBase(BaseModel):
 class RiskItemCreate(RiskItemBase):
     project_id: str  # UUID
     fmea_row_id: Optional[str] = None  # UUID
+    component_id: Optional[str] = None  # UUID (for component-scoped reports)
+    component_name: Optional[str] = None  # fallback string tag
 
 class RiskItemUpdate(BaseModel):
     title: Optional[str] = None
@@ -48,6 +50,8 @@ class RiskItemUpdate(BaseModel):
     due_date: Optional[datetime] = None
     fmea_row_id: Optional[str] = None
     ai_metadata: Optional[Dict[str, Any]] = None
+    component_id: Optional[str] = None
+    component_name: Optional[str] = None
     # ISO 14971 fields (optional in update)
     hazard: Optional[str] = None
     hazardous_situation: Optional[str] = None
@@ -73,6 +77,8 @@ class RiskItemOut(RiskItemBase):
     id: str  # UUID
     project_id: str  # UUID
     fmea_row_id: Optional[str] = None  # UUID
+    component_id: Optional[str] = None
+    component_name: Optional[str] = None
     current_version_id: Optional[str] = None
     risk_score: Optional[int] = None
     risk_level: Optional[str] = None
