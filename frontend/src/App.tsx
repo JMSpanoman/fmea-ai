@@ -54,6 +54,7 @@ import UsageDashboard from './components/UsageDashboard';
 import DashboardPageNew from './pages/DashboardPageNew';
 import ProjectDashboardPage from './pages/ProjectDashboardPage';
 import ProjectDocumentPage from './pages/ProjectDocumentPage';
+import DocumentsPage from './features/docs/DocumentsPage';
 import RiskItemListPage from './pages/RiskItems/RiskItemListPage';
 import RiskItemDetailPage from './pages/RiskItems/RiskItemDetailPage';
 import DesignInputDetailPage from './pages/DesignInputs/DesignInputDetailPage';
@@ -83,6 +84,10 @@ function App() {
                 <Route path="/projects/:projectId/documents" element={<DocumentControlPage />} />
                 <Route path="/projects/:projectId/documents/:docId" element={<ProjectDocumentPage />} />
                 <Route path="/documents" element={<DocumentControlPage />} />
+                {/* SmartQS Documentation Area */}
+                <Route path="/projects/:projectId/docs" element={<DocumentsPage />} />
+                <Route path="/projects/:projectId/docs/:groupId" element={<DocumentsPage />} />
+                <Route path="/projects/:projectId/docs/:groupId/:docTypeId" element={<DocumentsPage />} />
                 <Route path="/training" element={<TrainingPage />} />
                 <Route path="/projects/:projectId/audits" element={<AuditPage />} />
                 <Route path="/audits" element={<AuditPage />} />

@@ -21,6 +21,7 @@ const navItems: NavItem[] = [
   // Core
   { path: '/', label: 'Dashboard', icon: '📊', group: 'Core' },
   { path: '/projects', label: 'Projects', icon: '📁', group: 'Core' },
+  { path: '/docs', label: 'Documentation', icon: '📚', group: 'Core' },
   
   // PMS
   { path: '/pms/signals', label: 'Signals', icon: '📡', group: 'PMS' },
@@ -130,6 +131,13 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                       setShowGenerateDesignInputsModal(true);
                     } else if (item.path === '/design-outputs') {
                       setShowGenerateDesignOutputsModal(true);
+                    } else if (item.path === '/docs') {
+                      const pid = currentProject?.id;
+                      if (pid) {
+                        navigate(`/projects/${pid}/docs`);
+                      } else {
+                        navigate('/projects');
+                      }
                     } else if (item.path.startsWith('/reports/')) {
                       // Reports should be project-scoped whenever a project is selected
                       const pid = currentProject?.id;
