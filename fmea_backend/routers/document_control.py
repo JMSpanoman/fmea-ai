@@ -245,6 +245,63 @@ def generate_document_version(
 <table><thead><tr><th>ID</th><th>Failure Mode</th><th>Effect</th><th>Cause</th><th>S</th><th>P</th><th>D</th><th>RPN</th><th>Mitigation</th></tr></thead>
 <tbody>{''.join(trs) if trs else ''}</tbody></table>
 </body></html>"""
+    elif doc_type == "rmp":
+        # Deterministic Risk Management Plan generation (ISO 14971) using defaults + selected components.
+        from business_logic import rmp_generator
+        from models.component import Component as ComponentModel
+
+        # Inputs (with safe defaults)
+        scope = str(options.get("scope") or "TBD (edit Scope in Generate New modal)")
+        intended_use = str(options.get("intended_use") or "TBD (edit Intended Use in Generate New modal)")
+        acceptability_profile = str(options.get("acceptability_profile") or "default_med_device")
+
+        review_roles = options.get("review_roles") or {
+            "risk_manager": "required",
+            "design_lead": "required",
+            "quality_lead": "required",
+            "approver": "required",
+        }
+        if not isinstance(review_roles, dict):
+            review_roles = {"risk_manager": "required"}
+
+        # Components: if none provided, use all project components (or a single placeholder)
+        comps_in: list[dict[str, str]] = []
+        if component_filter:
+            for c in component_filter:
+                name = (c.get("name") or c.get("id") or "").strip()
+                if name:
+                    comps_in.append({"name": name, "description": ""})
+        else:
+            comps = db.query(ComponentModel).filter(ComponentModel.project_id == project_id).all()
+            for c in comps:
+                comps_in.append({"name": c.name, "description": c.description or ""})
+
+        if not comps_in:
+            comps_in = [{"name": "All components", "description": ""}]
+
+        acceptability_criteria = rmp_generator.generate_acceptability_criteria(acceptability_profile)
+        rendered_html = rmp_generator.generate_rmp_html(
+            title=f"Risk Management Plan (RMP) — {project.name}",
+            scope=scope,
+            intended_use=intended_use,
+            components=[rmp_generator.ComponentInput(**c) for c in comps_in],
+            acceptability_criteria=acceptability_criteria,
+            risk_methodology=rmp_generator.generate_risk_methodology(),
+            review_roles=review_roles,
+            risk_control_categories=rmp_generator.generate_risk_control_categories(),
+            benefit_risk_criteria=rmp_generator.generate_benefit_risk_criteria(),
+            lifecycle_linkage=rmp_generator.generate_lifecycle_linkage(),
+            governance_rules=rmp_generator.generate_governance_rules(),
+            version_no=document.version + 1,
+        )
+    elif doc_type == "traceability_matrix":
+        from business_logic import traceability_matrix_builder, traceability_matrix_renderer
+        evidence = traceability_matrix_builder.build_traceability_matrix_evidence(
+            db=db,
+            project_id=project_id,
+            component_filter=component_filter,
+        )
+        rendered_html = traceability_matrix_renderer.render_traceability_matrix_html(evidence, project.name)
     else:
         # Minimal deterministic fallback
         rendered_html = f"""<!doctype html>

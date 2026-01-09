@@ -3,7 +3,7 @@ Risk Control Measures Documentation HTML Renderer
 Generates audit-ready Risk Control Measures Documentation HTML report
 """
 from typing import Dict, Any, List
-from datetime import datetime
+from datetime import datetime as dt_datetime
 
 def render_risk_controls_doc_html(evidence: Dict[str, Any], project_name: str) -> str:
     """
@@ -19,7 +19,7 @@ def render_risk_controls_doc_html(evidence: Dict[str, Any], project_name: str) -
     components = evidence.get("components", [])
     rows = evidence.get("rows", [])
     counts = evidence.get("counts", {})
-    generated_at = datetime.now().isoformat()
+    generated_at = dt_datetime.now().isoformat()
     
     # Build component list HTML
     components_html = ""
@@ -86,8 +86,7 @@ def render_risk_controls_doc_html(evidence: Dict[str, Any], project_name: str) -
                         controls_html += f' <span class="link-type">({ref.get("link_type")})</span>'
                     if ref.get("created_at"):
                         try:
-                            from datetime import datetime
-                            dt = datetime.fromisoformat(ref.get("created_at").replace('Z', '+00:00'))
+                            dt = dt_datetime.fromisoformat(ref.get("created_at").replace('Z', '+00:00'))
                             controls_html += f' <span class="link-date">– {dt.strftime("%Y-%m-%d")}</span>'
                         except:
                             pass
@@ -111,8 +110,7 @@ def render_risk_controls_doc_html(evidence: Dict[str, Any], project_name: str) -
                         controls_html += f' <span class="link-type">({method.get("link_type")})</span>'
                     if method.get("created_at"):
                         try:
-                            from datetime import datetime
-                            dt = datetime.fromisoformat(method.get("created_at").replace('Z', '+00:00'))
+                            dt = dt_datetime.fromisoformat(method.get("created_at").replace('Z', '+00:00'))
                             controls_html += f' <span class="link-date">– {dt.strftime("%Y-%m-%d")}</span>'
                         except:
                             pass

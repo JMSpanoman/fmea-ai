@@ -3,7 +3,7 @@ Hazard Analysis HTML Renderer
 Generates audit-ready Hazard Analysis HTML report with ISO 14971 chain fields
 """
 from typing import Dict, Any, List
-from datetime import datetime
+from datetime import datetime as dt_datetime
 
 def render_hazard_analysis_html(evidence: Dict[str, Any], project_name: str) -> str:
     """
@@ -21,7 +21,7 @@ def render_hazard_analysis_html(evidence: Dict[str, Any], project_name: str) -> 
     version_scope = evidence.get("version_scope", "approved_only")
     include_unapproved = evidence.get("include_unapproved", False)
     counts = evidence.get("counts", {})
-    generated_at = datetime.now().isoformat()
+    generated_at = dt_datetime.now().isoformat()
     
     # Build component list HTML
     components_html = ""
@@ -77,8 +77,7 @@ def render_hazard_analysis_html(evidence: Dict[str, Any], project_name: str) -> 
                 approved_at = row.get("approved_at", "N/A")
                 if approved_at and approved_at != "N/A":
                     try:
-                        from datetime import datetime
-                        dt = datetime.fromisoformat(approved_at.replace('Z', '+00:00'))
+                        dt = dt_datetime.fromisoformat(approved_at.replace('Z', '+00:00'))
                         approved_at = dt.strftime('%Y-%m-%d %H:%M:%S')
                     except:
                         pass

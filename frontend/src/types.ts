@@ -150,7 +150,23 @@ export interface Document {
   id: string;
   project_id: string;
   name: string;
-  type: "dhf" | "dmr" | "sop" | "form" | "work_instruction" | "record";
+  // NOTE: SmartQS now uses project-scoped document types for ISO 14971 workflows.
+  // Keep this union broad to match backend values.
+  type:
+    | "rmp"
+    | "rmf"
+    | "hazard_analysis"
+    | "residual_risk"
+    | "risk_controls_doc"
+    | "fmea"
+    | "traceability_matrix"
+    | "dhf"
+    | "dmr"
+    | "sop"
+    | "form"
+    | "work_instruction"
+    | "record"
+    | string;
   content?: string;
   version: number;
   status: "draft" | "in_review" | "approved" | "obsolete";

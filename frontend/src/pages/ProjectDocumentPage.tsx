@@ -27,6 +27,14 @@ export default function ProjectDocumentPage() {
   const [genComponentInput, setGenComponentInput] = useState('');
   const [genComponents, setGenComponents] = useState<string[]>([]);
   const [versionScope, setVersionScope] = useState<VersionScope>('approved_only');
+  const [rmpScope, setRmpScope] = useState('');
+  const [rmpIntendedUse, setRmpIntendedUse] = useState('');
+  const [rmpReviewRoles, setRmpReviewRoles] = useState<Record<string, string>>({
+    risk_manager: 'required',
+    design_lead: 'required',
+    quality_lead: 'required',
+    approver: 'required',
+  });
   const [genOptions, setGenOptions] = useState<Record<string, any>>({
     include_traceability: true,
     include_ai_events: false,
@@ -159,7 +167,15 @@ export default function ProjectDocumentPage() {
       const payload = {
         components: genComponents.map((name) => ({ name })),
         version_scope: versionScope,
-        options: genOptions,
+        options:
+          docType === 'rmp'
+            ? {
+                ...genOptions,
+                scope: rmpScope,
+                intended_use: rmpIntendedUse,
+                review_roles: rmpReviewRoles,
+              }
+            : genOptions,
       };
       const res = await api.post(
         `/projects/${finalProjectId}/documents/${finalDocId}/generate`,
@@ -490,6 +506,68 @@ export default function ProjectDocumentPage() {
                       <option value="default_med_device">Default medical device</option>
                       <option value="custom">Custom</option>
                     </select>
+                  </div>
+                </div>
+              )}
+
+              {docType === 'rmp' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Scope</label>
+                    <textarea
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      rows={3}
+                      placeholder="Define the scope of the Risk Management Plan…"
+                      value={rmpScope}
+                      onChange={(e) => setRmpScope(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Intended Use</label>
+                    <textarea
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      rows={3}
+                      placeholder="Describe intended use, users, environment, and lifecycle…"
+                      value={rmpIntendedUse}
+                      onChange={(e) => setRmpIntendedUse(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Acceptability profile</label>
+                      <select
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        value={genOptions.acceptability_profile}
+                        onChange={(e) => setGenOptions((o) => ({ ...o, acceptability_profile: e.target.value }))}
+                      >
+                        <option value="default_med_device">Default medical device</option>
+                        <option value="custom">Custom</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="block text-sm font-medium text-gray-700 mb-2">Review roles</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {Object.entries(rmpReviewRoles).map(([role, requirement]) => (
+                        <label key={role} className="text-sm text-gray-700">
+                          <div className="mb-1 font-medium">{role.replace(/_/g, ' ')}</div>
+                          <select
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                            value={requirement}
+                            onChange={(e) =>
+                              setRmpReviewRoles((prev) => ({ ...prev, [role]: e.target.value }))
+                            }
+                          >
+                            <option value="required">required</option>
+                            <option value="optional">optional</option>
+                          </select>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-2">
+                      Tip: leave Scope/Intended Use blank to generate with placeholders and edit later.
+                    </div>
                   </div>
                 </div>
               )}
