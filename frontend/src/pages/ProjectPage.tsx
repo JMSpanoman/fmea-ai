@@ -94,7 +94,7 @@ const ProjectPage: React.FC = () => {
 
       // Project-first workflow: select + persist + navigate into project dashboard
       setCurrentProject(newProject as any);
-      navigate(`/projects/${newProject.id}/dashboard`);
+      navigate(`/projects/${newProject.id}/docs`);
     } catch (error: any) {
       console.error('[ProjectPage] Error creating project:', error);
       if (error.message?.includes('not logged in') || error.message?.includes('session expired') || error.response?.status === 401) {
@@ -158,7 +158,7 @@ const ProjectPage: React.FC = () => {
   const handleOpenProject = (project: Project) => {
     // Navigate to project-specific page or open project
     setCurrentProject(project as any);
-    navigate(`/projects/${project.id}/dashboard`);
+    navigate(`/projects/${project.id}/docs`);
   };
 
   const getStatusBadge = (status?: string) => {

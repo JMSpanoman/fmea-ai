@@ -41,15 +41,15 @@ function DocsPageInner() {
       <FiltersBar filters={state.filters} onChange={(patch) => actions.setFilters(patch)} />
 
       <div className="grid grid-cols-12 gap-4">
-        <div className="col-span-12 lg:col-span-3">
+        <div className="col-span-12 lg:col-span-2">
           <GroupSidebar onNavigate={onNavigate} />
         </div>
 
-        <div className="col-span-12 lg:col-span-5 space-y-3">
+        <div className="col-span-12 lg:col-span-4 space-y-3">
           <DocList groupId={state.selectedGroupId} onNavigate={onNavigate} />
         </div>
 
-        <div className="col-span-12 lg:col-span-4">
+        <div className="col-span-12 lg:col-span-6">
           <DocDetailPanel onNavigate={onNavigate} />
         </div>
       </div>

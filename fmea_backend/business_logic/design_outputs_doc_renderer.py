@@ -48,6 +48,8 @@ def render_design_outputs_doc_html(evidence: Dict[str, Any]) -> str:
             """
         )
 
+    tbody_html = "".join(table_rows) if table_rows else '<tr><td colspan="7">No design outputs found.</td></tr>'
+
     return f"""
 <!doctype html>
 <html>
@@ -98,7 +100,7 @@ def render_design_outputs_doc_html(evidence: Dict[str, Any]) -> str:
         </tr>
       </thead>
       <tbody>
-        {''.join(table_rows) if table_rows else '<tr><td colspan=\"7\">No design outputs found.</td></tr>'}
+        {tbody_html}
       </tbody>
     </table>
   </body>

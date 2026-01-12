@@ -5,10 +5,13 @@ import authService from '../services/authService';
 import { documentsApi } from '../services/apiPhase3';
 import api from '../axios';
 import type { Document } from '../types';
+import { docTypeById as docsRegistryById } from '../features/docs/docsRegistry';
 
 type LoadState = 'idle' | 'loading' | 'error' | 'ready';
 
 const typeLabel = (t: string) => {
+  const reg = docsRegistryById[t];
+  if (reg?.name) return reg.name;
   switch (t) {
     case 'rmp':
       return 'RMP';
@@ -33,6 +36,24 @@ const typeLabel = (t: string) => {
     default:
       return t;
   }
+};
+
+const authorityBadge = (docType: string) => {
+  const reg = docsRegistryById[docType];
+  const authority = reg?.authority;
+  if (!authority) return null;
+  const cls =
+    authority === 'manual'
+      ? 'bg-gray-100 text-gray-800'
+      : authority === 'ai'
+        ? 'bg-purple-100 text-purple-800'
+        : 'bg-indigo-100 text-indigo-800';
+  const label = authority === 'manual' ? 'Manual' : authority === 'ai' ? 'AI' : 'Hybrid';
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+      {label}
+    </span>
+  );
 };
 
 const statusBadge = (status?: string) => {
@@ -156,8 +177,15 @@ export default function ProjectDashboardPage() {
               {state === 'loading' ? 'Loading…' : 'Reload'}
             </button>
             <button
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              onClick={() => navigate(`/projects/${finalProjectId}/docs`)}
+            >
+              Documentation
+            </button>
+            <button
               className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
               onClick={() => navigate(`/projects/${finalProjectId}/documents`)}
+              title="Legacy Document Control page"
             >
               Document Control
             </button>
@@ -196,6 +224,7 @@ export default function ProjectDashboardPage() {
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                         {typeLabel(doc.type)}
                       </span>
+                      {authorityBadge(doc.type)}
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusBadge(doc.status)}`}>
                         {(doc.status || 'draft').toUpperCase()}
                       </span>

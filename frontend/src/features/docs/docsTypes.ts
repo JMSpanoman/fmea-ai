@@ -27,6 +27,7 @@ export interface DocApproval {
 
 export interface DocumentInstance {
   docTypeId: string;
+  backendDocId?: string; // maps to /projects/:projectId/documents/:documentId when present
   status: DocStatus;
   updatedAt?: string; // ISO
   owner?: string;

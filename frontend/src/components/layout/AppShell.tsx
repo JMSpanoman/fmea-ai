@@ -61,7 +61,16 @@ const navItems: NavItem[] = [
 ];
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      const v = localStorage.getItem('ui.sidebarCollapsed');
+      if (v === 'true') return true;
+      if (v === 'false') return false;
+    } catch {
+      // ignore
+    }
+    return true; // default minimized
+  });
   const [showAiPanel, setShowAiPanel] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -86,18 +95,18 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   }, {} as Record<string, NavItem[]>);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-200">
+    <div className="flex h-screen overflow-hidden bg-sky-50">
       {/* Sidebar */}
       <aside
         className={`
           ${sidebarCollapsed ? 'w-18' : 'w-72'}
-          bg-gray-200 border-r border-gray-300
+          bg-sky-50 border-r border-sky-100
           flex flex-col transition-smooth-slow
           flex-shrink-0
         `}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-sky-100">
           {!sidebarCollapsed && (
             <div className="flex items-center gap-2">
               <span className="text-2xl">✨</span>
@@ -105,7 +114,15 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             </div>
           )}
           <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onClick={() => {
+              const next = !sidebarCollapsed;
+              setSidebarCollapsed(next);
+              try {
+                localStorage.setItem('ui.sidebarCollapsed', String(next));
+              } catch {
+                // ignore
+              }
+            }}
             className="text-gray-900 hover:text-gray-900 transition-smooth"
           >
             {sidebarCollapsed ? '→' : '←'}
@@ -181,7 +198,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <header className="h-16 bg-gray-200 border-b border-gray-300 flex items-center justify-between px-6">
+        <header className="h-16 bg-sky-50 border-b border-sky-100 flex items-center justify-between px-6">
           <div className="flex items-center gap-4">
             {currentProject && (
               <div className="flex items-center gap-2">
@@ -204,7 +221,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                 px-4 py-2 rounded-button text-sm font-medium transition-smooth
                 ${showAiPanel
                   ? 'bg-primary text-white'
-                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                  : 'bg-white text-gray-900 hover:bg-sky-100'
                 }
               `}
             >
@@ -226,7 +243,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               </button>
 
               {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-gray-200 border border-gray-300 rounded-card shadow-elevated py-2">
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-sky-100 rounded-card shadow-elevated py-2">
                   <button
                     onClick={logout}
                     className="w-full text-left px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 hover:text-gray-900 transition-smooth"

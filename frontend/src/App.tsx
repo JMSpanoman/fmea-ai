@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AppShell } from './components/layout/AppShell';
 import { ToastProvider } from './components/ui/Toast';
+import ErrorBoundary from './components/ErrorBoundary';
 
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
@@ -71,93 +72,95 @@ function App() {
           <Router>
             <ProtectedRoute>
               <AppShell>
-                <Routes>
-                <Route path="/" element={<DashboardPageNew />} />
-                <Route path="/dashboard" element={<DashboardPageNew />} />
-                <Route path="/home" element={<HomePage />} />
-                <Route path="/nonconformance" element={<NonConformancePage />} />
-                <Route path="/capa" element={<CapaPage />} />
-                <Route path="/change-control" element={<ChangeControlPage />} />
-                <Route path="/dfmea" element={<FmeaPage />} />
-                <Route path="/projects/:projectId/dashboard" element={<ProjectDashboardPage />} />
-                {/* Phase 3 Routes */}
-                <Route path="/projects/:projectId/documents" element={<DocumentControlPage />} />
-                <Route path="/projects/:projectId/documents/:docId" element={<ProjectDocumentPage />} />
-                <Route path="/documents" element={<DocumentControlPage />} />
-                {/* SmartQS Documentation Area */}
-                <Route path="/projects/:projectId/docs" element={<DocumentsPage />} />
-                <Route path="/projects/:projectId/docs/:groupId" element={<DocumentsPage />} />
-                <Route path="/projects/:projectId/docs/:groupId/:docTypeId" element={<DocumentsPage />} />
-                <Route path="/training" element={<TrainingPage />} />
-                <Route path="/projects/:projectId/audits" element={<AuditPage />} />
-                <Route path="/audits" element={<AuditPage />} />
-                <Route path="/projects/:projectId/suppliers" element={<SupplierQualityPage />} />
-                <Route path="/suppliers" element={<SupplierQualityPage />} />
-                <Route path="/projects/:projectId/ncrs" element={<NCRPage />} />
-                <Route path="/ncrs" element={<NCRPage />} />
-                <Route path="/projects/:projectId/complaints" element={<ComplaintPage />} />
-                <Route path="/complaints" element={<ComplaintPage />} />
-                <Route path="/projects/:projectId/equipment" element={<EquipmentPage />} />
-                <Route path="/equipment" element={<EquipmentPage />} />
-                <Route path="/projects/:projectId/risk-items" element={<RiskItemListPage />} />
-                <Route path="/projects/:projectId/risk-items/:riskItemId" element={<RiskItemDetailPage />} />
-                <Route path="/risk-items" element={<RiskItemListPage />} />
-                <Route path="/projects/:projectId/design-inputs/:id" element={<DesignInputDetailPage />} />
-                <Route path="/design-inputs/:id" element={<DesignInputDetailPage />} />
-                <Route path="/projects/:projectId/design-outputs/:id" element={<DesignOutputDetailPage />} />
-                <Route path="/design-outputs/:id" element={<DesignOutputDetailPage />} />
-                <Route path="/projects/:projectId/vv-tests/:id" element={<VVTestDetailPage />} />
-                <Route path="/vv-tests/:id" element={<VVTestDetailPage />} />
-                <Route path="/projects/:projectId/capas/:id" element={<CAPADetailPage />} />
-                <Route path="/capas/:id" element={<CAPADetailPage />} />
-                <Route path="/projects/:projectId/change-controls/:id" element={<ChangeControlDetailPage />} />
-                <Route path="/projects/:projectId/changes/:id" element={<ChangeControlDetailPage />} />
-                <Route path="/change-controls/:id" element={<ChangeControlDetailPage />} />
-                <Route path="/hazard-analysis" element={<HazardAnalysisPage />} />
-                <Route path="/fault-tree-report" element={<FaultTreeReportPage />} />
-                <Route path="/risk-management-report" element={<RiskManagementReportPage />} />
+                <ErrorBoundary>
+                  <Routes>
+                  <Route path="/" element={<DashboardPageNew />} />
+                  <Route path="/dashboard" element={<DashboardPageNew />} />
+                  <Route path="/home" element={<HomePage />} />
+                  <Route path="/nonconformance" element={<NonConformancePage />} />
+                  <Route path="/capa" element={<CapaPage />} />
+                  <Route path="/change-control" element={<ChangeControlPage />} />
+                  <Route path="/dfmea" element={<FmeaPage />} />
+                  <Route path="/projects/:projectId/dashboard" element={<ProjectDashboardPage />} />
+                  {/* Phase 3 Routes */}
+                  <Route path="/projects/:projectId/documents" element={<DocumentControlPage />} />
+                  <Route path="/projects/:projectId/documents/:docId" element={<ProjectDocumentPage />} />
+                  <Route path="/documents" element={<DocumentControlPage />} />
+                  {/* SmartQS Documentation Area */}
+                  <Route path="/projects/:projectId/docs" element={<DocumentsPage />} />
+                  <Route path="/projects/:projectId/docs/:groupId" element={<DocumentsPage />} />
+                  <Route path="/projects/:projectId/docs/:groupId/:docTypeId" element={<DocumentsPage />} />
+                  <Route path="/training" element={<TrainingPage />} />
+                  <Route path="/projects/:projectId/audits" element={<AuditPage />} />
+                  <Route path="/audits" element={<AuditPage />} />
+                  <Route path="/projects/:projectId/suppliers" element={<SupplierQualityPage />} />
+                  <Route path="/suppliers" element={<SupplierQualityPage />} />
+                  <Route path="/projects/:projectId/ncrs" element={<NCRPage />} />
+                  <Route path="/ncrs" element={<NCRPage />} />
+                  <Route path="/projects/:projectId/complaints" element={<ComplaintPage />} />
+                  <Route path="/complaints" element={<ComplaintPage />} />
+                  <Route path="/projects/:projectId/equipment" element={<EquipmentPage />} />
+                  <Route path="/equipment" element={<EquipmentPage />} />
+                  <Route path="/projects/:projectId/risk-items" element={<RiskItemListPage />} />
+                  <Route path="/projects/:projectId/risk-items/:riskItemId" element={<RiskItemDetailPage />} />
+                  <Route path="/risk-items" element={<RiskItemListPage />} />
+                  <Route path="/projects/:projectId/design-inputs/:id" element={<DesignInputDetailPage />} />
+                  <Route path="/design-inputs/:id" element={<DesignInputDetailPage />} />
+                  <Route path="/projects/:projectId/design-outputs/:id" element={<DesignOutputDetailPage />} />
+                  <Route path="/design-outputs/:id" element={<DesignOutputDetailPage />} />
+                  <Route path="/projects/:projectId/vv-tests/:id" element={<VVTestDetailPage />} />
+                  <Route path="/vv-tests/:id" element={<VVTestDetailPage />} />
+                  <Route path="/projects/:projectId/capas/:id" element={<CAPADetailPage />} />
+                  <Route path="/capas/:id" element={<CAPADetailPage />} />
+                  <Route path="/projects/:projectId/change-controls/:id" element={<ChangeControlDetailPage />} />
+                  <Route path="/projects/:projectId/changes/:id" element={<ChangeControlDetailPage />} />
+                  <Route path="/change-controls/:id" element={<ChangeControlDetailPage />} />
+                  <Route path="/hazard-analysis" element={<HazardAnalysisPage />} />
+                  <Route path="/fault-tree-report" element={<FaultTreeReportPage />} />
+                  <Route path="/risk-management-report" element={<RiskManagementReportPage />} />
 
-                <Route path="/risk-management-plan" element={<RiskManagementPlanPage />} />
-                <Route path="/risk-management-procedure" element={<RiskManagementPlanPage />} />
-                <Route path="/rmf" element={<RmfExportPage />} />
-                <Route path="/projects/:projectId/rmf" element={<RmfExportPage />} />
-                <Route path="/hazard-analysis" element={<HazardAnalysisPage />} />
-                <Route path="/projects/:projectId/hazard-analysis" element={<HazardAnalysisPage />} />
-                <Route path="/residual-risk" element={<ResidualRiskReportPage />} />
-                <Route path="/projects/:projectId/residual-risk" element={<ResidualRiskReportPage />} />
-                <Route path="/risk-evaluation" element={<ResidualRiskReportPage />} />
-                <Route path="/projects/:projectId/risk-evaluation" element={<ResidualRiskReportPage />} />
-                <Route path="/risk-controls-documentation" element={<RiskControlsDocumentationPage />} />
-                <Route path="/projects/:projectId/risk-controls-documentation" element={<RiskControlsDocumentationPage />} />
-                <Route path="/projects/:projectId/reports/risk-control-measures" element={<RiskControlMeasuresReportPage />} />
-                <Route path="/reports/risk-control-measures" element={<RiskControlMeasuresReportPage />} />
-                <Route path="/projects/:projectId/reports/design-inputs" element={<DesignInputsReportPage />} />
-                <Route path="/reports/design-inputs" element={<DesignInputsReportPage />} />
-                <Route path="/projects/:projectId/reports/vv-evidence" element={<VVEvidenceReportPage />} />
-                <Route path="/reports/vv-evidence" element={<VVEvidenceReportPage />} />
-                <Route path="/projects/:projectId/pms/signals" element={<PmsSignalsPage />} />
-                <Route path="/pms/signals" element={<PmsSignalsPage />} />
-                <Route path="/projects/:projectId/pms/reports/signal-feedback" element={<PmsSignalReportPage />} />
-                <Route path="/pms/reports/signal-feedback" element={<PmsSignalReportPage />} />
-                <Route path="/traceability-matrix" element={<RiskTraceabilityMatrixPage />} />
-                <Route path="/residual-risk" element={<ResidualRiskRiskBenefitPage />} />
-                <Route path="/risk-control-implementation" element={<RiskControlImplementationPage />} />
-                <Route path="/risk-evaluation-report" element={<RiskEvaluationReportPage />} />
-                <Route path="/cache-clear" element={<CacheClearPage />} />
-                <Route path="/post-market" element={<PostMarket />} />
-                <Route path="/welcome" element={<WelcomePage />} />
-                <Route path="/projects" element={<ProjectPage />} />
-                <Route path="/tracability" element={<TracabilityMatrix />} />
-                <Route path="/export" element={<ExportPage />} />
-                <Route path="/help" element={<HelpPage />} />
-                <Route path="/mitigation" element={<MitigationPage />} />
-                <Route path="/admin" element={<AdminPage />} />
-                        <Route path="/email-management" element={<EmailManagement />} />
-                        <Route path="/email-list" element={<EmailListViewer />} />
-                        <Route path="/login-notifications" element={<LoginNotifications />} />
-                        <Route path="/usage-dashboard" element={<UsageDashboard />} />
-                        <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
+                  <Route path="/risk-management-plan" element={<RiskManagementPlanPage />} />
+                  <Route path="/risk-management-procedure" element={<RiskManagementPlanPage />} />
+                  <Route path="/rmf" element={<RmfExportPage />} />
+                  <Route path="/projects/:projectId/rmf" element={<RmfExportPage />} />
+                  <Route path="/hazard-analysis" element={<HazardAnalysisPage />} />
+                  <Route path="/projects/:projectId/hazard-analysis" element={<HazardAnalysisPage />} />
+                  <Route path="/residual-risk" element={<ResidualRiskReportPage />} />
+                  <Route path="/projects/:projectId/residual-risk" element={<ResidualRiskReportPage />} />
+                  <Route path="/risk-evaluation" element={<ResidualRiskReportPage />} />
+                  <Route path="/projects/:projectId/risk-evaluation" element={<ResidualRiskReportPage />} />
+                  <Route path="/risk-controls-documentation" element={<RiskControlsDocumentationPage />} />
+                  <Route path="/projects/:projectId/risk-controls-documentation" element={<RiskControlsDocumentationPage />} />
+                  <Route path="/projects/:projectId/reports/risk-control-measures" element={<RiskControlMeasuresReportPage />} />
+                  <Route path="/reports/risk-control-measures" element={<RiskControlMeasuresReportPage />} />
+                  <Route path="/projects/:projectId/reports/design-inputs" element={<DesignInputsReportPage />} />
+                  <Route path="/reports/design-inputs" element={<DesignInputsReportPage />} />
+                  <Route path="/projects/:projectId/reports/vv-evidence" element={<VVEvidenceReportPage />} />
+                  <Route path="/reports/vv-evidence" element={<VVEvidenceReportPage />} />
+                  <Route path="/projects/:projectId/pms/signals" element={<PmsSignalsPage />} />
+                  <Route path="/pms/signals" element={<PmsSignalsPage />} />
+                  <Route path="/projects/:projectId/pms/reports/signal-feedback" element={<PmsSignalReportPage />} />
+                  <Route path="/pms/reports/signal-feedback" element={<PmsSignalReportPage />} />
+                  <Route path="/traceability-matrix" element={<RiskTraceabilityMatrixPage />} />
+                  <Route path="/residual-risk" element={<ResidualRiskRiskBenefitPage />} />
+                  <Route path="/risk-control-implementation" element={<RiskControlImplementationPage />} />
+                  <Route path="/risk-evaluation-report" element={<RiskEvaluationReportPage />} />
+                  <Route path="/cache-clear" element={<CacheClearPage />} />
+                  <Route path="/post-market" element={<PostMarket />} />
+                  <Route path="/welcome" element={<WelcomePage />} />
+                  <Route path="/projects" element={<ProjectPage />} />
+                  <Route path="/tracability" element={<TracabilityMatrix />} />
+                  <Route path="/export" element={<ExportPage />} />
+                  <Route path="/help" element={<HelpPage />} />
+                  <Route path="/mitigation" element={<MitigationPage />} />
+                  <Route path="/admin" element={<AdminPage />} />
+                          <Route path="/email-management" element={<EmailManagement />} />
+                          <Route path="/email-list" element={<EmailListViewer />} />
+                          <Route path="/login-notifications" element={<LoginNotifications />} />
+                          <Route path="/usage-dashboard" element={<UsageDashboard />} />
+                          <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </ErrorBoundary>
               </AppShell>
             </ProtectedRoute>
           </Router>

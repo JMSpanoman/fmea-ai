@@ -1,7 +1,14 @@
-import React, { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import { docTypeById, documentTypes, docsGroups } from './docsRegistry';
 import type { DocApproval, DocsFilters, DocumentInstance, DocStatus } from './docsTypes';
-import { loadProjectDocInstances, saveProjectDocInstances, simulateGenerate } from './docsApi';
+import {
+  approveBackendDocument,
+  generateBackendDocument,
+  loadConnectedProjectDocInstances,
+  saveProjectDocInstances,
+  simulateGenerate,
+  updateBackendDocument,
+} from './docsApi';
 
 type GenerateState = { docTypeId: string; status: 'idle' | 'loading' | 'error'; error?: string };
 
@@ -25,6 +32,11 @@ type Action =
   | { type: 'GENERATE_REQUEST'; docTypeId: string }
   | { type: 'GENERATE_SUCCESS'; docTypeId: string; content: string; version: string }
   | { type: 'GENERATE_FAIL'; docTypeId: string; error: string }
+  | {
+      type: 'APPLY_BACKEND_DOC';
+      docTypeId: string;
+      patch: Partial<DocumentInstance>;
+    }
   | { type: 'RECOMPUTE_IMPACT' };
 
 const defaultFilters: DocsFilters = {
@@ -146,6 +158,12 @@ function reducer(state: DocsState, action: Action): DocsState {
     }
     case 'GENERATE_FAIL':
       return { ...state, generate: { docTypeId: action.docTypeId, status: 'error', error: action.error } };
+    case 'APPLY_BACKEND_DOC': {
+      const prev = state.instancesByTypeId[action.docTypeId] || ({ docTypeId: action.docTypeId } as DocumentInstance);
+      const updated = { ...prev, ...action.patch };
+      const next = computeImpacted({ ...state.instancesByTypeId, [action.docTypeId]: updated });
+      return { ...state, instancesByTypeId: next };
+    }
     case 'RECOMPUTE_IMPACT':
       return { ...state, instancesByTypeId: computeImpacted(state.instancesByTypeId) };
     default:
@@ -194,11 +212,12 @@ export function DocumentsProvider({
   };
 
   const [state, dispatch] = useReducer(reducer, init);
+  const saveTimersRef = useRef<Record<string, any>>({});
 
   // load persisted instances per project
   useEffect(() => {
     let mounted = true;
-    loadProjectDocInstances(projectId).then((instances) => {
+    loadConnectedProjectDocInstances(projectId).then((instances) => {
       if (!mounted) return;
       dispatch({ type: 'LOAD_INSTANCES', instances });
     });
@@ -228,20 +247,109 @@ export function DocumentsProvider({
       selectGroup: (groupId: string) => dispatch({ type: 'SELECT_GROUP', groupId }),
       selectDoc: (docTypeId?: string) => dispatch({ type: 'SELECT_DOC', docTypeId }),
       setFilters: (patch: Partial<DocsFilters>) => dispatch({ type: 'SET_FILTERS', patch }),
-      updateContent: (docTypeId: string, content: string) => dispatch({ type: 'UPDATE_CONTENT', docTypeId, content }),
-      updateStatus: (docTypeId: string, status: DocStatus) => dispatch({ type: 'UPDATE_STATUS', docTypeId, status }),
-      approve: (docTypeId: string, approval: DocApproval) => dispatch({ type: 'ADD_APPROVAL', docTypeId, approval }),
+      updateContent: (docTypeId: string, content: string) => {
+        dispatch({ type: 'UPDATE_CONTENT', docTypeId, content });
+
+        const inst = state.instancesByTypeId[docTypeId];
+        if (!inst?.backendDocId) return;
+
+        // Debounced backend save
+        const key = `content:${docTypeId}`;
+        if (saveTimersRef.current[key]) clearTimeout(saveTimersRef.current[key]);
+        saveTimersRef.current[key] = setTimeout(async () => {
+          try {
+            const updated = await updateBackendDocument(projectId, inst.backendDocId!, { content });
+            dispatch({
+              type: 'APPLY_BACKEND_DOC',
+              docTypeId,
+              patch: {
+                backendDocId: updated.id,
+                status: updated.status === 'approved' ? 'approved' : updated.status === 'in_review' ? 'in_review' : 'draft',
+                updatedAt: updated.updated_at || updated.created_at,
+                version: `v${updated.version ?? 0}`,
+                content: updated.content || '',
+              },
+            });
+          } catch {
+            // keep local optimistic content if save fails
+          }
+        }, 650);
+      },
+      updateStatus: (docTypeId: string, status: DocStatus) => {
+        dispatch({ type: 'UPDATE_STATUS', docTypeId, status });
+        const inst = state.instancesByTypeId[docTypeId];
+        if (!inst?.backendDocId) return;
+
+        const backendStatus =
+          status === 'approved' ? 'approved' : status === 'in_review' ? 'in_review' : status === 'draft' ? 'draft' : 'draft';
+        updateBackendDocument(projectId, inst.backendDocId, { status: backendStatus }).then((updated) => {
+          dispatch({
+            type: 'APPLY_BACKEND_DOC',
+            docTypeId,
+            patch: {
+              backendDocId: updated.id,
+              status: updated.status === 'approved' ? 'approved' : updated.status === 'in_review' ? 'in_review' : 'draft',
+              updatedAt: updated.updated_at || updated.created_at,
+              version: `v${updated.version ?? 0}`,
+              content: updated.content || '',
+            },
+          });
+        }).catch(() => {});
+      },
+      approve: (docTypeId: string, approval: DocApproval) => {
+        dispatch({ type: 'ADD_APPROVAL', docTypeId, approval });
+        const inst = state.instancesByTypeId[docTypeId];
+        if (!inst?.backendDocId) return;
+        approveBackendDocument(projectId, inst.backendDocId)
+          .then((updated) => {
+            dispatch({
+              type: 'APPLY_BACKEND_DOC',
+              docTypeId,
+              patch: {
+                backendDocId: updated.id,
+                status: updated.status === 'approved' ? 'approved' : updated.status === 'in_review' ? 'in_review' : 'draft',
+                updatedAt: updated.updated_at || updated.created_at,
+                version: `v${updated.version ?? 0}`,
+                content: updated.content || '',
+              },
+            });
+          })
+          .catch(() => {});
+      },
       generate: async (docTypeId: string) => {
         dispatch({ type: 'GENERATE_REQUEST', docTypeId });
         try {
-          const res = await simulateGenerate(docTypeId);
-          dispatch({ type: 'GENERATE_SUCCESS', docTypeId, content: res.content, version: res.version });
+          const inst = state.instancesByTypeId[docTypeId];
+          if (inst?.backendDocId) {
+            const res = await generateBackendDocument(projectId, inst.backendDocId);
+            dispatch({
+              type: 'GENERATE_SUCCESS',
+              docTypeId,
+              content: res.rendered_html || '',
+              version: `v${res.new_version_no ?? 0}`,
+            });
+            dispatch({
+              type: 'APPLY_BACKEND_DOC',
+              docTypeId,
+              patch: {
+                lastGeneratedAt: res.updated_at || nowIso(),
+                updatedAt: res.updated_at || nowIso(),
+                version: `v${res.new_version_no ?? 0}`,
+                content: res.rendered_html || '',
+              },
+            });
+          } else {
+            const res = await simulateGenerate(docTypeId);
+            dispatch({ type: 'GENERATE_SUCCESS', docTypeId, content: res.content, version: res.version });
+          }
         } catch (e: any) {
           dispatch({ type: 'GENERATE_FAIL', docTypeId, error: e?.message || 'Generate failed' });
         }
       },
     }),
-    []
+    // depend on state for backendDocId and content/status updates
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [projectId, state.instancesByTypeId]
   );
 
   const value: DocsContextValue = useMemo(

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { docTypeById } from './docsRegistry';
 import { canGenerate, useDocs } from './DocumentsProvider';
 import { AuthorityBadge } from './AuthorityBadge';
@@ -6,6 +7,7 @@ import { StatusBadge } from './StatusBadge';
 import { ImpactBanner } from './ImpactBanner';
 import { DocActions } from './DocActions';
 import { ApproveModal } from './ApproveModal';
+import { htmlToText, isProbablyHtml } from './htmlUtils';
 
 export function DocDetailPanel({
   onNavigate,
@@ -14,10 +16,19 @@ export function DocDetailPanel({
 }) {
   const { state, actions, derived } = useDocs();
   const [approveOpen, setApproveOpen] = useState(false);
+  const [contentMode, setContentMode] = useState<'preview' | 'text'>('preview');
+  const navigate = useNavigate();
 
   const docTypeId = state.selectedDocTypeId;
   const docType = docTypeId ? docTypeById[docTypeId] : undefined;
   const inst = docTypeId ? state.instancesByTypeId[docTypeId] : undefined;
+
+  // IMPORTANT: keep hooks unconditional (no early returns before these)
+  const isHtml = useMemo(() => isProbablyHtml(inst?.content), [inst?.content]);
+  const textView = useMemo(() => {
+    const c = inst?.content || '';
+    return isHtml ? htmlToText(c) : c;
+  }, [isHtml, inst?.content]);
 
   const dependencyStatus = useMemo(() => {
     if (!docType) return { blocking: false, message: '' };
@@ -73,6 +84,11 @@ export function DocDetailPanel({
             docType={docType}
             instance={inst}
             generating={generating}
+            onOpenEditor={
+              inst.backendDocId
+                ? () => navigate(`/projects/${state.projectId}/documents/${inst.backendDocId}`)
+                : undefined
+            }
             onGenerate={() => actions.generate(docTypeId)}
             onMarkDraft={() => actions.updateStatus(docTypeId, 'draft')}
             onSubmitForReview={() => actions.updateStatus(docTypeId, 'in_review')}
@@ -145,17 +161,60 @@ export function DocDetailPanel({
           <div>
             <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Content</div>
             <div className="mt-2">
-              <textarea
-                value={inst.content || ''}
-                onChange={(e) => actions.updateContent(docTypeId, e.target.value)}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono"
-                rows={16}
-                placeholder={
-                  showGenerate
-                    ? 'Generate to create an initial draft, then edit here.'
-                    : 'Start as Draft and edit content here.'
-                }
-              />
+              {inst.backendDocId && isHtml ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setContentMode('preview')}
+                      className={`px-2 py-1 text-xs rounded-md border ${
+                        contentMode === 'preview' ? 'bg-primary/10 border-primary text-primary' : 'bg-white border-gray-200'
+                      }`}
+                    >
+                      Preview
+                    </button>
+                    <button
+                      onClick={() => setContentMode('text')}
+                      className={`px-2 py-1 text-xs rounded-md border ${
+                        contentMode === 'text' ? 'bg-primary/10 border-primary text-primary' : 'bg-white border-gray-200'
+                      }`}
+                    >
+                      Text
+                    </button>
+                    <div className="text-xs text-gray-600">
+                      This document is generated as HTML. Use <b>Open/Edit</b> for full editing/versioning.
+                    </div>
+                  </div>
+
+                  {contentMode === 'preview' ? (
+                    <div className="rounded-md border border-gray-200 p-3 overflow-auto max-h-[520px]">
+                      <div
+                        className="prose prose-sm max-w-none"
+                        // Backend content is generated HTML; render it for readability.
+                        dangerouslySetInnerHTML={{ __html: inst.content || '' }}
+                      />
+                    </div>
+                  ) : (
+                    <textarea
+                      value={textView}
+                      readOnly
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono bg-gray-50"
+                      rows={16}
+                    />
+                  )}
+                </div>
+              ) : (
+                <textarea
+                  value={inst.content || ''}
+                  onChange={(e) => actions.updateContent(docTypeId, e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono"
+                  rows={16}
+                  placeholder={
+                    showGenerate
+                      ? 'Generate to create an initial draft, then edit here.'
+                      : 'Start as Draft and edit content here.'
+                  }
+                />
+              )}
             </div>
           </div>
 

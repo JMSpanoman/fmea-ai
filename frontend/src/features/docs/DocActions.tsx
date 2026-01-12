@@ -6,6 +6,7 @@ export function DocActions({
   docType,
   instance,
   generating,
+  onOpenEditor,
   onGenerate,
   onMarkDraft,
   onSubmitForReview,
@@ -15,6 +16,7 @@ export function DocActions({
   docType: DocumentTypeDef;
   instance: DocumentInstance;
   generating: boolean;
+  onOpenEditor?: () => void;
   onGenerate: () => void;
   onMarkDraft: () => void;
   onSubmitForReview: () => void;
@@ -36,6 +38,14 @@ export function DocActions({
 
   return (
     <div className="flex flex-wrap gap-2">
+      {onOpenEditor ? (
+        <button
+          onClick={onOpenEditor}
+          className="px-3 py-2 rounded-md text-sm border border-gray-300 bg-white hover:bg-gray-50"
+        >
+          Open/Edit
+        </button>
+      ) : null}
       {showGenerate ? (
         <button
           onClick={onGenerate}

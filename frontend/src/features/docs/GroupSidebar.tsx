@@ -41,7 +41,7 @@ export function GroupSidebar({
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="text-sm font-medium">{g.name}</div>
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-600 text-right whitespace-nowrap flex-shrink-0">
                   {g.approved}/{g.total} approved
                 </div>
               </div>
