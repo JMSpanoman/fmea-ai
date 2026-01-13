@@ -27,6 +27,16 @@ export const documentTypes: DocumentTypeDef[] = [
     groupId: 'risk_management_core',
     authority: 'manual',
     description: 'Scope, intended use, methodology, acceptability criteria, roles, and governance.',
+    includes: [
+      'Intended use, scope, and component list',
+      'Risk acceptability criteria and decision rules',
+      'Roles, reviews, and lifecycle governance',
+    ],
+    auditorQuestions: [
+      'Show me your risk management plan and acceptance criteria.',
+      'How do you control changes and keep the RMF current?',
+      'Who reviews/approves risk activities and when?',
+    ],
     exportable: true,
   }),
   req({
@@ -43,6 +53,16 @@ export const documentTypes: DocumentTypeDef[] = [
     authority: 'ai',
     supportsAiDraft: true,
     description: 'Hazard identification and chain evidence derived from risk item versions.',
+    includes: [
+      'Hazard → hazardous situation → harm chain',
+      'Version scope and approval status evidence',
+      'Coverage summary by component',
+    ],
+    auditorQuestions: [
+      'How did you identify hazards and harms?',
+      'Which version of the risk file does this reflect?',
+      'Show evidence that unapproved data is excluded/included as intended.',
+    ],
   }),
   req({
     id: 'fmea',
@@ -51,6 +71,16 @@ export const documentTypes: DocumentTypeDef[] = [
     authority: 'ai',
     supportsAiDraft: true,
     description: 'Failure Modes and Effects Analysis table and risk ranking.',
+    includes: [
+      'Failure mode → effects → causes',
+      'Severity / probability / detection scoring',
+      'Recommended mitigations and residual scoring',
+    ],
+    auditorQuestions: [
+      'How were FMEA scores determined and reviewed?',
+      'Which mitigations were implemented and verified?',
+      'How do you control updates/versioning of the FMEA?',
+    ],
   }),
   req({
     id: 'risk_controls_doc',
@@ -87,6 +117,16 @@ export const documentTypes: DocumentTypeDef[] = [
     supportsAiDraft: true,
     dependencies: ['rmp', 'hazard_analysis', 'risk_controls_doc', 'residual_risk'],
     description: 'Compilation document; combines generated evidence with manual review signoffs.',
+    includes: [
+      'Pointers to hazard analysis, controls, residual risk evaluation',
+      'Versioned evidence with review status',
+      'Audit-friendly compilation of outputs',
+    ],
+    auditorQuestions: [
+      'Show the complete RMF and the versions used.',
+      'Where is residual risk evaluated against acceptability?',
+      'How do you ensure the RMF is consistent with traceability and V&V evidence?',
+    ],
   }),
   req({
     id: 'risk_management_review',
@@ -186,6 +226,16 @@ export const documentTypes: DocumentTypeDef[] = [
     supportsAiDraft: true,
     dependencies: ['design_inputs_doc', 'design_outputs_doc', 'vv_evidence', 'risk_controls_doc'],
     description: 'Cross-artifact trace links: Risk → Control → DI → DO → V&V.',
+    includes: [
+      'Risk → control → design input → design output → V&V test linkage',
+      'Gaps: missing links and shortcut evidence called out',
+      'Component-scoped view and export',
+    ],
+    auditorQuestions: [
+      'Show me end-to-end traceability from risk controls to verification evidence.',
+      'Where are broken/missing links and how are they addressed?',
+      'How do you ensure trace links remain current after changes?',
+    ],
   }),
   req({
     id: 'change_impact_analysis',

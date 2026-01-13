@@ -13,6 +13,8 @@ export interface DocumentTypeDef {
   groupId: string;
   authority: DocAuthority;
   description: string;
+  includes?: string[];
+  auditorQuestions?: string[];
   required?: boolean; // default true
   supportsAiDraft?: boolean;
   exportable?: boolean;

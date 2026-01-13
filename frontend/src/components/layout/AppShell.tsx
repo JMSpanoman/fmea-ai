@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useProject } from '../../contexts/ProjectContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { AiAssistantPanel } from '../ai/AiAssistantPanel';
 import GenerateDesignInputsModal from '../GenerateDesignInputsModal';
 import GenerateDesignOutputsModal from '../GenerateDesignOutputsModal';
+import { docsGroups } from '../../features/docs/docsRegistry';
+import { CommandBar } from '../CommandBar';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -14,51 +16,10 @@ interface NavItem {
   path: string;
   label: string;
   icon: string;
-  group?: string;
+  section: 'Project' | 'Documentation';
+  kind: 'static' | 'doc_group';
+  groupId?: string;
 }
-
-const navItems: NavItem[] = [
-  // Core
-  { path: '/', label: 'Dashboard', icon: '📊', group: 'Core' },
-  { path: '/projects', label: 'Projects', icon: '📁', group: 'Core' },
-  { path: '/docs', label: 'Documentation', icon: '📚', group: 'Core' },
-  
-  // PMS
-  { path: '/pms/signals', label: 'Signals', icon: '📡', group: 'PMS' },
-  { path: '/pms/reports/signal-feedback', label: 'Signal Feedback Report', icon: '📊', group: 'PMS' },
-  
-  // Risk
-  { path: '/dfmea', label: 'FMEA', icon: '🛡️', group: 'SmartQS: Risk' },
-  { path: '/capa', label: 'CAPA', icon: '🔧', group: 'SmartQS: Risk' },
-  { path: '/pms', label: 'PMS', icon: '📈', group: 'SmartQS: Risk' },
-  { path: '/risk-management-procedure', label: 'Risk Procedure', icon: '📋', group: 'SmartQS: Risk' },
-  { path: '/risk-management-report', label: 'Risk Report', icon: '📊', group: 'SmartQS: Risk' },
-  { path: '/rmf', label: 'Risk Management File (RMF)', icon: '📁', group: 'SmartQS: Risk' },
-  { path: '/hazard-analysis', label: 'Hazard Analysis', icon: '⚠️', group: 'SmartQS: Risk' },
-  { path: '/risk-controls-documentation', label: 'Risk Control Documentation', icon: '📋', group: 'SmartQS: Risk' },
-  { path: '/reports/risk-control-measures', label: 'Risk Control Measures Report', icon: '📊', group: 'SmartQS: Risk' },
-  { path: '/residual-risk', label: 'Residual Risk Evaluation', icon: '📊', group: 'SmartQS: Risk' },
-  
-  // Quality Intelligence (Phase 2)
-  { path: '/design-inputs', label: 'Design Inputs', icon: '📥', group: 'SmartQS: Design' },
-  { path: '/reports/design-inputs', label: 'Design Inputs Report', icon: '📄', group: 'SmartQS: Design' },
-  { path: '/design-outputs', label: 'Design Outputs', icon: '📤', group: 'SmartQS: Design' },
-  { path: '/design-controls', label: 'Design Controls', icon: '📋', group: 'SmartQS: Design' },
-  { path: '/vv', label: 'V&V Tests', icon: '✅', group: 'SmartQS: Design' },
-  { path: '/reports/vv-evidence', label: 'V&V Evidence Report', icon: '🧪', group: 'SmartQS: Design' },
-  { path: '/traceability-matrix', label: 'Traceability', icon: '🔗', group: 'SmartQS: Design' },
-  
-  // QMS (Phase 3)
-  { path: '/documents', label: 'Documents', icon: '📄', group: 'QMS' },
-  { path: '/training', label: 'Training', icon: '🎓', group: 'QMS' },
-  { path: '/change-control', label: 'Changes', icon: '🔄', group: 'QMS' },
-  { path: '/audits', label: 'Audits', icon: '🔍', group: 'QMS' },
-  { path: '/suppliers', label: 'Suppliers', icon: '🏭', group: 'QMS' },
-  { path: '/ncrs', label: 'NCRs', icon: '⚠️', group: 'QMS' },
-  { path: '/complaints', label: 'Complaints', icon: '📢', group: 'QMS' },
-  { path: '/equipment', label: 'Equipment', icon: '⚙️', group: 'QMS' },
-  { path: '/events', label: 'Events', icon: '📅', group: 'QMS' },
-];
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
@@ -79,20 +40,64 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showGenerateDesignInputsModal, setShowGenerateDesignInputsModal] = useState(false);
   const [showGenerateDesignOutputsModal, setShowGenerateDesignOutputsModal] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+
+  const navItems: NavItem[] = useMemo(() => {
+    const projectItems: NavItem[] = [
+      { path: '/project-dashboard', label: 'Dashboard', icon: '📊', section: 'Project', kind: 'static' },
+      { path: '/projects', label: 'Projects', icon: '📁', section: 'Project', kind: 'static' },
+      { path: '/project-docs', label: 'Documents', icon: '📄', section: 'Project', kind: 'static' },
+      { path: '/traceability-matrix', label: 'Traceability', icon: '🔗', section: 'Project', kind: 'static' },
+      { path: '/export', label: 'Export', icon: '⬇️', section: 'Project', kind: 'static' },
+      { path: '/admin', label: 'History', icon: '🕒', section: 'Project', kind: 'static' }, // placeholder route
+    ];
+
+    const docItems: NavItem[] = docsGroups.map((g) => ({
+      path: `/docs/${g.id}`,
+      label: g.name,
+      icon: '📘',
+      section: 'Documentation',
+      kind: 'doc_group',
+      groupId: g.id,
+    }));
+
+    return [...projectItems, ...docItems];
+  }, []);
 
   const isActive = (path: string) => {
     if (path === '/') {
       return location.pathname === '/';
     }
+    if (path === '/project-dashboard') {
+      return location.pathname.includes('/dashboard');
+    }
     return location.pathname.startsWith(path);
   };
 
-  const groupedNav = navItems.reduce((acc, item) => {
-    const group = item.group || 'Other';
-    if (!acc[group]) acc[group] = [];
-    acc[group].push(item);
-    return acc;
-  }, {} as Record<string, NavItem[]>);
+  // Cmd+K handler (global)
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toLowerCase().includes('mac');
+      const combo = (isMac ? e.metaKey : e.ctrlKey) && e.key.toLowerCase() === 'k';
+      if (combo) {
+        e.preventDefault();
+        setCommandOpen(true);
+      } else if (e.key === 'Escape') {
+        setCommandOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  const groupedNav = useMemo(() => {
+    return navItems.reduce((acc, item) => {
+      const section = item.section;
+      if (!acc[section]) acc[section] = [];
+      acc[section].push(item);
+      return acc;
+    }, {} as Record<'Project' | 'Documentation', NavItem[]>);
+  }, [navItems]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-sky-50">
@@ -131,12 +136,12 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4">
-          {Object.entries(groupedNav).map(([group, items]) => (
-            <div key={group} className="mb-6">
+          {Object.entries(groupedNav).map(([section, items]) => (
+            <div key={section} className="mb-6">
               {!sidebarCollapsed && (
                 <div className="px-4 mb-2">
                   <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                    {group}
+                    {section}
                   </h3>
                 </div>
               )}
@@ -144,36 +149,30 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                 <button
                   key={item.path}
                   onClick={() => {
-                    if (item.path === '/design-inputs') {
-                      setShowGenerateDesignInputsModal(true);
-                    } else if (item.path === '/design-outputs') {
-                      setShowGenerateDesignOutputsModal(true);
-                    } else if (item.path === '/docs') {
-                      const pid = currentProject?.id;
-                      if (pid) {
-                        navigate(`/projects/${pid}/docs`);
-                      } else {
-                        navigate('/projects');
-                      }
-                    } else if (item.path.startsWith('/reports/')) {
-                      // Reports should be project-scoped whenever a project is selected
-                      const pid = currentProject?.id;
-                      if (pid) {
-                        navigate(`/projects/${pid}${item.path}`);
-                      } else {
-                        navigate('/projects');
-                      }
-                    } else if (item.path.startsWith('/pms/')) {
-                      // Navigate to PMS pages with current project
-                      const projectId = currentProject?.id;
-                      if (projectId) {
-                        navigate(`/projects/${projectId}${item.path}`);
-                      } else {
-                        navigate('/projects');
-                      }
-                    } else {
-                      navigate(item.path);
+                    const pid = currentProject?.id;
+
+                    if (item.path === '/project-dashboard') {
+                      if (pid) navigate(`/projects/${pid}/dashboard`);
+                      else navigate('/');
+                      return;
                     }
+
+                    // Project section items
+                    if (item.path === '/project-docs') {
+                      if (pid) navigate(`/projects/${pid}/documents`);
+                      else navigate('/projects');
+                      return;
+                    }
+
+                    // Documentation section group landing pages
+                    if (item.kind === 'doc_group') {
+                      if (pid && item.groupId) navigate(`/projects/${pid}/docs/${item.groupId}`);
+                      else navigate('/projects');
+                      return;
+                    }
+
+                    // Static pages
+                    navigate(item.path);
                   }}
                   className={`
                     w-full flex items-center gap-3 px-4 py-2.5
@@ -214,6 +213,15 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           </div>
 
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setCommandOpen(true)}
+              className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-200 bg-white text-xs text-gray-700 hover:bg-gray-50"
+              type="button"
+              title="Command bar"
+            >
+              ⌘K
+              <span className="text-gray-400">Jump</span>
+            </button>
             {/* AI Assistant Toggle */}
             <button
               onClick={() => setShowAiPanel(!showAiPanel)}
@@ -261,6 +269,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           {children}
         </main>
       </div>
+
+      <CommandBar isOpen={commandOpen} onClose={() => setCommandOpen(false)} />
 
       {/* AI Assistant Panel */}
       {showAiPanel && (

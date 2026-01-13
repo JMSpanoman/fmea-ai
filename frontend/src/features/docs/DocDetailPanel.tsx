@@ -106,6 +106,33 @@ export function DocDetailPanel({
           />
         </div>
 
+        {/* Registry explanation + "where it lives" link (for key doc types) */}
+        {['rmp', 'hazard_analysis', 'fmea', 'rmf', 'traceability_matrix'].includes(docType.id) ? (
+          <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+            <div className="text-sm font-semibold text-gray-900">What this is</div>
+            <div className="text-sm text-gray-700 mt-1">
+              This page is a <b>Documentation</b> lens (registry definition). Your project-specific instance lives under
+              Project Documents and is versioned for audit.
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="text-xs text-gray-700">
+                <b>Where it lives:</b>{' '}
+                {inst.backendDocId ? 'Project Document instance exists.' : 'No project instance found.'}
+              </div>
+              <button
+                onClick={() => {
+                  if (inst.backendDocId) navigate(`/projects/${state.projectId}/documents/${inst.backendDocId}`);
+                  else navigate(`/projects/${state.projectId}/documents`);
+                }}
+                className="px-3 py-2 rounded-md text-sm bg-primary text-white hover:bg-primary/90"
+                type="button"
+              >
+                {inst.backendDocId ? 'Open in Project' : 'Create in Project'}
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         {dependencyStatus.blocking ? (
           <div className="mt-3">
             <ImpactBanner title="Dependency required" message={dependencyStatus.message} />
@@ -134,6 +161,51 @@ export function DocDetailPanel({
 
       <div className="p-4 flex-1 overflow-y-auto">
         <div className="grid grid-cols-1 gap-4">
+          {['rmp', 'hazard_analysis', 'fmea', 'rmf', 'traceability_matrix'].includes(docType.id) ? (
+            <div className="rounded-lg border border-gray-200 bg-white p-4">
+              <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider">What it includes</div>
+              <div className="mt-2">
+                {(docType.includes || []).length ? (
+                  <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                    {(docType.includes || []).slice(0, 6).map((x) => (
+                      <li key={x}>{x}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-sm text-gray-600">—</div>
+                )}
+              </div>
+
+              <div className="mt-4 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                Common auditor questions
+              </div>
+              <div className="mt-2">
+                {(docType.auditorQuestions || []).length ? (
+                  <ul className="list-disc pl-5 text-sm text-gray-700 space-y-1">
+                    {(docType.auditorQuestions || []).slice(0, 6).map((x) => (
+                      <li key={x}>{x}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-sm text-gray-600">—</div>
+                )}
+              </div>
+
+              <div className="mt-4">
+                <button
+                  onClick={() => {
+                    if (inst.backendDocId) navigate(`/projects/${state.projectId}/documents/${inst.backendDocId}`);
+                    else navigate(`/projects/${state.projectId}/documents`);
+                  }}
+                  className="px-4 py-2 rounded-md text-sm bg-primary text-white hover:bg-primary/90"
+                  type="button"
+                >
+                  {inst.backendDocId ? 'Open in Project' : 'Create in Project'}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           <div>
             <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Dependencies</div>
             <div className="mt-2 flex flex-wrap gap-2">

@@ -6,6 +6,14 @@ import { documentsApi } from '../services/apiPhase3';
 import api from '../axios';
 import type { Document } from '../types';
 import { docTypeById as docsRegistryById } from '../features/docs/docsRegistry';
+import { KpiCardsRow, KpiCard, MiniBreakdown } from './projectDashboard/KpiCardsRow';
+import { NextActionsCard } from './projectDashboard/NextActionsCard';
+import { DocumentHub } from './projectDashboard/DocumentHub';
+import { inferDocStatus } from './projectDashboard/DocumentRow';
+import { ProjectReadinessCard } from './projectDashboard/ProjectReadinessCard';
+import { TraceabilityHealthCard } from './projectDashboard/TraceabilityHealthCard';
+import { RiskHotspotsCard } from './projectDashboard/RiskHotspotsCard';
+import { RecentActivityCard } from './projectDashboard/RecentActivityCard';
 
 type LoadState = 'idle' | 'loading' | 'error' | 'ready';
 
@@ -38,31 +46,19 @@ const typeLabel = (t: string) => {
   }
 };
 
-const authorityBadge = (docType: string) => {
-  const reg = docsRegistryById[docType];
-  const authority = reg?.authority;
-  if (!authority) return null;
-  const cls =
-    authority === 'manual'
-      ? 'bg-gray-100 text-gray-800'
-      : authority === 'ai'
-        ? 'bg-purple-100 text-purple-800'
-        : 'bg-indigo-100 text-indigo-800';
-  const label = authority === 'manual' ? 'Manual' : authority === 'ai' ? 'AI' : 'Hybrid';
-  return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
-      {label}
-    </span>
-  );
-};
-
-const statusBadge = (status?: string) => {
-  const s = status || 'draft';
-  if (s === 'approved') return 'bg-green-100 text-green-800';
-  if (s === 'in_review') return 'bg-yellow-100 text-yellow-800';
-  if (s === 'obsolete') return 'bg-gray-200 text-gray-800';
-  return 'bg-blue-100 text-blue-800';
-};
+function computeReadiness(docs: Document[]) {
+  if (!docs?.length) return { pct: 0, breakdown: [] as Array<{ label: string; value: string }> };
+  const statuses = docs.map((d) => inferDocStatus({ status: d.status, content: d.content }));
+  const approved = statuses.filter((s) => s === 'approved').length;
+  const pct = Math.round((approved / statuses.length) * 100);
+  const breakdown = [
+    { label: 'Approved', value: String(approved) },
+    { label: 'In review', value: String(statuses.filter((s) => s === 'in_review').length) },
+    { label: 'Draft', value: String(statuses.filter((s) => s === 'draft').length) },
+    { label: 'Not started', value: String(statuses.filter((s) => s === 'not_started').length) },
+  ];
+  return { pct, breakdown };
+}
 
 export default function ProjectDashboardPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -79,6 +75,8 @@ export default function ProjectDashboardPage() {
     if (currentProject?.id === finalProjectId) return currentProject.name;
     return 'Project';
   }, [currentProject, finalProjectId]);
+
+  const readiness = useMemo(() => computeReadiness(documents), [documents]);
 
   const load = async () => {
     if (!finalProjectId) return;
@@ -157,102 +155,82 @@ export default function ProjectDashboardPage() {
 
   return (
     <div className="p-6">
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Project Dashboard</h1>
-        <p className="text-gray-600 mt-1">
-          <span className="font-medium">Current Project:</span> {projectName}{' '}
-          <span className="text-gray-400">({finalProjectId})</span>
-        </p>
-      </div>
-
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Project Documents</h2>
-          <div className="flex gap-2">
-            <button
-              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
-              onClick={load}
-              disabled={state === 'loading'}
-            >
-              {state === 'loading' ? 'Loading…' : 'Reload'}
-            </button>
-            <button
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              onClick={() => navigate(`/projects/${finalProjectId}/docs`)}
-            >
-              Documentation
-            </button>
-            <button
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-              onClick={() => navigate(`/projects/${finalProjectId}/documents`)}
-              title="Legacy Document Control page"
-            >
-              Document Control
-            </button>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <div className="text-2xl font-bold text-gray-900">Mission Control</div>
+          <div className="text-sm text-gray-600 mt-1">
+            <span className="font-medium">Project:</span> {projectName}{' '}
+            <span className="text-gray-400">({finalProjectId})</span>
           </div>
         </div>
+        <div className="flex gap-2">
+          <button
+            className="px-4 py-2 bg-white border border-gray-200 text-gray-900 rounded-md hover:bg-gray-50"
+            onClick={load}
+            disabled={state === 'loading'}
+          >
+            {state === 'loading' ? 'Loading…' : 'Reload'}
+          </button>
+          <button
+            className="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700"
+            onClick={() => navigate(`/projects/${finalProjectId}/documents`)}
+          >
+            Project Docs
+          </button>
+          <button
+            className="px-4 py-2 bg-sky-500 text-white rounded-md hover:bg-sky-600"
+            onClick={() => navigate(`/projects/${finalProjectId}/docs`)}
+          >
+            Documentation
+          </button>
+        </div>
+      </div>
 
-        {state === 'error' && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <p className="text-red-800 font-medium">Failed to load project documents</p>
-            <p className="text-red-700 text-sm mt-1">{error}</p>
-            <button
-              className="mt-3 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-              onClick={load}
-            >
-              Retry
-            </button>
+      {state === 'error' ? (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-red-800 font-medium">Failed to load project documents</p>
+          <p className="text-red-700 text-sm mt-1">{error}</p>
+          <button
+            className="mt-3 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+            onClick={load}
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
+
+      {/* Primary Next Actions (full width) */}
+      <div className="mb-6">
+        <NextActionsCard projectId={finalProjectId} documents={documents} />
+      </div>
+
+      {/* Key widgets */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <ProjectReadinessCard documents={documents} />
+        <TraceabilityHealthCard documents={documents} />
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider">High Risk Items</div>
+          <div className="mt-2 text-2xl font-bold text-gray-900">Unknown</div>
+          <div className="mt-1 text-sm text-gray-600">
+            We’ll surface this once risk thresholds are derived from existing risk data.
           </div>
-        )}
-
-        {state === 'loading' && (
-          <div className="text-gray-600">Loading documents…</div>
-        )}
-
-        {state === 'ready' && documents.length === 0 && (
-          <div className="text-gray-600">No documents found for this project.</div>
-        )}
-
-        {state === 'ready' && documents.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {documents.map((doc) => (
-              <div key={doc.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-lg font-semibold text-gray-900">{doc.name}</div>
-                    <div className="mt-1 flex flex-wrap gap-2 items-center">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        {typeLabel(doc.type)}
-                      </span>
-                      {authorityBadge(doc.type)}
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusBadge(doc.status)}`}>
-                        {(doc.status || 'draft').toUpperCase()}
-                      </span>
-                      <span className="text-xs text-gray-500">v{doc.version}</span>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-2">
-                      Last updated: {doc.updated_at ? new Date(doc.updated_at).toLocaleString() : new Date(doc.created_at).toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex gap-2">
-                  <button
-                    className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700"
-                    onClick={() => navigate(`/projects/${finalProjectId}/documents/${doc.id}`)}
-                  >
-                    Open / Edit
-                  </button>
-                  <button
-                    className="bg-gray-200 text-gray-900 px-3 py-2 rounded-md hover:bg-gray-300"
-                    onClick={() => downloadHtml(doc)}
-                  >
-                    Download HTML
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="mt-3">
+            <MiniBreakdown items={readiness.breakdown} />
           </div>
+        </div>
+      </div>
+
+      {/* Hotspots + activity */}
+      <div className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <RiskHotspotsCard projectId={finalProjectId} documents={documents} />
+        <RecentActivityCard projectId={finalProjectId} documents={documents} />
+      </div>
+
+      <div className="mt-6">
+        {state === 'loading' ? (
+          <div className="text-gray-600">Loading…</div>
+        ) : (
+          <DocumentHub projectId={finalProjectId} documents={documents} />
         )}
       </div>
     </div>
