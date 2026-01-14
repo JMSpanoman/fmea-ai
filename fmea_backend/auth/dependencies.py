@@ -52,4 +52,27 @@ def get_current_user(
                 headers={"WWW-Authenticate": "Bearer"},
             )
     
+    # Attach ephemeral identity/role fields from the token payload (no schema change required).
+    # This ensures /auth/me can reflect roles for dev tokens and keeps frontend auth consistent.
+    token_email = (payload.get("email") or "") or getattr(user, "email", "") or ""
+    token_username = payload.get("username") or (token_email.split("@")[0] if "@" in token_email else None)
+    token_role = payload.get("role") or "user"
+
+    # Special-case: John has admin access
+    if str(token_email).lower() == "john@fotonconsulting.com":
+        token_role = "admin"
+
+    try:
+        setattr(user, "email", token_email or getattr(user, "email", ""))
+    except Exception:
+        pass
+    try:
+        setattr(user, "username", token_username)
+    except Exception:
+        pass
+    try:
+        setattr(user, "role", token_role)
+    except Exception:
+        pass
+
     return user

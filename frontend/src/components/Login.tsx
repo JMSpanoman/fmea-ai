@@ -6,6 +6,9 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const allowlistEnabled =
+    import.meta.env.DEV && String(import.meta.env.VITE_DEV_EMAIL_ALLOWLIST || '').toLowerCase() === 'true';
+  const isDev = import.meta.env.DEV;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -13,7 +16,10 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await login(email);
+      const trimmed = email.trim();
+      // In dev mode, allow choosing any email to simulate multiple users.
+      // In allowlist mode, email is required and validated by AuthContext.
+      await login((allowlistEnabled || (isDev && trimmed)) ? trimmed : undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -45,27 +51,33 @@ const Login: React.FC = () => {
             Smart FMEA Builder
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Please enter your email address to continue
+            {allowlistEnabled
+              ? 'Please enter your email address to continue'
+              : isDev
+                ? 'Dev sign-in (choose any email to simulate different users)'
+                : 'Sign in to continue'}
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="email" className="sr-only">
-              Email address
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-              placeholder="Enter your email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
-            />
-          </div>
+          {(allowlistEnabled || isDev) && (
+            <div>
+              <label htmlFor="email" className="sr-only">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required={allowlistEnabled}
+                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder={allowlistEnabled ? 'Enter your email address' : 'dev1@example.com'}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+          )}
 
           {error && (
             <div className="rounded-md bg-red-50 p-4">
@@ -121,7 +133,7 @@ const Login: React.FC = () => {
                   Signing in...
                 </div>
               ) : (
-                'Sign In'
+                allowlistEnabled ? 'Sign In' : 'Sign In (Dev)'
               )}
             </button>
           </div>

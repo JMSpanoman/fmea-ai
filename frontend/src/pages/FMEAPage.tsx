@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import ProjectDataViewer from '../components/ProjectDataViewer';
 import { exportFmeaData } from '../utils/exportUtils';
 import { getProjects, createProject, Project } from '../services/apiService';
+import api from '../axios';
 
 interface FmeaRow {
   id: string;
@@ -137,70 +138,55 @@ const FmeaPage: React.FC = () => {
                 // Enhanced AI generation with multiple attempts and comprehensive prompts
                 const generateWithAI = async (attempt: number = 1): Promise<FmeaRow[]> => {
                   try {
-                    const enhancedPrompt = {
-                      component_description: componentDescription,
-                      fmea_type: fmeaType,
-                      analysis_depth: 'comprehensive',
-                      requirements: {
-                        min_rows: 10,
-                        include_all_fields: true,
-                        focus_areas: [
-                          'functional failures',
-                          'performance degradation',
-                          'safety hazards',
-                          'quality issues',
-                          'maintenance concerns',
-                          'environmental factors',
-                          'operational risks',
-                          'design vulnerabilities',
-                          'manufacturing defects',
-                          'lifecycle considerations'
-                        ]
-                      }
-                    };
+                    // Use backend legacy AI generator endpoints (mounted under /fmea).
+                    // DFMEA -> /fmea/fmea/generate, PFMEA -> /fmea/pfmea/generate
+                    const endpoint = fmeaType === 'process' ? '/fmea/pfmea/generate' : '/fmea/fmea/generate';
+                    const res = await api.post(endpoint, { component: componentDescription });
+                    const aiResponse = res.data;
 
-                    const response = await fetch('http://localhost:8000/ai/generate-fmea', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify(enhancedPrompt),
+                    const rows = aiResponse?.fmea_data;
+                    if (!Array.isArray(rows) || rows.length === 0) {
+                      throw new Error('AI response missing fmea_data');
+                    }
+
+                    // Track whether backend fell back to mock data
+                    setMockFlag(Boolean(aiResponse?.mock));
+
+                    return rows.map((item: any, index: number) => {
+                      const severity = Number(item?.severity ?? 1) || 1;
+                      const occurrence = Number(item?.occurrence ?? 1) || 1;
+                      const detection = Number(item?.detection ?? 1) || 1;
+                      const rpn = Number(item?.rpn ?? severity * occurrence * detection) || (severity * occurrence * detection);
+
+                      const newSeverity = Number(item?.finalSeverity ?? item?.newSeverity ?? severity) || severity;
+                      const newOccurrence = Number(item?.finalOccurrence ?? item?.newOccurrence ?? occurrence) || occurrence;
+                      const newDetection = Number(item?.finalDetection ?? item?.newDetection ?? detection) || detection;
+                      const newRpn = Number(item?.finalRpn ?? item?.newRpn ?? (newSeverity * newOccurrence * newDetection)) || (newSeverity * newOccurrence * newDetection);
+
+                      return {
+                        id: String(item?.id ?? (index + 1)),
+                        component: String(item?.component ?? componentDescription),
+                        function: String(item?.function ?? ''),
+                        failureMode: String(item?.failureMode ?? ''),
+                        potentialEffects: String(item?.potentialEffect ?? item?.potentialEffects ?? ''),
+                        severity,
+                        potentialCauses: String(item?.potentialCauses ?? ''),
+                        occurrence,
+                        currentControls: String(item?.currentControls ?? ''),
+                        detection,
+                        rpn,
+                        recommendedActions: String(item?.recommendedActions ?? ''),
+                        responsibility: String(item?.responsible ?? item?.responsibility ?? ''),
+                        targetDate: String(item?.targetDate ?? '2024-12-31'),
+                        actionsTaken: String(item?.actionsTaken ?? ''),
+                        newSeverity,
+                        newOccurrence,
+                        newDetection,
+                        newRpn,
+                        analysis_timestamp: item?.analysis_timestamp ? new Date(item.analysis_timestamp).toISOString() : new Date().toISOString(),
+                        version: String(item?.version ?? '1.0'),
+                      } as FmeaRow;
                     });
-
-                    if (!response.ok) {
-                      throw new Error(`AI generation failed: ${response.status}`);
-                    }
-
-                    const aiResponse = await response.json();
-                    
-                    // Ensure we have comprehensive AI-generated data
-                    if (aiResponse.fmea_data && aiResponse.fmea_data.length >= 10) {
-                      return aiResponse.fmea_data.map((item: any, index: number) => ({
-                        id: (index + 1).toString(),
-                        component: componentDescription,
-                        function: item.function || `AI-analyzed function ${index + 1}`,
-                        failureMode: item.failure_mode || `AI-identified failure mode ${index + 1}`,
-                        potentialEffects: item.potential_effects || `AI-analyzed effects for failure ${index + 1}`,
-                        severity: item.severity || Math.floor(Math.random() * 10) + 1,
-                        potentialCauses: item.potential_causes || `AI-identified causes for failure ${index + 1}`,
-                        occurrence: item.occurrence || Math.floor(Math.random() * 10) + 1,
-                        currentControls: item.current_controls || `AI-suggested controls for failure ${index + 1}`,
-                        detection: item.detection || Math.floor(Math.random() * 10) + 1,
-                        rpn: (item.severity || 5) * (item.occurrence || 5) * (item.detection || 5),
-                        recommendedActions: item.recommended_actions || `AI-recommended actions for failure ${index + 1}`,
-                        responsibility: item.responsibility || `AI-assigned responsibility for failure ${index + 1}`,
-                        targetDate: item.target_date || '2024-12-31',
-                        actionsTaken: item.actions_taken || 'Pending AI analysis',
-                        newSeverity: item.new_severity || item.severity || 5,
-                        newOccurrence: item.new_occurrence || item.occurrence || 5,
-                        newDetection: item.new_detection || item.detection || 5,
-                        newRpn: (item.new_severity || item.severity || 5) * (item.new_occurrence || item.occurrence || 5) * (item.new_detection || item.detection || 5),
-                        analysis_timestamp: new Date().toISOString(),
-                        version: '1.0'
-                      }));
-                    } else {
-                      throw new Error('AI response insufficient - need at least 10 rows');
-                    }
                   } catch (error) {
                     console.error(`AI generation attempt ${attempt} failed:`, error);
                     
@@ -222,7 +208,6 @@ const FmeaPage: React.FC = () => {
                   setFmeaData({
                     [fmeaType]: aiFmeaData,
                   });
-                  setMockFlag(false);
                   setShowTable(true);
                   setIsGenerating(false);
 

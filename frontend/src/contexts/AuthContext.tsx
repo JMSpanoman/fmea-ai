@@ -1,17 +1,20 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import emailRepository from '../services/emailRepository';
-import emailNotificationService from '../services/emailNotificationService';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { API_BASE_URL } from '../axios';
 
 interface User {
+  id: string;
   email: string;
+  username?: string;
   name?: string;
+  role?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string) => Promise<void>;
+  login: (email?: string) => Promise<void>;
   logout: () => void;
+  refresh: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -25,58 +28,140 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Check if user is already logged in (from localStorage)
-    const savedEmail = localStorage.getItem('userEmail');
-    if (savedEmail) {
-      setUser({ email: savedEmail });
+  const fetchMe = useCallback(async (token: string): Promise<User> => {
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to load user profile (${res.status})`);
     }
-    setIsLoading(false);
+    const data: any = await res.json();
+    // Be tolerant of differing shapes between dev-login and /auth/me
+    return {
+      id: String(data?.id ?? data?.user?.id ?? ''),
+      email: String(data?.email ?? data?.user?.email ?? ''),
+      username: data?.username ?? data?.user?.username,
+      name: data?.full_name ?? data?.name ?? data?.user?.full_name ?? data?.user?.name,
+      role: data?.role ?? data?.user?.role,
+    };
   }, []);
 
-  const login = async (email: string): Promise<void> => {
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw new Error('Please enter a valid email address');
+  const refresh = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setUser(null);
+      return;
     }
-
-    // Check if email is authorized
-    const authorizedUser = emailRepository.getEmailByAddress(email);
-    if (!authorizedUser || !authorizedUser.isActive) {
-      throw new Error('This email address is not authorized to access the system or is inactive. Please contact your administrator.');
-    }
-
-    // Store user email in localStorage
-    localStorage.setItem('userEmail', email);
-    setUser({ email: authorizedUser.email, name: authorizedUser.name });
-
-    // Send login notification to admin
     try {
-      await emailNotificationService.sendLoginNotification({
-        userEmail: authorizedUser.email,
-        userName: authorizedUser.name || 'Unknown',
-        userRole: authorizedUser.role || 'User',
-        loginTime: new Date().toLocaleString(),
-        ipAddress: 'Unknown', // In a real app, you'd get this from the request
-        userAgent: navigator.userAgent
-      });
-    } catch (error) {
-      console.error('Failed to send login notification:', error);
-      // Don't fail login if notification fails
+      const me = await fetchMe(token);
+      if (!me.email) {
+        // If backend returns no identity, treat as unauthenticated
+        throw new Error('User profile missing email');
+      }
+      setUser(me);
+    } catch (err) {
+      console.warn('[auth] /auth/me failed; clearing token', err);
+      localStorage.removeItem('token');
+      localStorage.removeItem('auth_token'); // legacy
+      localStorage.removeItem('jwt'); // legacy
+      localStorage.removeItem('userEmail'); // legacy allowlist
+      setUser(null);
     }
+  }, [fetchMe]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await refresh();
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [refresh]);
+
+  const login = async (email?: string): Promise<void> => {
+    // Optional dev-only allowlist gate (off by default)
+    const allowlistEnabled =
+      import.meta.env.DEV && String(import.meta.env.VITE_DEV_EMAIL_ALLOWLIST || '').toLowerCase() === 'true';
+
+    if (allowlistEnabled) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email || !emailRegex.test(email)) {
+        throw new Error('Please enter a valid email address');
+      }
+      const { default: emailRepository } = await import('../services/emailRepository');
+      const { default: emailNotificationService } = await import('../services/emailNotificationService');
+
+      const authorizedUser = emailRepository.getEmailByAddress(email);
+      if (!authorizedUser || !authorizedUser.isActive) {
+        throw new Error(
+          'This email address is not authorized to access the system or is inactive. Please contact your administrator.'
+        );
+      }
+
+      // Optional: send login notification (best effort)
+      try {
+        await emailNotificationService.sendLoginNotification({
+          userEmail: authorizedUser.email,
+          userName: authorizedUser.name || 'Unknown',
+          userRole: authorizedUser.role || 'User',
+          loginTime: new Date().toLocaleString(),
+          ipAddress: 'Unknown',
+          userAgent: navigator.userAgent,
+        });
+      } catch {
+        // ignore
+      }
+    }
+
+    // Remember chosen dev identity (used for dev token refreshes)
+    if (email) {
+      localStorage.setItem('dev_login_email', email);
+    }
+
+    // Dev-friendly login: obtain a JWT via /auth/dev-login when available.
+    // In production this should be replaced by a real Auth0 login flow, but we keep backend APIs unchanged.
+    const res = await fetch(`${API_BASE_URL}/auth/dev-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: (email ? JSON.stringify({ email }) : undefined),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`Login failed (${res.status}) ${text}`);
+    }
+    const data: any = await res.json();
+    const token = String(data?.access_token || '');
+    if (!token) {
+      throw new Error('Login failed: missing access_token');
+    }
+
+    // Single source of truth: JWT token
+    localStorage.setItem('token', token);
+    // Backward-compatible mirrors (legacy callers)
+    localStorage.setItem('auth_token', token);
+    localStorage.setItem('jwt', token);
+    localStorage.removeItem('userEmail');
+
+    await refresh();
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('jwt');
     localStorage.removeItem('userEmail');
     setUser(null);
   };
 
   const value: AuthContextType = {
     user,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && !!localStorage.getItem('token'),
     login,
     logout,
+    refresh,
     isLoading,
   };
 

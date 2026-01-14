@@ -27,7 +27,7 @@ class NonConformanceUpdate(NonConformanceBase):
 
 class NonConformanceOut(NonConformanceBase):
     id: int
-    project_id: int
+    project_id: str
     user_id: str
     created_at: datetime
     updated_at: Optional[datetime] = None

@@ -5,8 +5,8 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 
 // Get auth token from localStorage or context
 const getAuthToken = (): string | null => {
-  // This should be replaced with your actual auth token retrieval
-  return localStorage.getItem('auth_token') || null;
+  // Single source of truth: JWT stored under `token`
+  return localStorage.getItem('token') || localStorage.getItem('auth_token') || null;
 };
 
 const apiRequest = async <T>(

@@ -11,7 +11,7 @@ interface ExportControlsProps {
 const ExportControls: React.FC<ExportControlsProps> = ({ projectId, projectName }) => {
   const handleExportCSV = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
       const url = exportApi.csv(projectId);
       
       const response = await fetch(url, {
@@ -39,7 +39,7 @@ const ExportControls: React.FC<ExportControlsProps> = ({ projectId, projectName 
 
   const handleExportPDF = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
       const url = exportApi.pdf(projectId);
       
       const response = await fetch(url, {

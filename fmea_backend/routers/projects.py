@@ -66,6 +66,19 @@ def get_project(
         raise HTTPException(status_code=404, detail="Project not found")
     return project
 
+@router.put("/{project_id}", response_model=project_schemas.ProjectOut)
+def update_project(
+    project_id: str,
+    project: project_schemas.ProjectUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update a project (name/description). Enforces ownership by current_user."""
+    updated = project_crud.update_project(db, project_id, project, current_user.id)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return updated
+
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_project(
     project_id: str,

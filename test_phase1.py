@@ -60,6 +60,81 @@ def test_imports() -> List[TestResult]:
     
     return results
 
+def test_generated_artifact_cleanup() -> List[TestResult]:
+    """Cleanup should delete expired rows/files and prune missing-file rows."""
+    results: List[TestResult] = []
+    try:
+        import tempfile
+        from pathlib import Path
+        from datetime import datetime, timedelta, timezone
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+
+        from database import Base
+        from models.user import User
+        from models.project import Project
+        from crud.generated_artifact import create_generated_artifact, cleanup_generated_artifacts
+
+        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+        TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        Base.metadata.create_all(bind=engine)
+
+        db = TestingSessionLocal()
+        try:
+            u1 = User(email="u1@example.com", auth0_id="u1")
+            db.add(u1)
+            db.commit()
+            db.refresh(u1)
+
+            p1 = Project(user_id=u1.id, name="P1", description=None)
+            db.add(p1)
+            db.commit()
+            db.refresh(p1)
+
+            with tempfile.TemporaryDirectory() as td:
+                temp_dir = Path(td)
+                # Expired file present
+                (temp_dir / "expired.docx").write_text("x", encoding="utf-8")
+                create_generated_artifact(
+                    db,
+                    user_id=u1.id,
+                    project_id=p1.id,
+                    filename="expired.docx",
+                    artifact_type="word_report",
+                    expires_at=datetime.now(timezone.utc) - timedelta(days=1),
+                )
+
+                # Missing file row (not expired)
+                create_generated_artifact(
+                    db,
+                    user_id=u1.id,
+                    project_id=p1.id,
+                    filename="missing.docx",
+                    artifact_type="word_report",
+                    expires_at=None,
+                )
+
+                stats = cleanup_generated_artifacts(
+                    db,
+                    base_dirs={"word_report": temp_dir},
+                    now=datetime.now(timezone.utc),
+                )
+
+                if not (temp_dir / "expired.docx").exists():
+                    results.append(TestResult("Cleanup deletes expired file", True))
+                else:
+                    results.append(TestResult("Cleanup deletes expired file", False, "expired.docx still exists"))
+
+                # Should have removed both rows: expired + missing file
+                if stats.get("deleted_rows_expired", 0) >= 1 and stats.get("deleted_rows_missing_file", 0) >= 1:
+                    results.append(TestResult("Cleanup deletes expired rows and missing-file rows", True))
+                else:
+                    results.append(TestResult("Cleanup deletes expired rows and missing-file rows", False, f"Unexpected stats: {stats}"))
+        finally:
+            db.close()
+    except Exception as e:
+        results.append(TestResult("GeneratedArtifact cleanup", False, "Error testing cleanup", e))
+    return results
 def test_model_relationships() -> List[TestResult]:
     """Test model relationships and foreign keys"""
     results = []
@@ -111,6 +186,8 @@ def test_model_relationships() -> List[TestResult]:
         # Check FMEAVersion relationships
         if hasattr(FMEAVersion, 'fmea_row'):
             results.append(TestResult("FMEAVersion.fmea_row relationship", True))
+        else:
+            results.append(TestResult("FMEAVersion.fmea_row relationship", False, "Missing fmea_row relationship"))
         
         # Check RiskItem relationships
         from models.risk_item import RiskItem
@@ -135,8 +212,6 @@ def test_model_relationships() -> List[TestResult]:
             results.append(TestResult("FMEARow.risk_items relationship", True))
         else:
             results.append(TestResult("FMEARow.risk_items relationship", False, "Missing risk_items relationship"))
-        else:
-            results.append(TestResult("FMEAVersion.fmea_row relationship", False, "Missing fmea_row relationship"))
         
     except Exception as e:
         results.append(TestResult("Model relationships", False, "Error checking relationships", e))
@@ -368,6 +443,322 @@ def test_export_functionality() -> List[TestResult]:
     
     return results
 
+def test_ai_event_project_scoping() -> List[TestResult]:
+    """
+    Security regression test:
+    Updating an AIEvent disposition must be scoped by BOTH event_id and project_id
+    to prevent cross-project / cross-user updates.
+    """
+    results: List[TestResult] = []
+    try:
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+
+        from database import Base
+        # Import models so they're registered on Base.metadata
+        from models.user import User
+        from models.project import Project
+        from models.ai_event import AIEvent
+        from schemas.ai_event import AIEventUpdate
+        from crud.ai_event import update_ai_event_disposition
+
+        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+        TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        Base.metadata.create_all(bind=engine)
+
+        db = TestingSessionLocal()
+        try:
+            # Two users, two projects
+            u1 = User(email="u1@example.com", auth0_id="u1")
+            u2 = User(email="u2@example.com", auth0_id="u2")
+            db.add_all([u1, u2])
+            db.commit()
+            db.refresh(u1)
+            db.refresh(u2)
+
+            p1 = Project(user_id=u1.id, name="P1", description=None)
+            p2 = Project(user_id=u2.id, name="P2", description=None)
+            db.add_all([p1, p2])
+            db.commit()
+            db.refresh(p1)
+            db.refresh(p2)
+
+            # AI event belongs to project 1
+            e1 = AIEvent(
+                project_id=p1.id,
+                user_id=u1.id,
+                context_type="risk_item",
+                context_id="risk-1",
+                prompt_name="risk_suggest",
+                input_summary="x",
+                output_json={"ok": True},
+                disposition="pending",
+            )
+            db.add(e1)
+            db.commit()
+            db.refresh(e1)
+
+            # Attempt update under WRONG project_id => must return None (no update)
+            updated_wrong = update_ai_event_disposition(
+                db=db,
+                event_id=e1.id,
+                project_id=p2.id,
+                update_data=AIEventUpdate(disposition="accepted"),
+                user_id=u2.id,
+            )
+            if updated_wrong is None:
+                results.append(TestResult("AIEvent update blocked cross-project", True))
+            else:
+                results.append(TestResult("AIEvent update blocked cross-project", False, "Update unexpectedly succeeded under wrong project_id"))
+
+            # Update under correct project_id => must succeed
+            updated_ok = update_ai_event_disposition(
+                db=db,
+                event_id=e1.id,
+                project_id=p1.id,
+                update_data=AIEventUpdate(disposition="accepted"),
+                user_id=u1.id,
+            )
+            if updated_ok and updated_ok.disposition == "accepted" and updated_ok.disposition_user_id == u1.id:
+                results.append(TestResult("AIEvent update succeeds within project", True))
+            else:
+                results.append(TestResult("AIEvent update succeeds within project", False, "Update did not apply expected disposition metadata"))
+        finally:
+            db.close()
+    except Exception as e:
+        results.append(TestResult("AIEvent project scoping", False, "Error testing AIEvent scoping", e))
+    return results
+
+def test_legacy_word_report_filename_security() -> List[TestResult]:
+    """Validate legacy Word download filename allowlist and safe path join helpers."""
+    results: List[TestResult] = []
+    try:
+        import tempfile
+        from pathlib import Path
+        from routers.ai import _is_safe_docx_filename, _safe_path_in_dir
+
+        # Filename allowlist
+        ok = [
+            "Report_ABC-123.docx",
+            "Risk_Management_Report_Project_20260101_010203.docx",
+            "a.b-c_d.docx",
+        ]
+        bad = [
+            "../secret.docx",
+            "..\\secret.docx",
+            "folder/secret.docx",
+            "secret.doc",
+            "secret.docx.exe",
+            "secret?.docx",
+            "",
+        ]
+
+        for name in ok:
+            if _is_safe_docx_filename(name):
+                results.append(TestResult(f"Word filename allowlist ok: {name}", True))
+            else:
+                results.append(TestResult(f"Word filename allowlist ok: {name}", False, "Expected safe filename"))
+
+        for name in bad:
+            if not _is_safe_docx_filename(name):
+                results.append(TestResult(f"Word filename allowlist reject: {name}", True))
+            else:
+                results.append(TestResult(f"Word filename allowlist reject: {name}", False, "Expected unsafe filename"))
+
+        # Safe join should keep files in base dir
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            p = _safe_path_in_dir(base, "Report_ABC-123.docx")
+            if p.parent == base.resolve():
+                results.append(TestResult("Word safe path join within base dir", True))
+            else:
+                results.append(TestResult("Word safe path join within base dir", False, f"Unexpected parent: {p.parent}"))
+
+            try:
+                _safe_path_in_dir(base, "../secret.docx")
+                results.append(TestResult("Word safe path join blocks traversal", False, "Traversal was not blocked"))
+            except Exception:
+                results.append(TestResult("Word safe path join blocks traversal", True))
+
+    except Exception as e:
+        results.append(TestResult("Legacy Word filename security", False, "Error testing filename/path security", e))
+    return results
+
+def test_templates_filename_security() -> List[TestResult]:
+    """Validate template download/delete filename allowlist and safe path join helpers."""
+    results: List[TestResult] = []
+    try:
+        import tempfile
+        from pathlib import Path
+        from routers.templates import _is_safe_template_filename, _safe_path_in_dir
+
+        ok = [
+            "risk_management_report_template.docx",
+            "fmea_report_My-Template_01.doc",
+            "general_a.b-c_d.docx",
+        ]
+        bad = [
+            "../secret.docx",
+            "..\\secret.docx",
+            "folder/secret.docx",
+            "secret.txt",
+            "secret.docx.exe",
+            "secret?.docx",
+            "",
+        ]
+
+        for name in ok:
+            if _is_safe_template_filename(name):
+                results.append(TestResult(f"Template filename allowlist ok: {name}", True))
+            else:
+                results.append(TestResult(f"Template filename allowlist ok: {name}", False, "Expected safe filename"))
+
+        for name in bad:
+            if not _is_safe_template_filename(name):
+                results.append(TestResult(f"Template filename allowlist reject: {name}", True))
+            else:
+                results.append(TestResult(f"Template filename allowlist reject: {name}", False, "Expected unsafe filename"))
+
+        with tempfile.TemporaryDirectory() as td:
+            base = Path(td)
+            p = _safe_path_in_dir(base, "risk_management_report_template.docx")
+            if p.parent == base.resolve():
+                results.append(TestResult("Template safe path join within base dir", True))
+            else:
+                results.append(TestResult("Template safe path join within base dir", False, f"Unexpected parent: {p.parent}"))
+
+            try:
+                _safe_path_in_dir(base, "../secret.docx")
+                results.append(TestResult("Template safe path join blocks traversal", False, "Traversal was not blocked"))
+            except Exception:
+                results.append(TestResult("Template safe path join blocks traversal", True))
+
+    except Exception as e:
+        results.append(TestResult("Templates filename security", False, "Error testing templates filename/path security", e))
+    return results
+
+def test_generated_artifact_db_scoping() -> List[TestResult]:
+    """DB-backed artifact records must scope access by (user_id, filename, artifact_type)."""
+    results: List[TestResult] = []
+    try:
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+
+        from database import Base
+        from models.user import User
+        from models.project import Project
+        from crud.generated_artifact import create_generated_artifact, get_generated_artifact_for_user
+
+        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+        TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        Base.metadata.create_all(bind=engine)
+
+        db = TestingSessionLocal()
+        try:
+            u1 = User(email="u1@example.com", auth0_id="u1")
+            u2 = User(email="u2@example.com", auth0_id="u2")
+            db.add_all([u1, u2])
+            db.commit()
+            db.refresh(u1)
+            db.refresh(u2)
+
+            p1 = Project(user_id=u1.id, name="P1", description=None)
+            db.add(p1)
+            db.commit()
+            db.refresh(p1)
+
+            create_generated_artifact(
+                db,
+                user_id=u1.id,
+                project_id=p1.id,
+                filename="file.docx",
+                artifact_type="word_report",
+            )
+
+            ok = get_generated_artifact_for_user(
+                db, user_id=u1.id, filename="file.docx", artifact_type="word_report"
+            )
+            if ok is not None and ok.user_id == u1.id:
+                results.append(TestResult("GeneratedArtifact scoped lookup succeeds for owner", True))
+            else:
+                results.append(TestResult("GeneratedArtifact scoped lookup succeeds for owner", False, "Expected record"))
+
+            bad = get_generated_artifact_for_user(
+                db, user_id=u2.id, filename="file.docx", artifact_type="word_report"
+            )
+            if bad is None:
+                results.append(TestResult("GeneratedArtifact scoped lookup blocks other user", True))
+            else:
+                results.append(TestResult("GeneratedArtifact scoped lookup blocks other user", False, "Unexpected record for other user"))
+        finally:
+            db.close()
+    except Exception as e:
+        results.append(TestResult("GeneratedArtifact DB scoping", False, "Error testing GeneratedArtifact scoping", e))
+    return results
+
+def test_word_report_requires_project_scope() -> List[TestResult]:
+    """Word report downloads must require GeneratedArtifact.project_id and project ownership."""
+    results: List[TestResult] = []
+    try:
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+
+        from database import Base
+        from models.user import User
+        from models.project import Project
+        from crud.generated_artifact import create_generated_artifact
+        from routers.ai import _require_project_scoped_word_report
+        from fastapi import HTTPException
+
+        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+        TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        Base.metadata.create_all(bind=engine)
+
+        db = TestingSessionLocal()
+        try:
+            u1 = User(email="u1@example.com", auth0_id="u1")
+            db.add(u1)
+            db.commit()
+            db.refresh(u1)
+
+            p1 = Project(user_id=u1.id, name="P1", description=None)
+            db.add(p1)
+            db.commit()
+            db.refresh(p1)
+
+            # Artifact without project_id should be rejected (fail closed)
+            create_generated_artifact(
+                db,
+                user_id=u1.id,
+                project_id=None,
+                filename="file.docx",
+                artifact_type="word_report",
+            )
+            try:
+                _require_project_scoped_word_report(db, current_user=u1, filename="file.docx")
+                results.append(TestResult("Word report artifact requires project_id", False, "Expected rejection for missing project_id"))
+            except HTTPException as he:
+                results.append(TestResult("Word report artifact requires project_id", he.status_code == 404))
+
+            # Artifact with project_id should be allowed
+            create_generated_artifact(
+                db,
+                user_id=u1.id,
+                project_id=p1.id,
+                filename="file2.docx",
+                artifact_type="word_report",
+            )
+            try:
+                _require_project_scoped_word_report(db, current_user=u1, filename="file2.docx")
+                results.append(TestResult("Word report artifact allows owned project", True))
+            except Exception as e:
+                results.append(TestResult("Word report artifact allows owned project", False, str(e), e))
+
+        finally:
+            db.close()
+    except Exception as e:
+        results.append(TestResult("Word report requires project scope", False, "Error testing word report project scoping", e))
+    return results
 def main():
     """Run all tests"""
     print("=" * 60)
@@ -386,6 +777,12 @@ def main():
         ("Router Endpoints", test_router_endpoints),
         ("Auth0 Integration", test_auth0_integration),
         ("Export Functionality", test_export_functionality),
+        ("AI Event Scoping", test_ai_event_project_scoping),
+        ("Legacy Word Filename Security", test_legacy_word_report_filename_security),
+        ("Templates Filename Security", test_templates_filename_security),
+        ("GeneratedArtifact DB Scoping", test_generated_artifact_db_scoping),
+        ("Word Report Requires Project Scope", test_word_report_requires_project_scope),
+        ("GeneratedArtifact Cleanup", test_generated_artifact_cleanup),
     ]
     
     for suite_name, test_func in test_suites:

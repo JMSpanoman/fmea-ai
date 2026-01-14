@@ -113,7 +113,10 @@ Version: {{ item.version }}
   const loadTemplates = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/templates/list');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/templates/list', {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (response.ok) {
         const data = await response.json();
         setTemplates(data);
@@ -165,8 +168,10 @@ Version: {{ item.version }}
     formData.append('template_type', templateType);
 
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch('/api/templates/upload', {
         method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: formData,
       });
 
@@ -196,7 +201,10 @@ Version: {{ item.version }}
 
   const handleDownload = async (filename: string) => {
     try {
-      const response = await fetch(`/api/templates/download/${filename}`);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/templates/download/${filename}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -223,8 +231,10 @@ Version: {{ item.version }}
     }
 
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`/api/templates/delete/${filename}`, {
         method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
 
       if (response.ok) {

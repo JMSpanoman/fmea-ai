@@ -36,7 +36,7 @@ from crud import capa as capa_crud
 from crud import nonconformance as nonconformance_crud
 
 from auth.dependencies import get_current_user
-from routers import ai, auth, capa, change_control, fmeas, mitigations, nonconformance, projects, tracibility, templates
+from routers import ai, auth, capa, change_control, mitigations, nonconformance, projects, tracibility, templates
 from routes.mastercontrol import router as mastercontrol_router
 # Phase 1 routers
 from routers import projects as projects_phase1, components, fmea as fmea_phase1, ai_phase1, export
@@ -88,9 +88,23 @@ async def lifespan(app: FastAPI):
     # Create database tables if they don't exist
     from database import engine, Base
     # Import all models to ensure they're registered
-    from models import user, project, fmea, component, risk_item, risk_item_version, risk_control, approval, trace_link, ai_event, audit_log_event, design_input, design_output, vv_test, risk_management_plan, pms_signal
+    from models import user, project, fmea, component, risk_item, risk_item_version, risk_control, approval, trace_link, ai_event, audit_log_event, design_input, design_output, vv_test, risk_management_plan, pms_signal, generated_artifact
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables initialized")
+
+    # Cleanup expired filesystem artifacts (best-effort, safe for multi-user)
+    try:
+        from database import SessionLocal
+        from crud.generated_artifact import cleanup_generated_artifacts
+        db = SessionLocal()
+        try:
+            stats = cleanup_generated_artifacts(db)
+            logger.info(f"GeneratedArtifact cleanup: {stats}")
+        finally:
+            db.close()
+    except Exception as cleanup_err:
+        logger.error(f"GeneratedArtifact cleanup failed: {cleanup_err}", exc_info=True)
+
     yield
     # Shutdown
     logger.info("Shutting down Smart FMEA Builder API")
@@ -276,116 +290,14 @@ def test_endpoint():
 # The active Project API is implemented in `fmea_backend/routers/projects.py`
 # and is included via `app.include_router(projects_phase1.router, ...)`.
 
-# FMEA endpoints
-@app.post("/projects/{project_id}/fmeas", status_code=status.HTTP_201_CREATED)
-def create_fmea(
-    project_id: int,
-    fmea: fmea_schemas.FMEACreate,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """Create a new FMEA entry for a project"""
-    try:
-        # Get user ID from the authenticated user
-        user_id = str(current_user.id if hasattr(current_user, "id") else current_user.username)
-        
-        # Test the CRUD function directly
-        db_fmea = fmea_crud.create_fmea(db=db, project_id=project_id, fmea=fmea, user_id=user_id)
-        
-        # Return a simple success response
-        return {
-            "message": "FMEA created successfully",
-            "id": db_fmea.id,
-            "component": db_fmea.component
-        }
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.get("/projects/{project_id}/fmeas", response_model=List[fmea_schemas.FMEAOut])
-def get_fmeas(
-    project_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """Get all FMEA entries for a project"""
-    try:
-        # Get user ID from the authenticated user
-        user_id = str(current_user.id if hasattr(current_user, "id") else current_user.username)
-        db_fmeas = fmea_crud.get_fmeas_for_project(db=db, project_id=project_id, user_id=user_id)
-        
-        # Use automatic conversion with from_attributes=True
-        return [fmea_schemas.FMEAOut.model_validate(db_fmea) for db_fmea in db_fmeas]
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-# Temporarily commented out to isolate the issue
-# @app.get("/projects/{project_id}/fmeas/{fmea_id}", response_model=fmea_schemas.FMEAOut)
-# def get_fmea(
-#     project_id: int,
-#     fmea_id: int,
-#     db: Session = Depends(get_db),
-#     current_user = Depends(get_current_user)
-# ):
-#     """Get a specific FMEA entry"""
-#     try:
-#         # Get user ID from the authenticated user
-#         user_id = str(current_user.id if hasattr(current_user, "id") else current_user.username)
-#         db_fmea = fmea_crud.get_fmea(db=db, project_id=project_id, fmea_id=fmea_id, user_id=user_id)
-#         if not db_fmea:
-#             raise HTTPException(status_code=404, detail="FMEA entry not found")
-#         
-#         # Use automatic conversion with from_attributes=True
-#         return fmea_schemas.FMEAOut.parse_obj(db_fmea.__dict__)
-#     except HTTPException:
-#         raise
-#     except Exception as e:
-#         raise HTTPException(status_code=400, detail=str(e))
-
-# Temporarily commented out to isolate the issue
-# @app.put("/projects/{project_id}/fmeas/{fmea_id}", response_model=fmea_schemas.FMEAOut)
-# def update_fmea(
-#     project_id: int,
-#     fmea_id: int,
-#     fmea: fmea_schemas.FMEAUpdate,
-#     db: Session = Depends(get_db),
-#     current_user = Depends(get_current_user)
-# ):
-#     """Update a FMEA entry"""
-#     try:
-#         # Get user ID from the authenticated user
-#         user_id = str(current_user.id if hasattr(current_user, "id") else current_user.username)
-#         db_fmea = fmea_crud.update_fmea(db=db, project_id=project_id, fmea_id=fmea_id, fmea=fmea, user_id=user_id)
-#         if not db_fmea:
-#             raise HTTPException(status_code=404, detail="FMEA entry not found")
-#         
-#         # Use automatic conversion with from_attributes=True
-#         return fmea_schemas.FMEAOut.parse_obj(db_fmea.__dict__)
-#     except HTTPException:
-#         raise
-#     except Exception as e:
-#         raise HTTPException(status_code=400, detail=str(e))
-
-@app.delete("/projects/{project_id}/fmeas/{fmea_id}")
-def delete_fmea(
-    project_id: int,
-    fmea_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """Delete a FMEA entry"""
-    try:
-        # Get user ID from the authenticated user
-        user_id = str(current_user.id if hasattr(current_user, "id") else current_user.username)
-        success = fmea_crud.delete_fmea(db=db, project_id=project_id, fmea_id=fmea_id, user_id=user_id)
-        if not success:
-            raise HTTPException(status_code=404, detail="FMEA entry not found")
-        return {"message": "FMEA entry deleted successfully"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+#
+# Legacy FMEA endpoints removed:
+# - /projects/{project_id}/fmeas (plural)
+# These conflict with the canonical, project-first FMEA router:
+# - `fmea_backend/routers/fmea.py` mounted at /projects/{project_id}/fmea (singular)
+#
+# The frontend does not call the plural endpoints anymore, so we remove them to
+# reduce attack surface area and avoid ambiguous behavior.
 
 # Change Control endpoints
 @app.post("/projects/{project_id}/change-controls", status_code=status.HTTP_201_CREATED)

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import List
@@ -9,6 +9,7 @@ from crud import user as user_crud
 from auth.security import create_access_token, verify_token, get_password_hash, verify_password
 from auth.dependencies import get_current_user
 from datetime import timedelta
+import os
 
 router = APIRouter()
 security = HTTPBearer()
@@ -99,24 +100,52 @@ def login_user(user_credentials: UserLogin, db: Session = Depends(get_db)):
     }
 
 @router.post("/dev-login", response_model=Token)
-def dev_login():
-    """Development login endpoint"""
+def dev_login(payload: dict = Body(default=None)):
+    """
+    Development-only login endpoint.
+    SECURITY: This endpoint MUST NOT be available in production.
+    """
+    env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
+    if env in ("production", "prod", "staging"):
+        # Fail closed: hide endpoint in production-like environments
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
     from auth.security import create_dev_token
     from crud import project as project_crud
     from crud import user as user_crud
     from schemas import project as project_schemas
     from database import get_db
     
-    access_token = create_dev_token()
+    # Allow choosing a dev identity so multiple users can sign in locally.
+    # Backward-compatible: if no payload provided, uses dev@example.com.
+    email = "dev@example.com"
+    # Default dev role is a regular user; allow explicit role override, and grant admin to John.
+    role = "user"
+    if isinstance(payload, dict):
+        raw_email = str(payload.get("email") or "").strip()
+        if raw_email:
+            email = raw_email
+        raw_role = str(payload.get("role") or "").strip()
+        if raw_role:
+            role = raw_role
+
+    # Special-case: John has admin rights in dev
+    if email.lower() == "john@fotonconsulting.com" and (not isinstance(payload, dict) or not payload.get("role")):
+        role = "admin"
+
+    # Use a stable dev-only subject derived from email.
+    auth0_id = f"dev:{email.lower()}"
+    username = email.split("@")[0] if "@" in email else email
+    access_token = create_dev_token(sub=auth0_id, email=email, username=username, role=role)
     
     # Get or create dev user and their default project
     db = next(get_db())
     user_id = None
     try:
         # Find or create the dev user
-        dev_user = user_crud.get_user_by_auth0_id(db, "dev-user")
+        dev_user = user_crud.get_user_by_auth0_id(db, auth0_id)
         if not dev_user:
-            dev_user = user_crud.create_user_from_auth0(db, "dev-user", "dev@example.com")
+            dev_user = user_crud.create_user_from_auth0(db, auth0_id, email)
         
         if dev_user:
             user_id = dev_user.id
@@ -150,11 +179,11 @@ def dev_login():
         "access_token": access_token,
         "token_type": "bearer",
         "user": {
-            "id": user_id or "dev-user",
-            "username": "dev-user",
-            "email": "dev@example.com",
+            "id": user_id or auth0_id,
+            "username": username or "dev-user",
+            "email": email,
             "full_name": "Development User",
-            "role": "admin",
+            "role": role or "admin",
             "company": "Development",
             "department": "IT",
             "phone": None,
@@ -168,19 +197,21 @@ def dev_login():
 @router.get("/me", response_model=UserProfile)
 def get_current_user_profile(current_user: User = Depends(get_current_user)):
     """Get current user profile"""
+    # NOTE: The DB User model used for Auth0/dev-login is intentionally minimal (id/auth0_id/email).
+    # Provide safe defaults for fields that may not exist on the model to keep /auth/me reliable.
     return UserProfile(
         id=current_user.id,
-        username=current_user.username,
-        email=current_user.email,
-        full_name=current_user.full_name,
-        role=current_user.role,
-        company=current_user.company,
-        department=current_user.department,
-        phone=current_user.phone,
-        bio=current_user.bio,
-        is_verified=current_user.is_verified,
-        created_at=current_user.created_at,
-        last_login=current_user.last_login
+        username=getattr(current_user, "username", None) or (getattr(current_user, "email", "") or "user").split("@")[0],
+        email=getattr(current_user, "email", "") or "",
+        full_name=getattr(current_user, "full_name", None),
+        role=getattr(current_user, "role", None) or "user",
+        company=getattr(current_user, "company", None),
+        department=getattr(current_user, "department", None),
+        phone=getattr(current_user, "phone", None),
+        bio=getattr(current_user, "bio", None),
+        is_verified=bool(getattr(current_user, "is_verified", True)),
+        created_at=getattr(current_user, "created_at", None),
+        last_login=getattr(current_user, "last_login", None),
     )
 
 @router.put("/me", response_model=UserProfile)
@@ -199,17 +230,17 @@ def update_current_user_profile(
     
     return UserProfile(
         id=updated_user.id,
-        username=updated_user.username,
-        email=updated_user.email,
-        full_name=updated_user.full_name,
-        role=updated_user.role,
-        company=updated_user.company,
-        department=updated_user.department,
-        phone=updated_user.phone,
-        bio=updated_user.bio,
-        is_verified=updated_user.is_verified,
-        created_at=updated_user.created_at,
-        last_login=updated_user.last_login
+        username=getattr(updated_user, "username", None) or (getattr(updated_user, "email", "") or "user").split("@")[0],
+        email=getattr(updated_user, "email", "") or "",
+        full_name=getattr(updated_user, "full_name", None),
+        role=getattr(updated_user, "role", None) or "user",
+        company=getattr(updated_user, "company", None),
+        department=getattr(updated_user, "department", None),
+        phone=getattr(updated_user, "phone", None),
+        bio=getattr(updated_user, "bio", None),
+        is_verified=bool(getattr(updated_user, "is_verified", True)),
+        created_at=getattr(updated_user, "created_at", None),
+        last_login=getattr(updated_user, "last_login", None),
     )
 
 @router.post("/change-password")

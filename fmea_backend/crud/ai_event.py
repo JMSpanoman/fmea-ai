@@ -48,11 +48,16 @@ def get_ai_events_by_context(
 def update_ai_event_disposition(
     db: Session,
     event_id: str,
+    project_id: str,
     update_data: AIEventUpdate,
     user_id: str
 ) -> Optional[AIEvent]:
     """Update AI event disposition"""
-    db_event = get_ai_event(db, event_id)
+    # SECURITY: Ensure the event belongs to the specified project before updating
+    db_event = db.query(AIEvent).filter(
+        AIEvent.id == event_id,
+        AIEvent.project_id == project_id
+    ).first()
     if not db_event:
         return None
     

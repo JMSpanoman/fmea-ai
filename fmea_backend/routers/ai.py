@@ -1,15 +1,83 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 import openai
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import re
 from docxtpl import DocxTemplate
 from pathlib import Path
 
+from sqlalchemy.orm import Session
+
+from auth.dependencies import get_current_user
+from database import get_db
+from models.user import User
+from crud import project as project_crud
+from crud import generated_artifact as artifact_crud
+
 router = APIRouter()
+
+# --- Security helpers for legacy file downloads ---
+_SAFE_DOCX_NAME_RE = re.compile(r"^[a-zA-Z0-9._-]+\.docx$")
+
+def _is_safe_docx_filename(filename: str) -> bool:
+    """Strict allowlist: no path separators; only [a-zA-Z0-9._-] and required .docx."""
+    if not isinstance(filename, str) or not filename:
+        return False
+    if "/" in filename or "\\" in filename:
+        return False
+    return _SAFE_DOCX_NAME_RE.fullmatch(filename) is not None
+
+
+def _safe_path_in_dir(base_dir: Path, filename: str) -> Path:
+    """
+    Resolve `filename` within `base_dir` and ensure it cannot escape the directory.
+    Also enforces a flat directory (no subfolders).
+    """
+    base = base_dir.resolve()
+    candidate = (base / filename).resolve()
+    # Disallow nested directories (even if filename includes separators, which we also validate)
+    if candidate.parent != base:
+        raise ValueError("Invalid filename path")
+    # Defense-in-depth against traversal/symlinks
+    try:
+        if not candidate.is_relative_to(base):  # py3.9+
+            raise ValueError("Invalid filename path")
+    except AttributeError:
+        # Fallback for older Path implementations
+        if str(candidate).find(str(base)) != 0:
+            raise ValueError("Invalid filename path")
+    return candidate
+
+
+def _require_project_scoped_word_report(
+    db: Session,
+    *,
+    current_user: User,
+    filename: str,
+):
+    """
+    Enforce that word report artifacts are project-scoped:
+    - record must exist for (current_user, filename, artifact_type="word_report")
+    - record must have project_id set
+    - project must belong to current_user
+    """
+    rec = artifact_crud.get_generated_artifact_for_user(
+        db,
+        user_id=current_user.id,
+        filename=filename,
+        artifact_type="word_report",
+    )
+    if not rec or not rec.project_id:
+        # Fail closed and don't leak existence
+        raise HTTPException(status_code=404, detail="Generated report not found")
+
+    project = project_crud.get_project(db, rec.project_id, current_user.id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Generated report not found")
+    return rec
 
 class FmeaRequest(BaseModel):
     component: str
@@ -1732,9 +1800,22 @@ async def save_risk_management_report(data: dict):
         raise HTTPException(status_code=500, detail=f"Failed to save data: {str(e)}")
 
 @router.post("/risk-management-report/generate-word")
-async def generate_word_report(data: dict):
+async def generate_word_report(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Generate Word document report using template"""
     try:
+        # Project scoping is REQUIRED for word report artifacts.
+        project_id = data.get("project_id") or data.get("projectId") or data.get("projectID")
+        if not project_id:
+            raise HTTPException(status_code=400, detail="project_id is required")
+
+        project = project_crud.get_project(db, str(project_id), current_user.id)
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+
         # Look for the Risk Management Report template
         templates_dir = Path("templates")
         template_file = None
@@ -1789,14 +1870,31 @@ async def generate_word_report(data: dict):
         
         # Generate output filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_filename = f"Risk_Management_Report_{data.get('project_name', 'Project')}_{timestamp}.docx"
-        output_path = Path("temp") / output_filename
+        raw_project_name = str(data.get("project_name", "Project"))
+        safe_project_name = re.sub(r"[^a-zA-Z0-9._-]+", "_", raw_project_name).strip("._-") or "Project"
+        output_filename = f"Risk_Management_Report_{safe_project_name}_{timestamp}.docx"
+        if not _is_safe_docx_filename(output_filename):
+            # Should never happen due to sanitization + fixed format, but keep guardrail.
+            raise HTTPException(status_code=500, detail="Failed to create a safe output filename")
+
+        temp_dir = Path("temp")
+        output_path = temp_dir / output_filename
         
         # Create temp directory if it doesn't exist
         output_path.parent.mkdir(exist_ok=True)
         
         # Save the generated document
         doc.save(output_path)
+
+        # Persist artifact record for multi-user authorization across restarts
+        artifact_crud.create_generated_artifact(
+            db,
+            user_id=current_user.id,
+            project_id=str(project_id),
+            filename=output_filename,
+            artifact_type="word_report",
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+        )
         
         # Return the file path for download
         return {
@@ -1806,17 +1904,31 @@ async def generate_word_report(data: dict):
             "template_used": template_file.name
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error generating Word report: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate Word report: {str(e)}")
 
 @router.get("/risk-management-report/download-word/{filename}")
-async def download_word_report(filename: str):
+async def download_word_report(
+    filename: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Download generated Word report"""
     try:
         from fastapi.responses import FileResponse
-        
-        file_path = Path("temp") / filename
+
+        # Validate filename strictly
+        if not _is_safe_docx_filename(filename):
+            raise HTTPException(status_code=400, detail="Invalid filename")
+
+        # Enforce DB scoping + REQUIRED project ownership before serving
+        _require_project_scoped_word_report(db, current_user=current_user, filename=filename)
+
+        # Safe resolve inside fixed temp/ directory (no traversal)
+        file_path = _safe_path_in_dir(Path("temp"), filename)
         
         if not file_path.exists():
             raise HTTPException(status_code=404, detail="Generated report not found")
@@ -1827,6 +1939,8 @@ async def download_word_report(filename: str):
             media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error downloading Word report: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to download Word report: {str(e)}")

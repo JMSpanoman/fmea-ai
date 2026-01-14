@@ -18,12 +18,14 @@ async function ensureValidToken(): Promise<string | null> {
   if (!token) {
     try {
       console.log('[axios] No token found, attempting dev-login...');
+      const devEmail = localStorage.getItem('dev_login_email') || '';
       // Use native fetch to avoid circular dependency
       const response = await fetch(`${API_BASE_URL}/auth/dev-login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: devEmail ? JSON.stringify({ email: devEmail }) : undefined,
       });
       
       if (response.ok) {

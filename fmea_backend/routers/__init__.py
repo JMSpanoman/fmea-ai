@@ -6,7 +6,6 @@ from . import mitigations
 from . import nonconformance
 from . import capa
 from . import change_control
-from . import fmeas
 from . import templates
 # Phase 1 routers
 from . import projects
@@ -36,7 +35,7 @@ from . import ai_phase3
 from . import risk_items
 
 __all__ = [
-    "auth", "ai", "tracibility", "mitigations", "nonconformance", "capa", "change_control", "fmeas", "templates",
+    "auth", "ai", "tracibility", "mitigations", "nonconformance", "capa", "change_control", "templates",
     "projects", "components", "fmea", "ai_phase1", "export",  # Phase 1
     "design_controls", "vv", "capa_phase2", "pms", "traceability", "ai_phase2",  # Phase 2
     "document_control", "training_phase3", "change_control_phase3", "audit_phase3", "supplier_phase3",  # Phase 3

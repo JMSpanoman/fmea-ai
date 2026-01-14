@@ -15,7 +15,7 @@ const AdminPage: React.FC = () => {
     setError(null);
     try {
       const res = await fetch(`${API_URL}/admin/users`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('jwt')}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('token') || localStorage.getItem('jwt')}` },
       });
       if (!res.ok) throw new Error('Failed to fetch users');
       const data = await res.json();
@@ -43,7 +43,7 @@ const AdminPage: React.FC = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') || localStorage.getItem('jwt')}`,
         },
         body: JSON.stringify(roles),
       });

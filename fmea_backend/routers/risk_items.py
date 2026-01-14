@@ -460,14 +460,20 @@ async def suggest_risk_assessment(
 # AI Event Disposition endpoint
 @router.patch("/ai/events/{event_id}/disposition")
 def update_ai_event_disposition(
+    project_id: str,
     event_id: str,
     update_data: ai_event_schemas.AIEventUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Update AI event disposition"""
+    # Verify project belongs to user (prevents cross-user / cross-project updates)
+    project = project_crud.get_project(db, project_id, current_user.id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
     updated_event = ai_event_crud.update_ai_event_disposition(
-        db, event_id, update_data, current_user.id
+        db, event_id, project_id, update_data, current_user.id
     )
     if not updated_event:
         raise HTTPException(status_code=404, detail="AI event not found")

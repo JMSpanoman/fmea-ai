@@ -11,7 +11,9 @@ from dotenv import load_dotenv
 
 from database import get_db
 from schemas.nonconformance import NonConformanceCreate, NonConformanceOut, NonConformanceRequest, NonConformanceResponse
-from auth.dependencies import verify_token
+from auth.dependencies import get_current_user
+from models.user import User
+from crud import project as project_crud
 
 # Load environment variables
 load_dotenv()
@@ -35,7 +37,7 @@ def generate_nonconformance_with_ai(issue_description: str, nonconformance_type:
 
 JSON format:
 - id: "NC-001", "NC-002", "NC-003"
-- project_id: 1
+- project_id: "project-uuid"
 - user_id: "ai-assistant"
 - issue_description: Brief description
 - source: "Customer Complaint", "Internal Audit", or "Regulatory Finding"
@@ -114,7 +116,7 @@ Return JSON array with 3 objects. Keep descriptions very brief."""
             for i, entry in enumerate(nonconformance_entries):
                 nonconformance_entry = {
                     'id': i + 1,
-                    'project_id': 1,
+                    'project_id': "project-uuid",
                     'user_id': 'ai-assistant',
                     'issue_description': entry.get("issue_description", f"{issue_description} - Issue {i+1}"),
                     'source': entry.get("source", sources[i % len(sources)]),
@@ -157,7 +159,7 @@ def generate_mock_nonconformance_data(issue_description: str, nonconformance_typ
         
         mock_entry = {
             "id": i + 1,
-            "project_id": 1,
+            "project_id": "project-uuid",
             "user_id": "dev-user-123",
             "issue_description": f"{issue_description} - Issue {i+1}",
             "source": "AI Generated",
@@ -199,7 +201,7 @@ async def generate_nonconformance(request: NonConformanceRequest):
         for entry in nonconformance_data:
             nonconformance_obj = NonConformanceOut(
                 id=entry.get('id', 1),
-                project_id=entry.get('project_id', 1),
+                project_id=str(entry.get('project_id', "project-uuid")),
                 user_id=entry.get('user_id', 'ai-assistant'),
                 issue_description=entry.get('issue_description', ''),
                 source=entry.get('source', ''),
@@ -233,37 +235,59 @@ async def generate_nonconformance(request: NonConformanceRequest):
 
 @router.post("/projects/{project_id}/nonconformances", response_model=NonConformanceOut, status_code=201)
 def create_nonconformance_for_project(
-    project_id: int,
+    project_id: str,
     nonconformance: NonConformanceCreate,
     db: Session = Depends(get_db),
-    token_data=Depends(verify_token)
+    current_user: User = Depends(get_current_user),
 ):
     """Create a new non-conformance entry for a project"""
     try:
-        user_id = str(token_data.get("sub") or "dev-user-123")
-        nonconformance.user_id = user_id
-        nonconformance.project_id = project_id
+        # Verify project belongs to user
+        project = project_crud.get_project(db, project_id, current_user.id)
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+
         # For now, return a mock response since we're not using the database models
+        payload = nonconformance.model_dump() if hasattr(nonconformance, "model_dump") else nonconformance.dict()
         return NonConformanceOut(
-            **nonconformance.dict(),
+            **payload,
             id=1,
+            project_id=project_id,
+            user_id=str(current_user.id),
+            created_at=datetime.now(),
+            updated_at=None,
             analysis_timestamp=datetime.now(),
-            version="1.0"
+            version=payload.get("version") or "1.0",
         )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/projects/{project_id}/nonconformances", response_model=List[NonConformanceOut])
 def get_nonconformances_for_project_endpoint(
-    project_id: int,
+    project_id: str,
     db: Session = Depends(get_db),
-    token_data=Depends(verify_token)
+    current_user: User = Depends(get_current_user),
 ):
     """Get all non-conformance entries for a project"""
     try:
-        user_id = str(token_data.get("sub") or "dev-user-123")
+        # Verify project belongs to user
+        project = project_crud.get_project(db, project_id, current_user.id)
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+
         # For now, return mock data
         mock_data = generate_mock_nonconformance_data("Sample issue", "product")
-        return [NonConformanceOut(**item) for item in mock_data]
+        # Override project/user to avoid cross-user leakage in mock data
+        out = []
+        for item in mock_data:
+            item = dict(item)
+            item["project_id"] = project_id
+            item["user_id"] = str(current_user.id)
+            out.append(NonConformanceOut(**item))
+        return out
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) 

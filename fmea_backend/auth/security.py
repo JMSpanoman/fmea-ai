@@ -160,12 +160,18 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash"""
     return pwd_context.verify(plain_password, hashed_password)
 
-def create_dev_token() -> str:
-    """Create a development token for testing"""
+def create_dev_token(
+    *,
+    sub: str = "dev-user",
+    email: str = "dev@example.com",
+    username: str = "dev-user",
+    role: str = "admin",
+) -> str:
+    """Create a development token for testing (HS256)."""
     data = {
-        "sub": "dev-user",
-        "username": "dev-user",
-        "role": "admin",
-        "email": "dev@example.com"
+        "sub": sub,
+        "username": username,
+        "role": role,
+        "email": email,
     }
     return create_access_token(data, expires_delta=timedelta(days=365))
