@@ -30,6 +30,7 @@ from .ai_event import AIEvent
 from .audit_log_event import AuditLogEvent
 from .idempotency_request import IdempotencyRequest
 from .generated_artifact import GeneratedArtifact
+from .project_profile import ProjectProfile
 
 __all__ = [
     "Project", "FMEARow", "User", "Component", "FMEAVersion",  # Phase 1
@@ -37,5 +38,5 @@ __all__ = [
     "Document", "DocumentVersion", "TrainingRecord", "ChangeControl", "Audit",  # Phase 3
     "Supplier", "SupplierEvaluation", "NCR", "Complaint", "Equipment", "CalibrationRecord",
     "QualityEvent", "Approval", "RiskItem", "RiskItemVersion", "RiskControl", "RiskManagementPlan", "AIEvent",  # Phase 3 continued + Risk Items
-    "AuditLogEvent", "IdempotencyRequest", "GeneratedArtifact"  # Handoff infrastructure + filesystem artifacts
+    "AuditLogEvent", "IdempotencyRequest", "GeneratedArtifact", "ProjectProfile"  # Handoff infrastructure + filesystem artifacts + Project setup wizard
 ]

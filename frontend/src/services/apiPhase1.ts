@@ -55,6 +55,46 @@ export const componentsApi = {
       method: 'POST',
       body: JSON.stringify(component),
     }),
+  bulkReplace: (
+    projectId: string,
+    components: Array<{ id?: string; name: string; description?: string | null; parent_id?: string | null; tags?: any }>
+  ): Promise<Component[]> =>
+    apiRequest<Component[]>(`/projects/${projectId}/components`, {
+      method: 'POST',
+      body: JSON.stringify(components),
+    }),
+};
+
+// Project Setup Wizard API
+export type ProjectProfile = {
+  id?: string;
+  project_id?: string;
+  intended_use?: string | null;
+  device_description?: string | null;
+  user_population?: string | null;
+  use_environment?: string | null;
+  key_safety_characteristics?: string[] | null;
+  created_at?: string;
+  updated_at?: string | null;
+};
+
+export const projectProfileApi = {
+  get: (projectId: string): Promise<ProjectProfile> => apiRequest<ProjectProfile>(`/projects/${projectId}/profile`),
+  upsert: (projectId: string, profile: ProjectProfile): Promise<ProjectProfile> =>
+    apiRequest<ProjectProfile>(`/projects/${projectId}/profile`, {
+      method: 'PUT',
+      body: JSON.stringify(profile),
+    }),
+};
+
+export const projectInitializeApi = {
+  run: (projectId: string): Promise<{ project_id: string; stats: any }> =>
+    apiRequest<{ project_id: string; stats: any }>(`/projects/${projectId}/initialize`, { method: 'POST' }),
+};
+
+export const projectInitializeFromProfileApi = {
+  run: (projectId: string): Promise<{ project_id: string; stats: any }> =>
+    apiRequest<{ project_id: string; stats: any }>(`/projects/${projectId}/initialize-from-profile`, { method: 'POST' }),
 };
 
 // FMEA API

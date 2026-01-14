@@ -28,6 +28,7 @@ export function DocumentGroup({
     name: string;
     status: DocRowStatus;
     updatedAt?: string | null;
+    tag?: string | null;
   }>;
 }) {
   const pct = useMemo(() => percentComplete(rows.map((r) => r.status)), [rows]);
@@ -53,6 +54,7 @@ export function DocumentGroup({
               status={r.status}
               updatedAt={r.updatedAt}
               docId={r.docId}
+              tag={r.tag || null}
             />
           </div>
         ))}

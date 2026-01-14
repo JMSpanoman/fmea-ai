@@ -43,9 +43,11 @@ function docDisplayName(type: string) {
 export function DocumentHub({
   projectId,
   documents,
+  generatedFromSetupByDocId,
 }: {
   projectId: string;
   documents: Document[];
+  generatedFromSetupByDocId?: Record<string, boolean>;
 }) {
   const byType = useMemo(() => {
     const m: Record<string, Document> = {};
@@ -62,11 +64,13 @@ export function DocumentHub({
         const name = d?.name || docDisplayName(k);
         const status = inferDocStatus({ status: d?.status, content: d?.content });
         const updatedAt = d?.updated_at || d?.created_at || null;
-        return { docId: d?.id, name, status, updatedAt };
+        const tag =
+          d?.id && generatedFromSetupByDocId?.[d.id] ? 'Generated from project setup' : null;
+        return { docId: d?.id, name, status, updatedAt, tag };
       });
       return { title: g.title, rows };
     });
-  }, [byType]);
+  }, [byType, generatedFromSetupByDocId]);
 
   const otherRows = useMemo(() => {
     const known = new Set<string>([
@@ -95,8 +99,9 @@ export function DocumentHub({
       name: d.name || docDisplayName(String(d.type || 'document')),
       status: inferDocStatus({ status: d.status, content: d.content }),
       updatedAt: d.updated_at || d.created_at || null,
+      tag: generatedFromSetupByDocId?.[d.id] ? 'Generated from project setup' : null,
     }));
-  }, [documents]);
+  }, [documents, generatedFromSetupByDocId]);
 
   return (
     <div className="space-y-4">

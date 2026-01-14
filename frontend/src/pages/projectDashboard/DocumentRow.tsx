@@ -48,6 +48,7 @@ export function DocumentRow({
   updatedAt,
   docId,
   detailsHref,
+  tag,
 }: {
   projectId: string;
   title: string;
@@ -55,6 +56,7 @@ export function DocumentRow({
   updatedAt?: string | null;
   docId?: string;
   detailsHref?: string;
+  tag?: string | null;
 }) {
   const navigate = useNavigate();
   const updatedLabel = useMemo(() => {
@@ -75,6 +77,11 @@ export function DocumentRow({
         <div className="text-sm font-medium text-gray-900 truncate">{title}</div>
         <div className="mt-1 flex items-center gap-3 text-xs text-gray-600">
           <StatusPill status={status} />
+          {tag ? (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+              {tag}
+            </span>
+          ) : null}
           <span className="whitespace-nowrap">Last updated: {updatedLabel}</span>
           {detailsHref ? (
             <button

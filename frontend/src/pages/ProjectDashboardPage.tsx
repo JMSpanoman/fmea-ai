@@ -17,6 +17,37 @@ import { RecentActivityCard } from './projectDashboard/RecentActivityCard';
 
 type LoadState = 'idle' | 'loading' | 'error' | 'ready';
 
+const setupDraftDocTypes = new Set(['rmp', 'hazard_analysis', 'fmea', 'design_inputs_doc']);
+
+function normalizeContent(s: string | null | undefined) {
+  return String(s || '').trim().toLowerCase();
+}
+
+function isStarterOrEmptyDoc(doc?: Document | null) {
+  if (!doc) return true;
+  const s = normalizeContent(doc.content);
+  if (!s) return true;
+  const status = String(doc.status || '').trim().toLowerCase();
+  if (status === 'not started' || status === 'not_started' || status === 'not-started') return true;
+  if (s.includes('hazard analysis export configuration starter')) return true;
+  if (s.startsWith('fmea starter')) return true;
+  if (s.startsWith('design inputs documentation starter')) return true;
+  if (s.startsWith('rmp starter')) return true;
+  return false;
+}
+
+function isGeneratedFromProjectSetup(doc?: Document | null) {
+  if (!doc?.content) return false;
+  if (!setupDraftDocTypes.has(String(doc.type || ''))) return false;
+  const s = normalizeContent(doc.content);
+  // RMP/Hazard Analysis/Design Inputs include explicit deterministic header
+  if (s.includes('generated deterministically from projectprofile + components')) return true;
+  // FMEA draft uses a slightly different deterministic marker set
+  if (s.includes('fmea — draft') && s.includes('project id:') && s.includes('severity/occurrence/detection') && s.includes('[draft]'))
+    return true;
+  return false;
+}
+
 const typeLabel = (t: string) => {
   const reg = docsRegistryById[t];
   if (reg?.name) return reg.name;
@@ -69,8 +100,13 @@ export default function ProjectDashboardPage() {
   const [state, setState] = useState<LoadState>('idle');
   const [error, setError] = useState<string>('');
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [setupIncomplete, setSetupIncomplete] = useState(false);
+  const [setupExists, setSetupExists] = useState(false);
+  const [generatingInitialDrafts, setGeneratingInitialDrafts] = useState(false);
 
   const finalProjectId = projectId || '';
+
+  const setupSkippedKey = useMemo(() => (finalProjectId ? `setup_skipped_${finalProjectId}` : ''), [finalProjectId]);
 
   const projectName = useMemo(() => {
     if (currentProject?.id === finalProjectId) return currentProject.name;
@@ -78,6 +114,47 @@ export default function ProjectDashboardPage() {
   }, [currentProject, finalProjectId]);
 
   const readiness = useMemo(() => computeReadiness(documents), [documents]);
+
+  const checkSetup = async () => {
+    if (!finalProjectId) return;
+
+    const skipped = setupSkippedKey ? localStorage.getItem(setupSkippedKey) === '1' : false;
+
+    // If explicitly skipped, treat setup as incomplete without extra API calls.
+    if (skipped) {
+      setSetupIncomplete(true);
+      setSetupExists(true);
+      return;
+    }
+
+    // Setup complete rules:
+    // - profile.intended_use present
+    // - components count >= 1
+    let hasIntendedUse = false;
+    let hasComponents = false;
+    let hasAnyProfile = false;
+
+    try {
+      const profileRes = await api.get(`/projects/${finalProjectId}/profile`);
+      const p = profileRes.data || {};
+      hasAnyProfile = true;
+      hasIntendedUse = Boolean(String(p.intended_use || '').trim());
+    } catch {
+      hasIntendedUse = false;
+      hasAnyProfile = false;
+    }
+
+    try {
+      const compsRes = await api.get(`/projects/${finalProjectId}/components`);
+      const comps = Array.isArray(compsRes.data) ? compsRes.data : [];
+      hasComponents = comps.length > 0;
+    } catch {
+      hasComponents = false;
+    }
+
+    setSetupIncomplete(!(hasIntendedUse && hasComponents));
+    setSetupExists(Boolean(hasAnyProfile || hasComponents));
+  };
 
   const load = async () => {
     if (!finalProjectId) return;
@@ -102,6 +179,8 @@ export default function ProjectDashboardPage() {
       const docs = await documentsApi.getAll(finalProjectId);
       setDocuments(Array.isArray(docs) ? docs : []);
       setState('ready');
+      // Non-blocking: compute setup completeness banner
+      checkSetup();
     } catch (e: any) {
       const msg =
         e?.message ||
@@ -188,6 +267,43 @@ export default function ProjectDashboardPage() {
     );
   }
 
+  const generatedFromSetupByDocId = useMemo(() => {
+    const m: Record<string, boolean> = {};
+    for (const d of documents || []) {
+      if (d?.id) m[d.id] = isGeneratedFromProjectSetup(d);
+    }
+    return m;
+  }, [documents]);
+
+  const anySetupDraftsGenerated = useMemo(() => {
+    return (documents || []).some((d) => isGeneratedFromProjectSetup(d));
+  }, [documents]);
+
+  const setupDraftDocsEmpty = useMemo(() => {
+    const byType: Record<string, Document> = {};
+    for (const d of documents || []) {
+      if (d?.type) byType[d.type] = d;
+    }
+    return ['rmp', 'hazard_analysis', 'fmea', 'design_inputs_doc'].every((t) => isStarterOrEmptyDoc(byType[t]));
+  }, [documents]);
+
+  const showGenerateDraftsCta = setupExists && !anySetupDraftsGenerated && setupDraftDocsEmpty;
+
+  const runInitializeFromProfile = async () => {
+    if (!finalProjectId) return;
+    setGeneratingInitialDrafts(true);
+    setError('');
+    try {
+      await api.post(`/projects/${finalProjectId}/initialize-from-profile`);
+      await load();
+    } catch (e: any) {
+      const msg = e?.message || e?.response?.data?.detail || 'Failed to generate initial drafts';
+      setError(String(msg));
+    } finally {
+      setGeneratingInitialDrafts(false);
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="flex items-start justify-between gap-4 mb-6">
@@ -220,6 +336,67 @@ export default function ProjectDashboardPage() {
           </button>
         </div>
       </div>
+
+      {anySetupDraftsGenerated ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 mb-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-sm font-semibold text-emerald-900">Initial drafts generated from project setup</div>
+              <div className="text-sm text-emerald-900/90 mt-1">
+                These documents were created deterministically from your <b>Project Profile</b> and <b>Components</b>.
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showGenerateDraftsCta ? (
+        <div className="rounded-lg border border-sky-200 bg-sky-50 p-4 mb-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-sm font-semibold text-sky-900">Generate initial drafts</div>
+              <div className="text-sm text-sky-900/90 mt-1">
+                Your project setup is saved, but the key documents are still empty. Generate deterministic draft content (no AI).
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={runInitializeFromProfile}
+                disabled={generatingInitialDrafts}
+                className="px-4 py-2 rounded-md bg-sky-600 text-white text-sm hover:bg-sky-700 disabled:opacity-50"
+              >
+                {generatingInitialDrafts ? 'Generating…' : 'Generate initial drafts'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {setupIncomplete ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 mb-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-sm font-semibold text-amber-900">Complete Project Setup to unlock auto-population</div>
+              <div className="text-sm text-amber-900/90 mt-1">
+                Add an <b>intended use</b> and at least <b>one component</b> to enable deterministic prefill.
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (setupSkippedKey) localStorage.removeItem(setupSkippedKey);
+                  navigate(`/projects/${finalProjectId}/setup`);
+                }}
+                className="px-4 py-2 rounded-md bg-amber-600 text-white text-sm hover:bg-amber-700"
+              >
+                Complete setup
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {state === 'error' ? (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
@@ -265,7 +442,11 @@ export default function ProjectDashboardPage() {
         {state === 'loading' ? (
           <div className="text-gray-600">Loading…</div>
         ) : (
-          <DocumentHub projectId={finalProjectId} documents={documents} />
+      <DocumentHub
+        projectId={finalProjectId}
+        documents={documents}
+        generatedFromSetupByDocId={generatedFromSetupByDocId}
+      />
         )}
       </div>
     </div>

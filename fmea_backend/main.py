@@ -64,6 +64,8 @@ from routers import reports_design_inputs
 from routers import pms_signal
 # Reports - V&V Evidence router
 from routers import reports_vv_evidence
+from routers import project_profile
+from routers import project_initialize
 
 
 
@@ -88,9 +90,16 @@ async def lifespan(app: FastAPI):
     # Create database tables if they don't exist
     from database import engine, Base
     # Import all models to ensure they're registered
-    from models import user, project, fmea, component, risk_item, risk_item_version, risk_control, approval, trace_link, ai_event, audit_log_event, design_input, design_output, vv_test, risk_management_plan, pms_signal, generated_artifact
+    from models import user, project, fmea, component, project_profile as _project_profile, risk_item, risk_item_version, risk_control, approval, trace_link, ai_event, audit_log_event, design_input, design_output, vv_test, risk_management_plan, pms_signal, generated_artifact
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables initialized")
+
+    # SQLite runtime migrations (add missing columns on existing tables)
+    try:
+        from db.runtime_migrations import ensure_component_columns
+        ensure_component_columns(engine)
+    except Exception as mig_err:
+        logger.error(f"Runtime migrations failed: {mig_err}", exc_info=True)
 
     # Cleanup expired filesystem artifacts (best-effort, safe for multi-user)
     try:
@@ -123,6 +132,8 @@ app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 # Phase 1 routers (primary)
 app.include_router(projects_phase1.router, tags=["Projects"])
 app.include_router(components.router, tags=["Components"])
+app.include_router(project_profile.router, tags=["Project Profile"])
+app.include_router(project_initialize.router, tags=["Project Initialize"])
 app.include_router(fmea_phase1.router, tags=["FMEA"])
 app.include_router(ai_phase1.router, tags=["AI Phase 1"])
 app.include_router(export.router, tags=["Export"])

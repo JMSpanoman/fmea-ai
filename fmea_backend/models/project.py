@@ -14,6 +14,7 @@ class Project(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
+    profile = relationship("ProjectProfile", back_populates="project", uselist=False, cascade="all, delete-orphan")
     components = relationship("Component", back_populates="project", cascade="all, delete-orphan")
     fmea_rows = relationship("FMEARow", back_populates="project", cascade="all, delete-orphan")
     # Phase 2 relationships

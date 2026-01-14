@@ -92,9 +92,9 @@ const ProjectPage: React.FC = () => {
       setSuccess('Project created successfully!');
       setTimeout(() => setSuccess(null), 3000);
 
-      // Project-first workflow: select + persist + navigate into project dashboard
+      // Project-first workflow: select + persist + navigate into Setup Wizard
       setCurrentProject(newProject as any);
-      navigate(`/projects/${newProject.id}/docs`);
+      navigate(`/projects/${newProject.id}/setup`);
     } catch (error: any) {
       console.error('[ProjectPage] Error creating project:', error);
       if (error.message?.includes('not logged in') || error.message?.includes('session expired') || error.response?.status === 401) {

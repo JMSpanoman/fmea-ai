@@ -64,6 +64,7 @@ import VVTestDetailPage from './pages/VVTests/VVTestDetailPage';
 import CAPADetailPage from './pages/CAPAs/CAPADetailPage';
 import ChangeControlDetailPage from './pages/ChangeControls/ChangeControlDetailPage';
 import ProjectFMEAPage from './pages/ProjectFMEAPage';
+import ProjectSetupWizard from './pages/ProjectSetupWizard';
 
 function App() {
   return (
@@ -84,6 +85,7 @@ function App() {
                   <Route path="/change-control" element={<ChangeControlPage />} />
                   <Route path="/dfmea" element={<FmeaPage />} />
                   <Route path="/projects/:projectId/fmea" element={<ProjectFMEAPage />} />
+                  <Route path="/projects/:projectId/setup" element={<ProjectSetupWizard />} />
                   <Route path="/projects/:projectId/dashboard" element={<ProjectDashboardPage />} />
                   {/* Phase 3 Routes */}
                   <Route path="/projects/:projectId/documents" element={<DocumentControlPage />} />

@@ -139,6 +139,10 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     fetchProjects();
     // Close the modal
     setShowCreateProjectModal(false);
+    // Immediately route into the Setup Wizard for the new project
+    if (newProject?.id) {
+      navigate(`/projects/${newProject.id}/setup`);
+    }
   };
 
   return (
