@@ -235,6 +235,15 @@ def generate_document_version(
                 f"<td>{r.severity or ''}</td><td>{r.probability or ''}</td><td>{r.detection or ''}</td>"
                 f"<td>{r.rpn or ''}</td><td>{r.mitigation or ''}</td></tr>"
             )
+        empty_banner = ""
+        if not trs:
+            # Make the "empty export" case obvious in the UI (otherwise it looks like nothing happened).
+            empty_banner = (
+                "<div style='margin:12px 0;padding:12px;border:1px solid #fbbf24;background:#fffbeb;color:#92400e;border-radius:8px'>"
+                "<b>No saved FMEA rows found for this project.</b> "
+                "Generate FMEA rows in the FMEA Generator and click <b>Save to Project</b>, then regenerate this document."
+                "</div>"
+            )
         rendered_html = f"""<!doctype html>
 <html><head><meta charset="utf-8"/><title>FMEA — {project.name}</title>
 <style>body{{font-family:Arial,sans-serif;margin:24px}} table{{border-collapse:collapse;width:100%}} th,td{{border:1px solid #ddd;padding:8px}} th{{background:#f3f4f6}}</style>
@@ -242,6 +251,7 @@ def generate_document_version(
 <h1>FMEA</h1>
 <div>Project: {project.name}</div>
 <div>Generated: {datetime.now(timezone.utc).isoformat()}</div>
+{empty_banner}
 <table><thead><tr><th>ID</th><th>Failure Mode</th><th>Effect</th><th>Cause</th><th>S</th><th>P</th><th>D</th><th>RPN</th><th>Mitigation</th></tr></thead>
 <tbody>{''.join(trs) if trs else ''}</tbody></table>
 </body></html>"""

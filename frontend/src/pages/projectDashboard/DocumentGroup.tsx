@@ -46,7 +46,7 @@ export function DocumentGroup({
 
       <div className="mt-3 divide-y divide-gray-100">
         {rows.map((r) => (
-          <div key={r.name} className="py-2">
+          <div key={r.docId || r.name} className="py-2">
             <DocumentRow
               projectId={projectId}
               title={r.name}

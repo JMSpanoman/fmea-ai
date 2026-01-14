@@ -87,6 +87,11 @@ export async function generateBackendDocument(
     version_scope: 'approved_only',
     options: {},
   });
+  try {
+    window.dispatchEvent(new CustomEvent('project-documents-changed', { detail: { projectId } }));
+  } catch {
+    // ignore
+  }
   return res.data;
 }
 

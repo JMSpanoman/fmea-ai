@@ -10,6 +10,15 @@ import {
 
 import api from '../axios';
 
+function notifyProjectDocumentsChanged(projectId: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.dispatchEvent(new CustomEvent('project-documents-changed', { detail: { projectId } }));
+  } catch {
+    // ignore
+  }
+}
+
 const apiRequest = async <T>(
   endpoint: string,
   options: RequestInit = {}
@@ -41,20 +50,29 @@ export const documentsApi = {
     apiRequest<Document[]>(`/projects/${projectId}/documents`),
   getById: (projectId: string, documentId: string): Promise<Document> =>
     apiRequest<Document>(`/projects/${projectId}/documents/${documentId}`),
-  create: (projectId: string, document: Partial<Document>): Promise<Document> =>
-    apiRequest<Document>(`/projects/${projectId}/documents`, {
+  create: async (projectId: string, document: Partial<Document>): Promise<Document> => {
+    const created = await apiRequest<Document>(`/projects/${projectId}/documents`, {
       method: 'POST',
       body: JSON.stringify(document),
-    }),
-  update: (projectId: string, documentId: string, document: Partial<Document>): Promise<Document> =>
-    apiRequest<Document>(`/projects/${projectId}/documents/${documentId}`, {
+    });
+    notifyProjectDocumentsChanged(projectId);
+    return created;
+  },
+  update: async (projectId: string, documentId: string, document: Partial<Document>): Promise<Document> => {
+    const updated = await apiRequest<Document>(`/projects/${projectId}/documents/${documentId}`, {
       method: 'PUT',
       body: JSON.stringify(document),
-    }),
-  approve: (projectId: string, documentId: string): Promise<Document> =>
-    apiRequest<Document>(`/projects/${projectId}/documents/${documentId}/approve`, {
+    });
+    notifyProjectDocumentsChanged(projectId);
+    return updated;
+  },
+  approve: async (projectId: string, documentId: string): Promise<Document> => {
+    const approved = await apiRequest<Document>(`/projects/${projectId}/documents/${documentId}/approve`, {
       method: 'POST',
-    }),
+    });
+    notifyProjectDocumentsChanged(projectId);
+    return approved;
+  },
   getVersions: (projectId: string, documentId: string): Promise<DocumentVersion[]> =>
     apiRequest<DocumentVersion[]>(`/projects/${projectId}/documents/${documentId}/versions`),
 };

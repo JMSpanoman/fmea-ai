@@ -119,6 +119,15 @@ export function DocDetailPanel({
                 <b>Where it lives:</b>{' '}
                 {inst.backendDocId ? 'Project Document instance exists.' : 'No project instance found.'}
               </div>
+              {docType.id === 'fmea' ? (
+                <button
+                  onClick={() => navigate(`/projects/${state.projectId}/fmea`)}
+                  className="px-3 py-2 rounded-md text-sm border border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100"
+                  type="button"
+                >
+                  Generate FMEA Rows (Project)
+                </button>
+              ) : null}
               <button
                 onClick={() => {
                   if (inst.backendDocId) navigate(`/projects/${state.projectId}/documents/${inst.backendDocId}`);

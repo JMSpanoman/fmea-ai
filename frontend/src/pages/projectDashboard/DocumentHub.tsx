@@ -68,6 +68,36 @@ export function DocumentHub({
     });
   }, [byType]);
 
+  const otherRows = useMemo(() => {
+    const known = new Set<string>([
+      'rmp',
+      'rmf',
+      'hazard_analysis',
+      'fmea',
+      'risk_controls_doc',
+      'residual_risk',
+      'design_inputs_doc',
+      'design_outputs_doc',
+      'vv_evidence',
+      'traceability_matrix',
+    ]);
+    const list = (documents || [])
+      .filter((d) => d?.type && !known.has(String(d.type)))
+      .slice()
+      .sort((a, b) => {
+        const ta = a.updated_at || a.created_at || '';
+        const tb = b.updated_at || b.created_at || '';
+        return tb.localeCompare(ta);
+      })
+      .slice(0, 6);
+    return list.map((d) => ({
+      docId: d.id,
+      name: d.name || docDisplayName(String(d.type || 'document')),
+      status: inferDocStatus({ status: d.status, content: d.content }),
+      updatedAt: d.updated_at || d.created_at || null,
+    }));
+  }, [documents]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -77,6 +107,9 @@ export function DocumentHub({
         {groups.map((g) => (
           <DocumentGroup key={g.title} title={g.title} projectId={projectId} rows={g.rows} />
         ))}
+        {otherRows.length ? (
+          <DocumentGroup title="Other Documents" projectId={projectId} rows={otherRows} />
+        ) : null}
       </div>
     </div>
   );

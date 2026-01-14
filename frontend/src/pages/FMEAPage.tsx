@@ -134,13 +134,16 @@ const FmeaPage: React.FC = () => {
                   return;
                 }
                 setIsGenerating(true);
+                // Capture the selected type at click time so a mid-flight dropdown change
+                // doesn't hide the generated results (table renders by current fmeaType).
+                const requestedType = fmeaType;
                 
                 // Enhanced AI generation with multiple attempts and comprehensive prompts
                 const generateWithAI = async (attempt: number = 1): Promise<FmeaRow[]> => {
                   try {
                     // Use backend legacy AI generator endpoints (mounted under /fmea).
                     // DFMEA -> /fmea/fmea/generate, PFMEA -> /fmea/pfmea/generate
-                    const endpoint = fmeaType === 'process' ? '/fmea/pfmea/generate' : '/fmea/fmea/generate';
+                    const endpoint = requestedType === 'process' ? '/fmea/pfmea/generate' : '/fmea/fmea/generate';
                     const res = await api.post(endpoint, { component: componentDescription });
                     const aiResponse = res.data;
 
@@ -206,8 +209,10 @@ const FmeaPage: React.FC = () => {
                   const aiFmeaData = await generateWithAI();
                   
                   setFmeaData({
-                    [fmeaType]: aiFmeaData,
+                    [requestedType]: aiFmeaData,
                   });
+                  // Ensure the UI is showing the type we just generated.
+                  setFmeaType(requestedType);
                   setShowTable(true);
                   setIsGenerating(false);
 
@@ -224,9 +229,10 @@ const FmeaPage: React.FC = () => {
                   const enhancedFallbackData = generateEnhancedAIFallback();
                   
                   setFmeaData({
-                    [fmeaType]: enhancedFallbackData,
+                    [requestedType]: enhancedFallbackData,
                   });
                   setMockFlag(false); // Still mark as AI-generated since it's sophisticated
+                  setFmeaType(requestedType);
                   setShowTable(true);
                   setIsGenerating(false);
 

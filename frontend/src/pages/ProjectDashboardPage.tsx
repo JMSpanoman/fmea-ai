@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useProject } from '../contexts/ProjectContext';
 import authService from '../services/authService';
 import { documentsApi } from '../services/apiPhase3';
@@ -63,6 +63,7 @@ function computeReadiness(docs: Document[]) {
 export default function ProjectDashboardPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentProject, setCurrentProject } = useProject();
 
   const [state, setState] = useState<LoadState>('idle');
@@ -114,6 +115,40 @@ export default function ProjectDashboardPage() {
   useEffect(() => {
     if (!finalProjectId) return;
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finalProjectId, location.key]);
+
+  // Also refresh when documents are created/updated elsewhere and when the tab regains focus.
+  const loadingRef = useRef(false);
+  useEffect(() => {
+    if (!finalProjectId) return;
+
+    const safeLoad = () => {
+      if (loadingRef.current) return;
+      loadingRef.current = true;
+      Promise.resolve(load()).finally(() => {
+        loadingRef.current = false;
+      });
+    };
+
+    const onDocsChanged = (ev: any) => {
+      const pid = ev?.detail?.projectId;
+      if (!pid || pid === finalProjectId) safeLoad();
+    };
+
+    const onFocus = () => safeLoad();
+    const onVis = () => {
+      if (document.visibilityState === 'visible') safeLoad();
+    };
+
+    window.addEventListener('project-documents-changed', onDocsChanged as any);
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.removeEventListener('project-documents-changed', onDocsChanged as any);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVis);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalProjectId]);
 
