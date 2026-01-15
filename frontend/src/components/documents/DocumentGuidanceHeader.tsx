@@ -24,11 +24,15 @@ export default function DocumentGuidanceHeader({
   documentType,
   hasAiSample,
   onGenerateAiSample,
+  onGenerateWithAi,
+  isGeneratingAi,
   populationSources,
 }: {
   documentType: string;
   hasAiSample: boolean;
   onGenerateAiSample?: () => void;
+  onGenerateWithAi?: () => void;
+  isGeneratingAi?: boolean;
   populationSources?: string[];
 }) {
   const [loading, setLoading] = useState(false);
@@ -62,9 +66,8 @@ export default function DocumentGuidanceHeader({
     return key && registry ? registry[key] : null;
   }, [documentType, registry]);
 
-  const aiAvailable = Boolean(guidance?.ai_available);
-  const showAiButton = aiAvailable && !hasAiSample && typeof onGenerateAiSample === 'function';
-  const aiButtonText = (guidance?.ai_button_text || 'Generate AI sample').trim() || 'Generate AI sample';
+  const showGenerateWithAi = typeof onGenerateWithAi === 'function';
+  const generating = Boolean(isGeneratingAi);
 
   return (
     <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
@@ -105,16 +108,28 @@ export default function DocumentGuidanceHeader({
           ) : null}
         </div>
 
-        {showAiButton ? (
+        {showGenerateWithAi ? (
           <div className="shrink-0">
-            <button
-              onClick={onGenerateAiSample}
-              className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary/90"
-            >
-              {aiButtonText}
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={onGenerateWithAi}
+                disabled={generating}
+                className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-60"
+              >
+                {generating ? 'Generating…' : 'Generate with AI'}
+              </button>
+              {typeof onGenerateAiSample === 'function' && !hasAiSample ? (
+                <button
+                  onClick={onGenerateAiSample}
+                  disabled={generating}
+                  className="inline-flex items-center justify-center rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50 disabled:opacity-60"
+                >
+                  Generate AI sample
+                </button>
+              ) : null}
+            </div>
             <div className="mt-2 max-w-[280px] text-xs text-gray-500">
-              AI samples are examples only and must be reviewed before use.
+              AI output is an example draft only and must be reviewed before use.
             </div>
           </div>
         ) : null}

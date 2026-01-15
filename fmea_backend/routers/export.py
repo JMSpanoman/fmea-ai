@@ -8,12 +8,24 @@ from crud import project as project_crud
 from crud import fmea as fmea_crud
 import csv
 import io
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
 
 router = APIRouter(prefix="/projects/{project_id}/export", tags=["export"])
+
+def _require_reportlab():
+    """
+    Lazy-import reportlab so environments without the optional PDF dependency can still import this router.
+    """
+    try:
+        from reportlab.lib import colors  # type: ignore
+        from reportlab.lib.pagesizes import letter  # type: ignore
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer  # type: ignore
+        from reportlab.lib.styles import getSampleStyleSheet  # type: ignore
+        return colors, letter, SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, getSampleStyleSheet
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail="PDF export is unavailable because the optional dependency 'reportlab' is not installed.",
+        ) from e
 
 @router.get("/csv")
 def export_csv(
@@ -91,6 +103,7 @@ def export_pdf(
     current_user: User = Depends(get_current_user)
 ):
     """Export FMEA data as PDF"""
+    colors, letter, SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, getSampleStyleSheet = _require_reportlab()
     # Verify project belongs to user
     project = project_crud.get_project(db, project_id, current_user.id)
     if not project:

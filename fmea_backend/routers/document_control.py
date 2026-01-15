@@ -611,6 +611,31 @@ def generate_ai_sample(
     return updated
 
 
+@router.post("/documents/{document_type}/generate-ai", response_model=doc_schemas.DocumentOut)
+def generate_ai_example(
+    project_id: str,
+    document_type: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Generate an AI-GENERATED EXAMPLE draft for ANY document type.
+
+    Hard rules:
+    - Must not overwrite user-entered content (append as a clearly marked AI Example section)
+    - Must create a NEW document version
+    - Must be labeled Draft + AI Example + generated_at timestamp
+    """
+    from services.document_ai_example import generate_ai_example_for_document
+
+    return generate_ai_example_for_document(
+        db=db,
+        project_id=project_id,
+        user_id=current_user.id,
+        document_type=document_type,
+    )
+
+
 @router.get("/documents/{document_id}/export/html", response_class=HTMLResponse)
 def export_document_html(
     project_id: str,

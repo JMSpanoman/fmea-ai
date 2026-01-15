@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../axios';
 import authService from '../services/authService';
 import { documentsApi } from '../services/apiPhase3';
@@ -60,6 +60,7 @@ export default function ProjectDocumentPage() {
   const docType = (doc?.type || '').toLowerCase();
   const isRmf = docType === 'rmf';
   const hasAiSample = Boolean((doc as any)?.ai_metadata?.ai_sample_generated || (doc as any)?.ai_metadata?.default_sample_provided);
+  const missingSetupMessage = 'Project setup information is missing. Complete Project Setup to generate better examples.';
 
   const populationSources = useMemo(() => {
     // Optional, friendly chips in the header. Keep conservative and deterministic.
@@ -258,6 +259,31 @@ export default function ProjectDocumentPage() {
     }
   };
 
+  const generateWithAi = async () => {
+    if (!finalProjectId || !docType) return;
+    if (!doc) return;
+    setSaving(true);
+    setError('');
+    try {
+      if (!authService.isAuthenticated()) {
+        await authService.authenticate();
+      }
+      const updated = await documentsApi.generateAiExampleForType(finalProjectId, docType);
+      setDoc(updated);
+      setName(updated.name || '');
+      setStatus((updated.status as any) || 'draft');
+      setContent(updated.content || '');
+      setSelectedVersionNo(null);
+      setTab('preview');
+      await loadPreview();
+      alert('AI example added as a new draft version.');
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || e?.message || 'Failed to generate with AI');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const openVersions = async () => {
     if (!finalProjectId || !finalDocId) return;
     setShowVersions(true);
@@ -311,6 +337,8 @@ export default function ProjectDocumentPage() {
         documentType={docType || 'document'}
         hasAiSample={hasAiSample}
         onGenerateAiSample={generateAiSample}
+        onGenerateWithAi={generateWithAi}
+        isGeneratingAi={saving}
         populationSources={populationSources}
       />
       <div className="bg-white rounded-lg shadow p-6 mb-6">
@@ -361,6 +389,16 @@ export default function ProjectDocumentPage() {
         {error && (
           <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-red-800">{error}</p>
+            {String(error).includes(missingSetupMessage) ? (
+              <div className="mt-2">
+                <Link
+                  to={`/projects/${finalProjectId}/setup`}
+                  className="text-sm font-medium text-blue-700 underline"
+                >
+                  Complete Project Setup
+                </Link>
+              </div>
+            ) : null}
           </div>
         )}
       </div>
