@@ -372,6 +372,10 @@ export function useDocs() {
 
 export function canGenerate(docTypeId: string) {
   const t = docTypeById[docTypeId];
+  // Compile-only docs (no AI) still use the same backend `/generate` endpoint.
+  if (['rmf', 'essential_requirements_checklist', 'submission_index', 'audit_package'].includes(docTypeId)) {
+    return true;
+  }
   return !!t?.supportsAiDraft && (t.authority === 'ai' || t.authority === 'hybrid');
 }
 

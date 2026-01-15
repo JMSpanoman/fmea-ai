@@ -161,6 +161,11 @@ def get_risk_controls_by_risk_item(db: Session, risk_item_id: str) -> List[RiskC
         RiskControl.risk_item_id == risk_item_id
     ).all()
 
+
+def get_risk_controls_by_project(db: Session, project_id: str) -> List[RiskControl]:
+    """Get all risk controls for a project (project-scoped)."""
+    return db.query(RiskControl).filter(RiskControl.project_id == project_id).all()
+
 def get_risk_control(db: Session, control_id: str, risk_item_id: str) -> Optional[RiskControl]:
     """Get a specific risk control"""
     return db.query(RiskControl).filter(

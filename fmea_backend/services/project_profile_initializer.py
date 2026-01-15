@@ -59,17 +59,37 @@ def _content_is_placeholder_for_type(doc_type: str, content: Optional[str]) -> b
         return True
     if doc_type == "design_inputs_doc" and c.startswith("design inputs documentation starter"):
         return True
+    if doc_type == "design_dev_plan" and c.startswith("design & development plan starter"):
+        return True
     if doc_type == "risk_acceptability_criteria" and c.startswith("risk acceptability criteria starter"):
         return True
     if doc_type == "rmp" and c.startswith("rmp starter"):
         return True
     if doc_type == "design_outputs_doc" and c.startswith("design outputs documentation starter"):
         return True
+    if doc_type == "design_reviews" and c.startswith("design reviews starter"):
+        return True
+    if doc_type == "design_change_record" and c.startswith("design change record starter"):
+        return True
     if doc_type == "vv_plan" and c.startswith("v&v plan starter"):
         return True
     if doc_type == "vv_evidence" and c.startswith("v&v evidence report starter"):
         return True
+    if doc_type == "validation_summary" and c.startswith("validation summary starter"):
+        return True
     if doc_type == "traceability_matrix" and c.startswith("traceability matrix export configuration starter"):
+        return True
+    if doc_type == "change_impact_analysis" and c.startswith("change impact analysis starter"):
+        return True
+    if doc_type == "pms_plan" and c.startswith("pms plan starter"):
+        return True
+    if doc_type == "pms_report" and c.startswith("pms report starter"):
+        return True
+    if doc_type == "capa" and c.startswith("capa starter"):
+        return True
+    if doc_type == "usability_risk_analysis" and c.startswith("usability risk analysis starter"):
+        return True
+    if doc_type == "hf_validation" and c.startswith("human factors validation starter"):
         return True
     if doc_type == "residual_risk" and c.startswith("residual risk evaluation export configuration starter"):
         return True
@@ -81,6 +101,483 @@ def _content_is_placeholder_for_type(doc_type: str, content: Optional[str]) -> b
         return True
 
     return False
+
+
+def _draft_design_dev_plan(*, project_id: str, profile: Any, components: list[Any], refs: dict[str, Any]) -> str:
+    device_desc = (getattr(profile, "device_description", None) or "").strip() if profile else ""
+    intended_use = (getattr(profile, "intended_use", None) or "").strip() if profile else ""
+
+    def _ref_line(label: str, doc: Any, doc_type: str) -> str:
+        if not doc:
+            return f"- {label}: (type={doc_type}) — (not present yet)"
+        return f"- {label}: doc_id={getattr(doc, 'id', '')} (type={doc_type}, status={getattr(doc, 'status', '')}, version=v{getattr(doc, 'version', '')})"
+
+    comp_lines = []
+    for c in sorted(components, key=lambda x: (str(getattr(x, "name", "") or "").lower(), str(getattr(x, "id", "") or ""))):
+        comp_lines.append(f"- {c.name}{(': ' + c.description) if getattr(c, 'description', None) else ''} (component_id={c.id})")
+    if not comp_lines:
+        comp_lines = ["- (No components defined yet)"]
+
+    return (
+        "Design & Development Plan — Draft\n"
+        "\n"
+        "SYSTEM-GENERATED DRAFT (deterministic)\n"
+        f"Project ID: {project_id}\n"
+        f"Device description (from profile): {device_desc or 'TBD'}\n"
+        f"Intended use (from profile): {intended_use or 'TBD'}\n"
+        "\n"
+        "Purpose\n"
+        "- Defines planned design and development activities, responsibilities, deliverables, and reviews.\n"
+        "- This is a conservative template and must be tailored and approved by the team.\n"
+        "\n"
+        "System Breakdown (from project components)\n"
+        + "\n".join(comp_lines)
+        + "\n\n"
+        "Project Phases / Timeline (placeholders)\n"
+        "- Concept / Feasibility: (TBD)\n"
+        "- Design / Development: (TBD)\n"
+        "- Verification: (TBD)\n"
+        "- Validation: (TBD)\n"
+        "- Transfer / Release: (TBD)\n"
+        "\n"
+        "Roles and Responsibilities (placeholders)\n"
+        "- Project Owner: (TBD)\n"
+        "- Engineering Lead: (TBD)\n"
+        "- QA/RA: (TBD)\n"
+        "- Clinical/Safety: (TBD)\n"
+        "- Manufacturing/Operations: (TBD)\n"
+        "\n"
+        "Deliverables by Phase (placeholders)\n"
+        "- Concept: (TBD)\n"
+        "- Design: (TBD)\n"
+        "- Verification: (TBD)\n"
+        "- Validation: (TBD)\n"
+        "- Transfer: (TBD)\n"
+        "\n"
+        "Review Cadence (placeholders)\n"
+        "- Design reviews planned: (TBD)\n"
+        "- Periodic risk reviews planned: (TBD)\n"
+        "\n"
+        "References (auto-listed)\n"
+        + _ref_line("Design Inputs Documentation", refs.get("design_inputs_doc"), "design_inputs_doc")
+        + "\n"
+        + _ref_line("Design Outputs Documentation", refs.get("design_outputs_doc"), "design_outputs_doc")
+        + "\n"
+        + _ref_line("Design Reviews", refs.get("design_reviews"), "design_reviews")
+        + "\n"
+        + _ref_line("Design Change Record", refs.get("design_change_record"), "design_change_record")
+        + "\n"
+    )
+
+
+def _draft_design_reviews(*, project_id: str, profile: Any, refs: dict[str, Any]) -> str:
+    device_desc = (getattr(profile, "device_description", None) or "").strip() if profile else ""
+    intended_use = (getattr(profile, "intended_use", None) or "").strip() if profile else ""
+
+    def _fmt(label: str, doc: Any, doc_type: str) -> str:
+        if not doc:
+            return f"- {label}: (type={doc_type}) — (not present yet)"
+        return f"- {label}: doc_id={getattr(doc, 'id', '')} (type={doc_type}, status={getattr(doc, 'status', '')}, version=v{getattr(doc, 'version', '')})"
+
+    reviewed = [
+        _fmt("Design Inputs Documentation", refs.get("design_inputs_doc"), "design_inputs_doc"),
+        _fmt("Design Outputs Documentation", refs.get("design_outputs_doc"), "design_outputs_doc"),
+        _fmt("Hazard Analysis", refs.get("hazard_analysis"), "hazard_analysis"),
+        _fmt("FMEA", refs.get("fmea"), "fmea"),
+        _fmt("Risk Control Measures Documentation", refs.get("risk_controls_doc"), "risk_controls_doc"),
+        _fmt("V&V Plan", refs.get("vv_plan"), "vv_plan"),
+    ]
+
+    return (
+        "Design Reviews — Draft\n"
+        "\n"
+        "SYSTEM-GENERATED DRAFT (deterministic)\n"
+        f"Project ID: {project_id}\n"
+        f"Device description (from profile): {device_desc or 'TBD'}\n"
+        f"Intended use (from profile): {intended_use or 'TBD'}\n"
+        "\n"
+        "Review Record Template (repeat per review)\n"
+        "- Review title/type: (e.g., System Requirements Review / Design Review / Verification Readiness) — TBD\n"
+        "- Date: (blank — entered by the team)\n"
+        "- Attendees: (blank)\n"
+        "- Approvals / Sign-off: (blank — do not imply approval)\n"
+        "\n"
+        "Reviewed Artifacts (auto-listed references)\n"
+        + "\n".join(reviewed)
+        + "\n\n"
+        "Summary of Issues (blank)\n"
+        "- \n"
+        "\n"
+        "Actions / Owners / Due Dates (blank)\n"
+        "- Action: ____  Owner: ____  Due: ____\n"
+    )
+
+
+def _draft_design_change_record_base(*, project_id: str, profile: Any) -> str:
+    device_desc = (getattr(profile, "device_description", None) or "").strip() if profile else ""
+    intended_use = (getattr(profile, "intended_use", None) or "").strip() if profile else ""
+
+    return (
+        "Design Change Record — Draft\n"
+        "\n"
+        "SYSTEM-GENERATED DRAFT (deterministic)\n"
+        f"Project ID: {project_id}\n"
+        f"Device description (from profile): {device_desc or 'TBD'}\n"
+        f"Intended use (from profile): {intended_use or 'TBD'}\n"
+        "\n"
+        "Purpose\n"
+        "- Captures design/document changes and candidate impacted artifacts for subsequent assessment.\n"
+        "- SmartQS may append change entries when project documents create new versions.\n"
+        "- This record does NOT infer impact conclusions or approvals.\n"
+        "\n"
+        "Change Entries\n"
+        "- (No change entries yet.)\n"
+    )
+
+
+def _build_validation_summary(*, project_id: str, profile: Any, vv_evidence_doc: Any, residual_risk_doc: Any) -> str:
+    intended_use = (getattr(profile, "intended_use", None) or "").strip() if profile else ""
+    device_desc = (getattr(profile, "device_description", None) or "").strip() if profile else ""
+    user_pop = (getattr(profile, "user_population", None) or "").strip() if profile else ""
+    use_env = (getattr(profile, "use_environment", None) or "").strip() if profile else ""
+
+    vv_ref = (
+        f"V&V Evidence Report reference: doc_id={getattr(vv_evidence_doc, 'id', '')} "
+        f"(status={getattr(vv_evidence_doc, 'status', '')}, version=v{getattr(vv_evidence_doc, 'version', '')})"
+        if vv_evidence_doc is not None
+        else "V&V Evidence Report reference: (type=vv_evidence) — (not present yet)"
+    )
+    rr_ref = (
+        f"Residual Risk Evaluation reference: doc_id={getattr(residual_risk_doc, 'id', '')} "
+        f"(status={getattr(residual_risk_doc, 'status', '')}, version=v{getattr(residual_risk_doc, 'version', '')})"
+        if residual_risk_doc is not None
+        else "Residual Risk Evaluation reference: (type=residual_risk) — (not present yet)"
+    )
+
+    return (
+        "Validation Summary — Draft\n"
+        "\n"
+        "NOT COMPLETE — Validation Summary cannot be finalized until validation evidence is recorded in the V&V Evidence Report.\n"
+        "\n"
+        "SYSTEM-GENERATED DRAFT (deterministic)\n"
+        f"Project ID: {project_id}\n"
+        "\n"
+        "1. Intended Use Summary (from Project Profile)\n"
+        f"- Intended use: {intended_use or 'TBD'}\n"
+        f"- Device description: {device_desc or 'TBD'}\n"
+        f"- User population: {user_pop or 'TBD'}\n"
+        f"- Use environment: {use_env or 'TBD'}\n"
+        "\n"
+        "2. Validation Approach Summary (Draft placeholder)\n"
+        "- (TBD — summarize validation strategy, simulated/actual use conditions, and clinical/user needs coverage)\n"
+        "\n"
+        "3. Summary of Validation Evidence (placeholders)\n"
+        f"- {vv_ref}\n"
+        "- Evidence summary: (TBD — link/upload evidence and summarize results; do not claim completion here)\n"
+        "\n"
+        "4. Residual Risks Summary Reference (placeholder)\n"
+        f"- {rr_ref}\n"
+        "- Residual risks summary: (TBD — reference approved residual risk evaluation)\n"
+        "\n"
+        "5. Conclusions\n"
+        "- Not complete until validation evidence is recorded and reviewed.\n"
+        "- (No compliance claims are made in this draft.)\n"
+    )
+
+
+def _draft_pms_plan(
+    *,
+    project_id: str,
+    profile: Any,
+    components: list[Any],
+    refs: dict[str, Any],
+    risks_exist: bool,
+) -> str:
+    device_desc = (getattr(profile, "device_description", None) or "").strip() if profile else ""
+    intended_use = (getattr(profile, "intended_use", None) or "").strip() if profile else ""
+    user_pop = (getattr(profile, "user_population", None) or "").strip() if profile else ""
+    use_env = (getattr(profile, "use_environment", None) or "").strip() if profile else ""
+
+    def _ref(label: str, doc: Any, doc_type: str) -> str:
+        if not doc:
+            return f"- {label}: (type={doc_type}) — (not present yet)"
+        return f"- {label}: doc_id={getattr(doc, 'id', '')} (type={doc_type}, status={getattr(doc, 'status', '')}, version=v{getattr(doc, 'version', '')})"
+
+    comp_lines = []
+    for c in sorted(components, key=lambda x: (str(getattr(x, "name", "") or "").lower(), str(getattr(x, "id", "") or ""))):
+        comp_lines.append(f"- {c.name}{(': ' + c.description) if getattr(c, 'description', None) else ''} (component_id={c.id})")
+    if not comp_lines:
+        comp_lines = ["- (No components defined yet)"]
+
+    risk_note = (
+        "- Related risks exist in this project (review Hazard Analysis/FMEA/Risk Controls to focus PMS).\n"
+        if risks_exist
+        else "- No risk items detected yet. Add hazards/risks to focus PMS over time.\n"
+    )
+
+    return (
+        "PMS Plan — Draft\n"
+        "\n"
+        "SYSTEM-GENERATED DRAFT SCAFFOLD (deterministic)\n"
+        f"Project ID: {project_id}\n"
+        "\n"
+        "Purpose & Scope (Draft)\n"
+        "- Defines the planned post-market surveillance (PMS) activities for the device.\n"
+        "- Structure-only: does not imply data collection has occurred or that signals exist.\n"
+        "\n"
+        "Device Overview (from Project Profile)\n"
+        f"- Device description: {device_desc or 'TBD'}\n"
+        f"- Intended use: {intended_use or 'TBD'}\n"
+        f"- User population: {user_pop or 'TBD'}\n"
+        f"- Use environment: {use_env or 'TBD'}\n"
+        "\n"
+        "PMS Objectives (placeholders)\n"
+        "- (TBD) Monitor safety and performance trends.\n"
+        "- (TBD) Detect new hazards/risks and changes in known risks.\n"
+        "- (TBD) Feed back into risk management and design controls.\n"
+        "\n"
+        "Data Sources (structure only)\n"
+        "- Complaints\n"
+        "- Service / returns / repairs\n"
+        "- Literature and registries\n"
+        "- Vigilance / regulatory reporting\n"
+        "- User feedback (as applicable)\n"
+        "- Supplier data (as applicable)\n"
+        "\n"
+        "Collection Methods & Frequency (placeholders)\n"
+        "- Data collection cadence: (TBD)\n"
+        "- Review cadence: (TBD)\n"
+        "- Data owners/inputs: (TBD)\n"
+        "\n"
+        "Signal Detection Approach (structure only)\n"
+        "- Define signal criteria and triage workflow. (TBD)\n"
+        "- Define trend monitoring approach. (TBD)\n"
+        "\n"
+        "Escalation Criteria (placeholders; do not invent thresholds)\n"
+        "- Escalation triggers: (TBD)\n"
+        "- Reportability review: (TBD)\n"
+        "\n"
+        "Roles & Responsibilities (placeholders)\n"
+        "- PMS Owner: (TBD)\n"
+        "- QA/RA: (TBD)\n"
+        "- Clinical/Safety: (TBD)\n"
+        "- Engineering: (TBD)\n"
+        "\n"
+        "Linkage to Risk Management (references only)\n"
+        + _ref("Hazard Analysis", refs.get("hazard_analysis"), "hazard_analysis")
+        + "\n"
+        + _ref("FMEA", refs.get("fmea"), "fmea")
+        + "\n"
+        + _ref("Risk Controls", refs.get("risk_controls_doc"), "risk_controls_doc")
+        + "\n\n"
+        "Risk/Component Focus\n"
+        + risk_note
+        + "\n"
+        "Components in scope (from Components list)\n"
+        + "\n".join(comp_lines)
+        + "\n\n"
+        "PMS Focus Areas (placeholders; mark areas to monitor)\n"
+        "- Component/area: ____  Rationale: ____  Data sources: ____  Frequency: ____\n"
+    )
+
+
+def _draft_pms_report(*, project_id: str, profile: Any, refs: dict[str, Any]) -> str:
+    def _ref(label: str, doc: Any, doc_type: str) -> str:
+        if not doc:
+            return f"- {label}: (type={doc_type}) — (not present yet)"
+        return f"- {label}: doc_id={getattr(doc, 'id', '')} (type={doc_type}, status={getattr(doc, 'status', '')}, version=v{getattr(doc, 'version', '')})"
+
+    return (
+        "PMS Report — Draft\n"
+        "\n"
+        "DRAFT — No PMS data included. Populate after post-market data exists.\n"
+        "\n"
+        "SYSTEM-GENERATED DRAFT TEMPLATE (deterministic)\n"
+        f"Project ID: {project_id}\n"
+        "\n"
+        "Reporting Period (blank)\n"
+        "- Start date: \n"
+        "- End date: \n"
+        "- Markets / regions: \n"
+        "\n"
+        "Summary of Data Reviewed (placeholders)\n"
+        "- Complaints reviewed: (TBD)\n"
+        "- Service/returns reviewed: (TBD)\n"
+        "- Literature/registry review: (TBD)\n"
+        "- Vigilance review: (TBD)\n"
+        "\n"
+        "Signals Identified (empty; populate when signals exist)\n"
+        "signal_id | description | source | status | notes\n"
+        "-" * 72
+        + "\n"
+        "\n"
+        "Trend Analysis (placeholder)\n"
+        "- (TBD)\n"
+        "\n"
+        "Actions Taken (placeholder)\n"
+        "- (TBD)\n"
+        "\n"
+        "References\n"
+        + _ref("PMS Plan", refs.get("pms_plan"), "pms_plan")
+        + "\n"
+        + _ref("Hazard Analysis", refs.get("hazard_analysis"), "hazard_analysis")
+        + "\n"
+        + _ref("FMEA", refs.get("fmea"), "fmea")
+        + "\n"
+    )
+
+
+def _draft_capa_log(*, project_id: str, profile: Any) -> str:
+    return (
+        "CAPA — Draft (CAPA Log)\n"
+        "\n"
+        "SYSTEM-GENERATED DRAFT SCAFFOLD (deterministic)\n"
+        f"Project ID: {project_id}\n"
+        "\n"
+        "Important\n"
+        "- Structure-only: do not record effectiveness confirmation unless objective evidence exists.\n"
+        "- Entries below are placeholders; create/track real CAPAs as they occur.\n"
+        "\n"
+        "CAPA Entries\n"
+        "\n"
+        "CAPA-001 — Draft (sample empty entry)\n"
+        "- Trigger reference: (blank — complaint/quality event/nonconformance reference or free text)\n"
+        "- Problem statement: (blank)\n"
+        "- Containment: (blank)\n"
+        "- Root cause analysis: (blank)\n"
+        "- Corrective action(s): (blank)\n"
+        "- Preventive action(s): (blank)\n"
+        "- Verification of effectiveness plan: (blank)\n"
+        "- Status: Open\n"
+        "- Owner: (blank)\n"
+        "- Dates: Opened ____  Target ____  Closed ____\n"
+        "\n"
+        "Risk linkage (optional; placeholders)\n"
+        "- Related hazard(s): (blank)\n"
+        "- Related FMEA row(s): (blank)\n"
+        "- Related risk control(s): (blank)\n"
+    )
+
+
+def _draft_usability_risk_analysis(
+    *,
+    project_id: str,
+    profile: Any,
+    components: list[Any],
+    refs: dict[str, Any],
+) -> str:
+    intended_use = (getattr(profile, "intended_use", None) or "").strip() if profile else ""
+    device_desc = (getattr(profile, "device_description", None) or "").strip() if profile else ""
+    user_pop = (getattr(profile, "user_population", None) or "").strip() if profile else ""
+    use_env = (getattr(profile, "use_environment", None) or "").strip() if profile else ""
+
+    def _ref(label: str, doc: Any, doc_type: str) -> str:
+        if not doc:
+            return f"- {label}: (type={doc_type}) — (not present yet)"
+        return f"- {label}: doc_id={getattr(doc, 'id', '')} (type={doc_type}, status={getattr(doc, 'status', '')}, version=v{getattr(doc, 'version', '')})"
+
+    ui_elements = []
+    for c in sorted(components, key=lambda x: (str(getattr(x, "name", "") or "").lower(), str(getattr(x, "id", "") or ""))):
+        ui_elements.append(f"- {c.name} (use interface element placeholder; component_id={c.id})")
+    if not ui_elements:
+        ui_elements = ["- (No components defined yet)"]
+
+    return (
+        "Usability Risk Analysis — Draft\n"
+        "\n"
+        "SYSTEM-GENERATED DRAFT SCAFFOLD (deterministic)\n"
+        f"Project ID: {project_id}\n"
+        "\n"
+        "Purpose & Scope (Draft)\n"
+        "- Identify and manage use-related hazards, use errors, foreseeable misuse, and UI/training/labeling dependencies.\n"
+        "- Structure-only: does not claim testing or validation has occurred.\n"
+        "\n"
+        "Use Context Summary (from Project Profile)\n"
+        f"- Intended use: {intended_use or 'TBD'}\n"
+        f"- Device description: {device_desc or 'TBD'}\n"
+        f"- Intended users / user population: {user_pop or 'TBD'}\n"
+        f"- Use environment: {use_env or 'TBD'}\n"
+        "\n"
+        "Use Interface Elements (placeholders; derived from Components)\n"
+        + "\n".join(ui_elements)
+        + "\n\n"
+        "User Tasks / Critical Tasks (placeholders)\n"
+        "- Task: ____  Critical? (Y/N)  Notes: ____\n"
+        "\n"
+        "Use-Related Hazard Categories (seeded; deterministic)\n"
+        "- Incorrect setup/configuration\n"
+        "- Incorrect operation/use steps\n"
+        "- Misinterpretation of displays/indicators\n"
+        "- Incorrect maintenance/cleaning (if applicable)\n"
+        "- Alarm/alert misunderstanding (if applicable)\n"
+        "- Foreseeable misuse scenarios\n"
+        "\n"
+        "Use Error Analysis Table (Draft scaffold; no risk scores)\n"
+        "user_task | use_error | potential_harm | contributing_factors | risk_control (UI/training/labeling) | verification_method (TBD) | status\n"
+        + ("-" * 120)
+        + "\n"
+        "\n"
+        "Link to Risk Management (references only)\n"
+        + _ref("Hazard Analysis", refs.get("hazard_analysis"), "hazard_analysis")
+        + "\n"
+        + _ref("FMEA", refs.get("fmea"), "fmea")
+        + "\n"
+        + _ref("Risk Controls", refs.get("risk_controls_doc"), "risk_controls_doc")
+        + "\n"
+    )
+
+
+def _draft_hf_validation(
+    *,
+    project_id: str,
+    profile: Any,
+) -> str:
+    user_pop = (getattr(profile, "user_population", None) or "").strip() if profile else ""
+    use_env = (getattr(profile, "use_environment", None) or "").strip() if profile else ""
+    intended_use = (getattr(profile, "intended_use", None) or "").strip() if profile else ""
+
+    return (
+        "Human Factors Validation — Draft\n"
+        "\n"
+        "DRAFT — NOT EXECUTED. This document is a scaffold; attach study protocol/results when performed.\n"
+        "\n"
+        "SYSTEM-GENERATED DRAFT SCAFFOLD (deterministic)\n"
+        f"Project ID: {project_id}\n"
+        "\n"
+        "Purpose & Scope (Draft)\n"
+        "- Plan and record human factors validation activities and evidence.\n"
+        "- Structure-only: no implied execution, no compliance claims.\n"
+        "\n"
+        "Intended users and use environments (from Project Profile)\n"
+        f"- Intended use: {intended_use or 'TBD'}\n"
+        f"- Intended users / user population: {user_pop or 'TBD'}\n"
+        f"- Use environment(s): {use_env or 'TBD'}\n"
+        "\n"
+        "Critical Tasks to Validate (placeholders)\n"
+        "- Task: ____  Rationale: ____\n"
+        "\n"
+        "Study Design Overview (placeholders)\n"
+        "- Formative vs summative: (TBD)\n"
+        "- Sample size: (TBD)\n"
+        "- Participant characteristics: (TBD)\n"
+        "- Use scenarios: (TBD)\n"
+        "\n"
+        "Acceptance Criteria (TBD — do not invent thresholds)\n"
+        "- (TBD)\n"
+        "\n"
+        "Deviations Handling (placeholder)\n"
+        "- (TBD)\n"
+        "\n"
+        "Results Summary\n"
+        "- Status: Not Executed\n"
+        "- (Do not populate until study is performed and evidence is recorded.)\n"
+        "\n"
+        "Evidence Slots (align these to the Critical Tasks list)\n"
+        "task_name | observation/evidence_link | result | notes/deviations\n"
+        + ("-" * 96)
+        + "\n"
+        "- (Add one row per critical task; default Result = Not Executed)\n"
+    )
 
 
 def _draft_risk_acceptability_criteria(*, project_id: str, profile: Any, residual_risk_doc: Any) -> str:
@@ -666,14 +1163,18 @@ def _build_vv_plan(
     db: Session, *, project_id: str, profile: Any, design_inputs: list[dict[str, str]]
 ) -> tuple[str, list[dict[str, str]]]:
     """
-    Returns (content, vv_items) where vv_items are:
-      {id, input_id, text}
+    Returns (content, vv_items) where vv_items are structured plan activities:
+      - For Design Inputs: {id, source_type, input_id, source_ref, verification_method, acceptance_criteria, planned_evidence, status}
+      - For Risk Controls: {id, source_type, risk_control_id, source_ref, verification_method, acceptance_criteria, planned_evidence, status}
     """
     lines: list[str] = [
         "V&V Plan — Draft",
         "",
         _traceability_header(project_id=project_id, profile=profile).rstrip(),
         "",
+        "Purpose and Scope (Draft)",
+        "- This plan defines the intended verification and validation strategy for the project.\n"
+        "- It is a structure-first scaffold and does not imply execution, completion, or compliance.\n",
         "Definitions (Draft)",
         "- Verification: confirmation, through provision of objective evidence, that specified requirements have been fulfilled.",
         "- Validation: confirmation that the device meets user needs and intended use under actual or simulated use conditions.",
@@ -684,58 +1185,94 @@ def _build_vv_plan(
         "",
         "Traceability Expectations (Draft)",
         "- Each Design Input shall map to at least one verification activity and associated evidence.",
+        "- Risk controls with defined verification methods should map to planned activities and evidence.",
         "- This draft does not assert compliance or acceptance; it establishes placeholders only.",
         "",
-        "Planned Verification/Validation Items (Draft placeholders)",
+        "Planned Verification Activities (Draft; Status = Planned)",
     ]
 
     vv_items: list[dict[str, str]] = []
-    if not design_inputs:
-        lines.append("- (No Design Inputs available yet.)")
-        return "\n".join(lines) + "\n", vv_items
+    seq = 1
 
-    for di in design_inputs:
-        di_id = di["id"]
-        vv_id = di_id.replace("DI-", "VV-", 1)
-        txt = f"Verification/validation activity placeholder for {di_id} (method TBD; acceptance criteria TBD). [DRAFT]"
-        lines.append(f"- {vv_id} (covers {di_id}): {txt}")
-        vv_items.append({"id": vv_id, "input_id": di_id, "text": txt})
-
-    # Risk control verification activities (auto-created VV tests linked via TraceLink).
+    # A) Risk Controls (structured) with verification_method
     try:
-        from models.trace_link import TraceLink
         from models.risk_control import RiskControl
-        from models.vv_test import VVTest
 
-        links = (
-            db.query(TraceLink)
-            .filter(
-                TraceLink.project_id == project_id,
-                TraceLink.from_type == "risk_control",
-                TraceLink.to_type == "vv_test",
-            )
+        controls = (
+            db.query(RiskControl)
+            .filter(RiskControl.project_id == project_id)
             .all()
         )
-        if links:
+        controls = [
+            c
+            for c in controls
+            if str(getattr(c, "verification_method", "") or "").strip()
+        ]
+        # Deterministic ordering
+        controls = sorted(controls, key=lambda c: (str(getattr(c, "control_key", "") or ""), str(getattr(c, "id", "") or "")))
+        if controls:
             lines.append("")
-            lines.append("Risk Control Verification Activities (Draft)")
-            lines.append("- These are draft verification activities created from RiskControl.verification_method.")
-            lines.append("- Do not treat as executed or complete until performed and reviewed.")
-
-            # Deterministic ordering
-            for link in sorted(links, key=lambda l: (str(l.from_id or ""), str(l.to_id or ""))):
-                rc = db.query(RiskControl).filter(RiskControl.id == link.from_id).first()
-                vt = db.query(VVTest).filter(VVTest.id == link.to_id).first()
-                if not rc or not vt:
-                    continue
-                lines.append(f"- {vt.vv_key or ('V-' + vt.id[:8])}: {vt.name or 'Verification activity'}")
-                lines.append(f"  - Linked control: {rc.control_key or ('RC-' + rc.id[:8])} — {rc.control_name}")
-                lines.append(f"  - Verification method: {vt.test_method}")
-                lines.append(f"  - Acceptance criteria: {vt.acceptance_criteria}")
-                lines.append(f"  - Status: {vt.status}")
+            lines.append("A) Planned activities from Risk Controls (verification_method present)")
+            for rc in controls:
+                vv_id = f"VV-{seq:03d}"
+                seq += 1
+                rc_key = (getattr(rc, "control_key", None) or f"RC-{str(getattr(rc, 'id', '') or '')[:8]}")
+                rc_name = (getattr(rc, "control_name", None) or "").strip() or "Risk Control"
+                method = (getattr(rc, "verification_method", None) or "").strip()
+                vv_items.append(
+                    {
+                        "id": vv_id,
+                        "source_type": "Risk Control",
+                        "risk_control_id": str(getattr(rc, "id", "") or ""),
+                        "source_ref": f"{rc_key} — {rc_name}",
+                        "verification_method": method,
+                        "acceptance_criteria": "TBD",
+                        "planned_evidence": f"DV Test Report: {vv_id} (TBD)",
+                        "status": "Planned",
+                    }
+                )
+                lines.append(f"- {vv_id}")
+                lines.append(f"  - Source type: Risk Control")
+                lines.append(f"  - Source reference: {rc_key} — {rc_name} (risk_control_id={rc.id})")
+                lines.append(f"  - Verification method: {method}")
+                lines.append(f"  - Acceptance criteria: TBD")
+                lines.append(f"  - Planned evidence artifact: DV Test Report: {vv_id} (TBD)")
+                lines.append(f"  - Status: Planned")
     except Exception:
-        # Keep V&V plan generation robust even if trace tables are not present yet.
+        # Keep robust in environments where tables may not exist yet.
         pass
+
+    # B) Design Inputs (placeholders per input)
+    if design_inputs:
+        lines.append("")
+        lines.append("B) Planned activities from Design Inputs (placeholders)")
+        for di in design_inputs:
+            di_id = str(di.get("id") or "")
+            vv_id = f"VV-{seq:03d}"
+            seq += 1
+            vv_items.append(
+                {
+                    "id": vv_id,
+                    "source_type": "Design Input",
+                    "input_id": di_id,
+                    "source_ref": di_id,
+                    "verification_method": "TBD (Test/Analysis/Inspection)",
+                    "acceptance_criteria": "TBD",
+                    "planned_evidence": f"DV Test Report: {vv_id} (TBD)",
+                    "status": "Planned",
+                }
+            )
+            lines.append(f"- {vv_id}")
+            lines.append(f"  - Source type: Design Input")
+            lines.append(f"  - Source reference: {di_id}")
+            lines.append(f"  - Verification method: TBD (Test/Analysis/Inspection)")
+            lines.append(f"  - Acceptance criteria: TBD")
+            lines.append(f"  - Planned evidence artifact: DV Test Report: {vv_id} (TBD)")
+            lines.append(f"  - Status: Planned")
+    else:
+        lines.append("")
+        lines.append("B) Planned activities from Design Inputs")
+        lines.append("- (No Design Inputs available yet.)")
 
     return "\n".join(lines).strip() + "\n", vv_items
 
@@ -748,21 +1285,29 @@ def _build_vv_evidence_report(
         "",
         _traceability_header(project_id=project_id, profile=profile).rstrip(),
         "",
-        "Status",
-        "- Draft / Not Executed",
+        "NOT EXECUTED — DRAFT SCAFFOLD",
+        "- This report is a draft scaffold. Evidence must be uploaded/linked and execution recorded.",
+        "- Nothing in this document implies that tests were executed or passed.",
         "",
-        "Evidence Sections (aligned to V&V Plan placeholders)",
+        "Evidence Slots (mirrors V&V Plan activities)",
     ]
     if not vv_items:
         lines.append("- (No V&V Plan placeholders available yet.)")
         return "\n".join(lines).strip() + "\n"
 
     for item in vv_items:
-        lines.append(f"\n{item['id']} (covers {item['input_id']})")
-        lines.append("- Execution status: Not Executed [DRAFT]")
-        lines.append("- Evidence reference(s): TBD [DRAFT]")
-        lines.append("- Result summary: TBD [DRAFT]")
-        lines.append("- Deviations / anomalies: TBD [DRAFT]")
+        vv_id = str(item.get("id") or "")
+        source_type = str(item.get("source_type") or "Unknown")
+        source_ref = str(item.get("source_ref") or "")
+        lines.append(f"\nEvidence Slot: {vv_id}")
+        lines.append(f"- Activity reference: {vv_id}")
+        lines.append(f"- Source type: {source_type}")
+        lines.append(f"- Source reference: {source_ref}")
+        lines.append("- Evidence expected (placeholder title): (TBD)")
+        lines.append("- Evidence link/file reference: (empty)")
+        lines.append("- Result summary: (empty)")
+        lines.append("- Deviations/notes: (empty)")
+        lines.append("- Status: Not Executed")
 
     return "\n".join(lines).strip() + "\n"
 
@@ -935,9 +1480,17 @@ def _build_traceability_matrix(
         cname = str(getattr(c, "name", "") or "")
         lines.append(f"{cid} | {cname} | {fmea_by_comp.get(cid, 0)}")
 
-    # DI -> DO -> VV
+    # DI -> DO -> VV (Design Input sourced activities only)
     do_by_input = {d["input_id"]: d["id"] for d in design_outputs}
-    vv_by_input = {v["input_id"]: v["id"] for v in vv_items}
+    vv_by_input: Dict[str, str] = {}
+    vv_by_risk_control: Dict[str, str] = {}
+    for v in vv_items:
+        iid = str(v.get("input_id") or "")
+        rcid = str(v.get("risk_control_id") or "")
+        if iid:
+            vv_by_input[iid] = str(v.get("id") or "")
+        if rcid:
+            vv_by_risk_control[rcid] = str(v.get("id") or "")
 
     lines.extend(
         [
@@ -950,6 +1503,22 @@ def _build_traceability_matrix(
     for di in design_inputs:
         di_id = di["id"]
         lines.append(f"{di_id} | {do_by_input.get(di_id, '')} | {vv_by_input.get(di_id, '')}")
+
+    # Risk Control -> VV (candidates; evidence slots mirror VV IDs)
+    lines.extend(
+        [
+            "",
+            "C) Risk Controls → V&V Plan → V&V Evidence",
+            "risk_control_id | vv_item_id | vv_evidence_slot_id",
+            "-" * 72,
+        ]
+    )
+    if not vv_by_risk_control:
+        lines.append("(No risk-control sourced V&V activities found yet.)")
+    else:
+        for rcid in sorted(vv_by_risk_control.keys()):
+            vvid = vv_by_risk_control.get(rcid, "")
+            lines.append(f"{rcid} | {vvid} | {vvid}")
 
     return "\n".join(lines).strip() + "\n"
     intended_use = (getattr(profile, "intended_use", None) or "").strip() if profile else ""
@@ -1044,6 +1613,22 @@ def initialize_project_from_profile(db: Session, *, project_id: str) -> Dict[str
     do_content, do_entries = _build_design_outputs(project_id=project_id, profile=profile, design_inputs=di_entries)
     vv_plan_content, vv_items = _build_vv_plan(db, project_id=project_id, profile=profile, design_inputs=di_entries)
 
+    # Convenience: current docs for cross-references (best-effort, may be None).
+    def _d(t: str) -> Any:
+        return by_type.get((t or "").lower())
+
+    refs_common = {
+        "design_inputs_doc": _d("design_inputs_doc"),
+        "design_outputs_doc": _d("design_outputs_doc"),
+        "design_reviews": _d("design_reviews"),
+        "design_change_record": _d("design_change_record"),
+        "hazard_analysis": _d("hazard_analysis"),
+        "fmea": _d("fmea"),
+        "risk_controls_doc": _d("risk_controls_doc"),
+        "vv_plan": _d("vv_plan"),
+        "pms_plan": _d("pms_plan"),
+    }
+
     # 1) RMP
     rmp = by_type.get("rmp")
     if rmp and _should_populate(rmp):
@@ -1078,6 +1663,27 @@ def initialize_project_from_profile(db: Session, *, project_id: str) -> Dict[str
         document_crud.update_document(db, do.id, DocumentUpdate(content=do_content, status="draft"), project_id)
         stats.updated_documents.append("design_outputs_doc")
 
+    # 5b) Design & Development Plan
+    ddp = by_type.get("design_dev_plan")
+    if ddp and _should_populate(ddp):
+        ddp_content = _draft_design_dev_plan(project_id=project_id, profile=profile, components=components, refs=refs_common)
+        document_crud.update_document(db, ddp.id, DocumentUpdate(content=ddp_content, status="draft"), project_id)
+        stats.updated_documents.append("design_dev_plan")
+
+    # 5c) Design Reviews
+    dr = by_type.get("design_reviews")
+    if dr and _should_populate(dr):
+        dr_content = _draft_design_reviews(project_id=project_id, profile=profile, refs=refs_common)
+        document_crud.update_document(db, dr.id, DocumentUpdate(content=dr_content, status="draft"), project_id)
+        stats.updated_documents.append("design_reviews")
+
+    # 5d) Design Change Record (base template; change entries appended separately via version hook)
+    dcr = by_type.get("design_change_record")
+    if dcr and _should_populate(dcr):
+        dcr_content = _draft_design_change_record_base(project_id=project_id, profile=profile)
+        document_crud.update_document(db, dcr.id, DocumentUpdate(content=dcr_content, status="draft"), project_id)
+        stats.updated_documents.append("design_change_record")
+
     # 6) V&V Plan
     vvp = by_type.get("vv_plan")
     if vvp and _should_populate(vvp):
@@ -1090,6 +1696,21 @@ def initialize_project_from_profile(db: Session, *, project_id: str) -> Dict[str
         vve_content = _build_vv_evidence_report(project_id=project_id, profile=profile, vv_items=vv_items)
         document_crud.update_document(db, vve.id, DocumentUpdate(content=vve_content, status="draft"), project_id)
         stats.updated_documents.append("vv_evidence")
+
+    # 7b) Validation Summary (structure only; NOT COMPLETE until evidence exists)
+    vs = by_type.get("validation_summary")
+    if vs and _should_populate(vs):
+        # Refs are best-effort; do not imply completion.
+        refreshed = document_crud.get_documents_by_project(db, project_id)
+        refreshed_by_type = {(d.type or "").lower(): d for d in refreshed}
+        vs_content = _build_validation_summary(
+            project_id=project_id,
+            profile=profile,
+            vv_evidence_doc=refreshed_by_type.get("vv_evidence"),
+            residual_risk_doc=refreshed_by_type.get("residual_risk"),
+        )
+        document_crud.update_document(db, vs.id, DocumentUpdate(content=vs_content, status="draft"), project_id)
+        stats.updated_documents.append("validation_summary")
 
     # 8) Risk Controls Documentation
     rcd = by_type.get("risk_controls_doc")
@@ -1122,16 +1743,9 @@ def initialize_project_from_profile(db: Session, *, project_id: str) -> Dict[str
     # 10) Traceability Matrix
     tm = by_type.get("traceability_matrix")
     if tm and _should_populate(tm):
-        fmea_rows = fmea_crud.get_fmea_rows_by_project(db, project_id)
-        tm_content = _build_traceability_matrix(
-            project_id=project_id,
-            profile=profile,
-            components=components,
-            design_inputs=di_entries,
-            design_outputs=do_entries,
-            vv_items=vv_items,
-            fmea_rows=fmea_rows,
-        )
+        # Use the deterministic traceability builder to generate a gap-aware snapshot.
+        from services.traceability_builder import build_traceability
+        tm_content, _stats = build_traceability(db, project_id=project_id)
         document_crud.update_document(db, tm.id, DocumentUpdate(content=tm_content, status="draft"), project_id)
         stats.updated_documents.append("traceability_matrix")
 
@@ -1156,6 +1770,74 @@ def initialize_project_from_profile(db: Session, *, project_id: str) -> Dict[str
         )
         document_crud.update_document(db, rmr.id, DocumentUpdate(content=rmr_content, status="draft"), project_id)
         stats.updated_documents.append("risk_management_review")
+
+    # 12) Post-Market & CAPA (structure-only scaffolds)
+    # PMS Plan
+    pms_plan = by_type.get("pms_plan")
+    if pms_plan and _should_populate(pms_plan):
+        risks_exist = False
+        try:
+            from crud import risk_item as _risk_item_crud
+            risks_exist = len(_risk_item_crud.get_risk_items_by_project(db, project_id)) > 0
+        except Exception:
+            risks_exist = False
+        pms_plan_content = _draft_pms_plan(
+            project_id=project_id,
+            profile=profile,
+            components=components,
+            refs={
+                "hazard_analysis": _d("hazard_analysis"),
+                "fmea": _d("fmea"),
+                "risk_controls_doc": _d("risk_controls_doc"),
+            },
+            risks_exist=risks_exist,
+        )
+        document_crud.update_document(db, pms_plan.id, DocumentUpdate(content=pms_plan_content, status="draft"), project_id)
+        stats.updated_documents.append("pms_plan")
+
+    # PMS Report
+    pms_report = by_type.get("pms_report")
+    if pms_report and _should_populate(pms_report):
+        pms_report_content = _draft_pms_report(
+            project_id=project_id,
+            profile=profile,
+            refs={
+                "pms_plan": _d("pms_plan"),
+                "hazard_analysis": _d("hazard_analysis"),
+                "fmea": _d("fmea"),
+            },
+        )
+        document_crud.update_document(db, pms_report.id, DocumentUpdate(content=pms_report_content, status="draft"), project_id)
+        stats.updated_documents.append("pms_report")
+
+    # CAPA (CAPA log scaffold)
+    capa_doc = by_type.get("capa")
+    if capa_doc and _should_populate(capa_doc):
+        capa_content = _draft_capa_log(project_id=project_id, profile=profile)
+        document_crud.update_document(db, capa_doc.id, DocumentUpdate(content=capa_content, status="draft"), project_id)
+        stats.updated_documents.append("capa")
+
+    # 13) Usability & Human Factors (structure-only scaffolds)
+    ura = by_type.get("usability_risk_analysis")
+    if ura and _should_populate(ura):
+        ura_content = _draft_usability_risk_analysis(
+            project_id=project_id,
+            profile=profile,
+            components=components,
+            refs={
+                "hazard_analysis": _d("hazard_analysis"),
+                "fmea": _d("fmea"),
+                "risk_controls_doc": _d("risk_controls_doc"),
+            },
+        )
+        document_crud.update_document(db, ura.id, DocumentUpdate(content=ura_content, status="draft"), project_id)
+        stats.updated_documents.append("usability_risk_analysis")
+
+    hf = by_type.get("hf_validation")
+    if hf and _should_populate(hf):
+        hf_content = _draft_hf_validation(project_id=project_id, profile=profile)
+        document_crud.update_document(db, hf.id, DocumentUpdate(content=hf_content, status="draft"), project_id)
+        stats.updated_documents.append("hf_validation")
 
     return stats.as_dict()
 
@@ -1201,12 +1883,21 @@ def build_project_setup_scaffolds(
             profile=profile,
             artifacts={},
         ),
+        "design_dev_plan": _draft_design_dev_plan(project_id=project_id, profile=profile, components=components, refs={}),
+        "design_reviews": _draft_design_reviews(project_id=project_id, profile=profile, refs={}),
+        "design_change_record": _draft_design_change_record_base(project_id=project_id, profile=profile),
         "design_inputs_doc": di_content,
         "design_outputs_doc": do_content,
         "vv_plan": vv_plan_content,
         "vv_evidence": _build_vv_evidence_report(project_id=project_id, profile=profile, vv_items=vv_items),
+        "validation_summary": _build_validation_summary(project_id=project_id, profile=profile, vv_evidence_doc=None, residual_risk_doc=None),
         "risk_controls_doc": _build_risk_controls_doc(db, project_id=project_id, profile=profile, components=components),
         "residual_risk": _build_residual_risk_eval(project_id=project_id, profile=profile),
         "traceability_matrix": tm_content,
+        "pms_plan": _draft_pms_plan(project_id=project_id, profile=profile, components=components, refs={}, risks_exist=False),
+        "pms_report": _draft_pms_report(project_id=project_id, profile=profile, refs={}),
+        "capa": _draft_capa_log(project_id=project_id, profile=profile),
+        "usability_risk_analysis": _draft_usability_risk_analysis(project_id=project_id, profile=profile, components=components, refs={}),
+        "hf_validation": _draft_hf_validation(project_id=project_id, profile=profile),
     }
 

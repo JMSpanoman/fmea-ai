@@ -193,7 +193,8 @@ class RiskControlBase(BaseModel):
             if len(s) > 1200:
                 raise ValueError("verification_method is too long (max 1200 chars)")
             first_line = s.splitlines()[0].strip()
-            ok = bool(re.match(r"^(Test|Inspection|Analysis|Demonstration)\\s*:\\s*.+", first_line, flags=re.IGNORECASE))
+            # NOTE: use single-backslash whitespace escapes inside raw string.
+            ok = bool(re.match(r"^(Test|Inspection|Analysis|Demonstration)\s*:\s*.+", first_line, flags=re.IGNORECASE))
             if not ok:
                 raise ValueError(
                     "verification_method must be structured text starting with one of: "

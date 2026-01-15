@@ -12,6 +12,49 @@ from datetime import datetime, timezone
 
 router = APIRouter(prefix="/projects/{project_id}", tags=["Document Control"])
 
+SYSTEM_COMPILED_START = "\n--- SYSTEM COMPILED SECTION START ---\n"
+SYSTEM_COMPILED_END = "\n--- SYSTEM COMPILED SECTION END ---\n"
+
+
+def _upsert_system_compiled_section(existing: str, compiled: str) -> str:
+    """
+    Insert/replace a system-generated compiled section without overwriting user-authored content.
+    Used for compile-only documents (regulatory/audit outputs).
+    """
+    base = existing or ""
+    if SYSTEM_COMPILED_START in base and SYSTEM_COMPILED_END in base:
+        pre = base.split(SYSTEM_COMPILED_START, 1)[0]
+        post = base.split(SYSTEM_COMPILED_END, 1)[1]
+        return pre.rstrip() + SYSTEM_COMPILED_START + (compiled or "").strip() + SYSTEM_COMPILED_END + post.lstrip()
+    if base.strip():
+        return base.rstrip() + "\n" + SYSTEM_COMPILED_START + (compiled or "").strip() + SYSTEM_COMPILED_END
+    return SYSTEM_COMPILED_START + (compiled or "").strip() + SYSTEM_COMPILED_END
+
+
+def _render_text_as_html(*, title: str, project_name: str, doc_type: str, status: str, version: int, text: str) -> str:
+    safe_content = (text or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return f"""<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>{title} — v{version}</title>
+    <style>
+      body {{ font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 32px; }}
+      h1 {{ margin: 0 0 8px 0; }}
+      .meta {{ color: #555; margin-bottom: 16px; }}
+      pre {{ background: #f7f7f7; padding: 16px; border-radius: 8px; white-space: pre-wrap; }}
+      .badge {{ display: inline-block; padding: 2px 10px; border-radius: 999px; background: #eef2ff; color: #3730a3; font-size: 12px; }}
+    </style>
+  </head>
+  <body>
+    <h1>{title}</h1>
+    <div class="meta">
+      <span class="badge">{doc_type}</span>
+      &nbsp; Project: {project_name} &nbsp;|&nbsp; Status: {status} &nbsp;|&nbsp; Version: {version}
+    </div>
+    <pre>{safe_content}</pre>
+  </body>
+</html>"""
 
 def _safe_meta(d: any) -> dict:
     return d if isinstance(d, dict) else {}
@@ -207,6 +250,7 @@ def generate_document_version(
     # Build deterministic HTML by doc.type using existing evidence builders/renderers
     doc_type = (document.type or "").lower()
     rendered_html: str
+    stored_content: Optional[str] = None
 
     if doc_type == "rmf":
         # Evidence-based compilation: RMF is compiled from authoritative project documents.
@@ -400,15 +444,40 @@ def generate_document_version(
             component_filter=component_filter,
         )
         rendered_html = design_outputs_doc_renderer.render_design_outputs_doc_html(evidence)
+    elif doc_type in {"essential_requirements_checklist", "submission_index", "audit_package"}:
+        # Compile-only documents: links/status only, no compliance claims, do not overwrite user-authored content.
+        from services.regulatory_audit_compiler import (
+            compile_audit_package,
+            compile_essential_requirements_checklist,
+            compile_submission_index,
+        )
+
+        if doc_type == "essential_requirements_checklist":
+            compiled = compile_essential_requirements_checklist(db, project_id=project_id, project_name=project.name)
+        elif doc_type == "submission_index":
+            compiled = compile_submission_index(db, project_id=project_id, project_name=project.name)
+        else:
+            compiled = compile_audit_package(db, project_id=project_id, project_name=project.name)
+
+        stored_content = _upsert_system_compiled_section(document.content or "", compiled)
+        rendered_html = _render_text_as_html(
+            title=document.name,
+            project_name=project.name,
+            doc_type=doc_type,
+            status="draft",
+            version=(document.version or 0) + 1,
+            text=stored_content,
+        )
     else:
         # Minimal deterministic fallback
         rendered_html = f"""<!doctype html>
 <html><head><meta charset="utf-8"/><title>{document.name} — {project.name}</title></head>
 <body><h1>{document.name}</h1><p>Project: {project.name}</p><pre>{document.content or ''}</pre></body></html>"""
+        stored_content = document.content or ""
 
     # Create new version (do not overwrite silently)
     document.version += 1
-    document.content = rendered_html
+    document.content = stored_content if stored_content is not None else rendered_html
     document.status = "draft"  # generation creates a new draft version
     document.updated_at = datetime.now(timezone.utc)
     db.commit()
@@ -418,7 +487,7 @@ def generate_document_version(
         db,
         document.id,
         document.version,
-        rendered_html,
+        document.content,
         {
             "generated": True,
             "generated_at": datetime.now(timezone.utc).isoformat(),

@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends, status, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import uvicorn
@@ -67,6 +68,7 @@ from routers import reports_vv_evidence
 from routers import project_profile
 from routers import project_initialize
 from routers import document_guidance
+from routers import traceability_impact
 
 
 
@@ -164,6 +166,7 @@ app.include_router(ai_phase2.router, tags=["AI Phase 2"])
 # Phase 3 routers
 app.include_router(document_control.router, tags=["Document Control"])
 app.include_router(document_guidance.router, tags=["Document Guidance"])
+app.include_router(traceability_impact.router, tags=["Traceability & Impact"])
 app.include_router(training_phase3.router, tags=["Training Phase 3"])
 app.include_router(change_control_phase3.router, tags=["Change Control Phase 3"])
 app.include_router(audit_phase3.router, tags=["Audit Phase 3"])
@@ -251,7 +254,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     headers = get_cors_headers(request)
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors()},
+        # Pydantic v2 errors may include non-JSON-serializable objects (e.g., ValueError in ctx).
+        content={"detail": jsonable_encoder(exc.errors())},
         headers=headers
     )
 

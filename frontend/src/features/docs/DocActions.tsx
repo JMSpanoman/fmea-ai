@@ -25,6 +25,7 @@ export function DocActions({
 }) {
   const showGenerate = canGenerate(docType.id);
   const isRmf = docType.id === 'rmf';
+  const isCompileOnly = ['essential_requirements_checklist', 'submission_index', 'audit_package'].includes(docType.id);
 
   const primaryCta =
     instance.status === 'not_started'
@@ -56,16 +57,24 @@ export function DocActions({
           }`}
         >
           {generating
-            ? isRmf
+            ? isRmf || isCompileOnly
               ? 'Compiling…'
               : 'Generating…'
             : instance.status === 'not_started'
               ? isRmf
                 ? 'Compile Risk Management File'
-                : 'Generate'
+                : isCompileOnly
+                  ? docType.id === 'essential_requirements_checklist'
+                    ? 'Compile Essential Requirements Checklist'
+                    : docType.id === 'submission_index'
+                      ? 'Compile Submission Index'
+                      : 'Compile Audit Package'
+                  : 'Generate'
               : isRmf
                 ? 'Recompile Risk Management File'
-                : 'Regenerate'}
+                : isCompileOnly
+                  ? 'Recompile'
+                  : 'Regenerate'}
         </button>
       ) : null}
 
