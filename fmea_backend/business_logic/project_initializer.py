@@ -15,6 +15,7 @@ REQUIRED_DOCS: list[dict[str, str]] = [
     {"type": "fmea", "name": "FMEA"},
     {"type": "design_inputs_doc", "name": "Design Inputs Documentation"},
     {"type": "design_outputs_doc", "name": "Design Outputs Documentation"},
+    {"type": "vv_plan", "name": "V&V Plan"},
     {"type": "vv_evidence", "name": "V&V Evidence Report"},
     {"type": "traceability_matrix", "name": "Traceability Matrix"},
 ]
@@ -48,6 +49,8 @@ def _default_content_for(doc_type: str) -> str:
         return "Design Inputs Documentation starter. Use Generate New to compile component-scoped requirements and trace evidence."
     if doc_type == "design_outputs_doc":
         return "Design Outputs Documentation starter. Use Generate New to compile component-scoped implementation artifacts and trace evidence."
+    if doc_type == "vv_plan":
+        return "V&V Plan starter. Use Generate New to compile verification/validation plan scaffolding and trace links."
     if doc_type == "vv_evidence":
         return "V&V Evidence Report starter. Use Generate New to compile component-scoped verification/validation evidence and trace links."
     if doc_type == "traceability_matrix":

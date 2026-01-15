@@ -71,8 +71,8 @@ function App() {
     <AuthProvider>
       <ProjectProvider>
         <ToastProvider>
-          {/* Opt-in to React Router v7 relative splat behavior to silence future-flag warnings. */}
-          <Router future={{ v7_relativeSplatPath: true }}>
+          {/* Opt-in to React Router v7 future behavior to silence future-flag warnings. */}
+          <Router future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
             <ProtectedRoute>
               <AppShell>
                 <ErrorBoundary>

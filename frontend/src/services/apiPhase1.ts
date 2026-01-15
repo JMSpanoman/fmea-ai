@@ -97,6 +97,17 @@ export const projectInitializeFromProfileApi = {
     apiRequest<{ project_id: string; stats: any }>(`/projects/${projectId}/initialize-from-profile`, { method: 'POST' }),
 };
 
+export const projectGenerateAiDraftsFromSetupApi = {
+  run: (
+    projectId: string,
+    docTypes?: string[]
+  ): Promise<{ project_id: string; stats: any }> =>
+    apiRequest<{ project_id: string; stats: any }>(`/projects/${projectId}/generate-ai-drafts-from-setup`, {
+      method: 'POST',
+      body: JSON.stringify({ doc_types: docTypes || null }),
+    }),
+};
+
 // FMEA API
 export const fmeaApi = {
   getByProject: (projectId: string): Promise<FmeaRow[]> =>

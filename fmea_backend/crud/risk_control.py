@@ -1,8 +1,101 @@
 from sqlalchemy.orm import Session
 from models.risk_control import RiskControl
+from models.trace_link import TraceLink
 from schemas.risk_item import RiskControlCreate, RiskControlUpdate
 from typing import List, Optional
 import uuid
+
+
+def _ensure_vv_activity_for_control(db: Session, control: RiskControl) -> None:
+    """
+    Ensure a draft V&V activity exists for this risk control's verification_method.
+
+    - Creates a draft DesignOutput placeholder if trace_to_design_output is missing (required by VVTest model).
+    - Creates a draft VVTest with test_method derived from verification_method (structured text).
+    - Creates a TraceLink risk_control -> vv_test (link_type='verified_by') for traceability.
+    - Sets control.trace_to_verification_test, but does NOT mark verification as complete.
+    """
+    vm = (getattr(control, "verification_method", None) or "").strip()
+    if not vm:
+        return
+
+    # If we already have a linked VV test, do nothing.
+    if getattr(control, "trace_to_verification_test", None):
+        return
+
+    # Ensure there is a DesignOutput to attach the VVTest to (VVTest requires design_output_id).
+    design_output_id = (getattr(control, "trace_to_design_output", None) or "").strip()
+    if not design_output_id:
+        from crud import design_control as design_crud
+        from schemas.design_control import DesignOutputCreate
+
+        do = design_crud.create_design_output(
+            db,
+            DesignOutputCreate(
+                project_id=control.project_id,
+                source="ai",
+                title=f"[DRAFT] Design Output placeholder for {control.control_name}",
+                text=f"[DRAFT] Placeholder design output used to anchor verification activity for risk control {control.control_key or control.id}.",
+                description=None,
+                document_ref=None,
+                status="draft",
+                linked_input_id=None,
+            ),
+            created_by=getattr(control, "created_by", None),
+        )
+        design_output_id = do.id
+        control.trace_to_design_output = design_output_id
+        db.commit()
+        db.refresh(control)
+
+    # Create VV test
+    from crud import vv as vv_crud
+    from schemas.vv import VVTestCreate
+
+    vv_test = vv_crud.create_vv_test(
+        db,
+        VVTestCreate(
+            project_id=control.project_id,
+            design_output_id=design_output_id,
+            test_method=vm,
+            acceptance_criteria="TBD (define pass/fail criteria for this risk control verification).",
+            rationale=f"[DRAFT] Auto-created from RiskControl {control.control_key or control.id} verification_method.",
+            ai_metadata={"source": "risk_control_verification_method", "risk_control_id": control.id},
+        ),
+        created_by=getattr(control, "created_by", None),
+    )
+
+    # Create trace link if missing
+    existing_link = (
+        db.query(TraceLink)
+        .filter(
+            TraceLink.project_id == control.project_id,
+            TraceLink.from_type == "risk_control",
+            TraceLink.from_id == control.id,
+            TraceLink.to_type == "vv_test",
+            TraceLink.to_id == vv_test.id,
+        )
+        .first()
+    )
+    if not existing_link:
+        db.add(
+            TraceLink(
+                id=str(uuid.uuid4()),
+                project_id=control.project_id,
+                from_type="risk_control",
+                from_id=control.id,
+                to_type="vv_test",
+                to_id=vv_test.id,
+                link_type="verified_by",
+                rationale="Auto-created from RiskControl.verification_method; requires human review and execution.",
+            )
+        )
+        db.commit()
+
+    # Link back from control (do not set verified_date; keep draft)
+    control.trace_to_verification_test = vv_test.id
+    db.commit()
+    db.refresh(control)
 
 def _generate_control_key(db: Session, risk_item_id: str) -> str:
     """Generate a unique control_key for a risk item (e.g., RC-001, RC-002)"""
@@ -59,6 +152,7 @@ def create_risk_control(db: Session, risk_control: RiskControlCreate, created_by
     db.add(db_control)
     db.commit()
     db.refresh(db_control)
+    _ensure_vv_activity_for_control(db, db_control)
     return db_control
 
 def get_risk_controls_by_risk_item(db: Session, risk_item_id: str) -> List[RiskControl]:
@@ -96,6 +190,7 @@ def update_risk_control(
     
     db.commit()
     db.refresh(db_control)
+    _ensure_vv_activity_for_control(db, db_control)
     return db_control
 
 def delete_risk_control(db: Session, control_id: str, risk_item_id: str) -> bool:

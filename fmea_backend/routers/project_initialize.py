@@ -7,6 +7,9 @@ from models.user import User
 from crud import project as project_crud
 from services.project_setup_initializer import initialize_project_content
 from services.project_profile_initializer import initialize_project_from_profile
+from services.project_ai_doc_generator import generate_all_docs_with_ai_from_setup
+from pydantic import BaseModel
+from typing import Optional, List
 
 
 router = APIRouter(prefix="/projects/{project_id}", tags=["Project Initialize"])
@@ -51,4 +54,39 @@ def initialize_project_from_profile_endpoint(
 
     stats = initialize_project_from_profile(db, project_id=project_id)
     return {"project_id": project_id, "stats": stats}
+
+
+class GenerateAIDraftsFromSetupRequest(BaseModel):
+    doc_types: Optional[List[str]] = None
+
+
+@router.post("/generate-ai-drafts-from-setup", status_code=status.HTTP_200_OK)
+def generate_ai_drafts_from_setup_endpoint(
+    project_id: str,
+    request: GenerateAIDraftsFromSetupRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Generate detailed AI drafts using Project Setup (ProjectProfile + Components).
+
+    Audit-safe rules:
+    - Never overwrite user-edited content
+    - Only fills empty/not-started/starter content or exact deterministic setup scaffolds
+    - Writes Draft content via document update (creates a new document version)
+    """
+    project = project_crud.get_project(db, project_id, current_user.id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    try:
+        stats = generate_all_docs_with_ai_from_setup(
+            db,
+            project_id=project_id,
+            doc_types=request.doc_types,
+        )
+        return {"project_id": project_id, "stats": stats}
+    except RuntimeError as e:
+        # e.g. OPENAI_API_KEY missing
+        raise HTTPException(status_code=503, detail=str(e))
 

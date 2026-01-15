@@ -66,6 +66,7 @@ from routers import pms_signal
 from routers import reports_vv_evidence
 from routers import project_profile
 from routers import project_initialize
+from routers import document_guidance
 
 
 
@@ -114,6 +115,20 @@ async def lifespan(app: FastAPI):
     except Exception as cleanup_err:
         logger.error(f"GeneratedArtifact cleanup failed: {cleanup_err}", exc_info=True)
 
+    # Backfill document ai_metadata flags for existing starter content (best-effort).
+    # This enables consistent frontend behavior ("hasAiSample") without touching user content.
+    try:
+        from database import SessionLocal
+        from services.document_sample_backfill import backfill_default_sample_flags
+        db = SessionLocal()
+        try:
+            stats = backfill_default_sample_flags(db)
+            logger.info(f"Starter content backfill: {stats}")
+        finally:
+            db.close()
+    except Exception as backfill_err:
+        logger.error(f"Starter content backfill failed: {backfill_err}", exc_info=True)
+
     yield
     # Shutdown
     logger.info("Shutting down Smart FMEA Builder API")
@@ -148,6 +163,7 @@ app.include_router(ai_phase2.router, tags=["AI Phase 2"])
 
 # Phase 3 routers
 app.include_router(document_control.router, tags=["Document Control"])
+app.include_router(document_guidance.router, tags=["Document Guidance"])
 app.include_router(training_phase3.router, tags=["Training Phase 3"])
 app.include_router(change_control_phase3.router, tags=["Change Control Phase 3"])
 app.include_router(audit_phase3.router, tags=["Audit Phase 3"])

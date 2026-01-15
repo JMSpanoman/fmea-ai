@@ -4,6 +4,7 @@ import api from '../axios';
 import authService from '../services/authService';
 import { documentsApi } from '../services/apiPhase3';
 import type { Document } from '../types';
+import DocumentGuidanceHeader from '../components/documents/DocumentGuidanceHeader';
 
 type Tab = 'edit' | 'preview';
 type VersionScope = 'approved_only' | 'current' | 'all';
@@ -15,7 +16,8 @@ export default function ProjectDocumentPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>('');
-  const [tab, setTab] = useState<Tab>('edit');
+  // Default to Preview when opening documents (users can switch to Edit when needed).
+  const [tab, setTab] = useState<Tab>('preview');
   const [doc, setDoc] = useState<Document | null>(null);
   const [name, setName] = useState('');
   const [status, setStatus] = useState<Document['status']>('draft');
@@ -56,6 +58,30 @@ export default function ProjectDocumentPage() {
 
   const title = useMemo(() => doc?.name || 'Document', [doc]);
   const docType = (doc?.type || '').toLowerCase();
+  const isRmf = docType === 'rmf';
+  const hasAiSample = Boolean((doc as any)?.ai_metadata?.ai_sample_generated || (doc as any)?.ai_metadata?.default_sample_provided);
+
+  const populationSources = useMemo(() => {
+    // Optional, friendly chips in the header. Keep conservative and deterministic.
+    const t = docType;
+    const sources: string[] = [];
+    if (!t) return sources;
+    if (['rmp', 'hazard_analysis', 'design_inputs_doc', 'design_outputs_doc', 'vv_plan', 'vv_evidence', 'traceability_matrix', 'fmea'].includes(t)) {
+      sources.push('Project Setup');
+      sources.push('Components');
+    }
+    if (['fmea', 'risk_controls_doc', 'traceability_matrix', 'residual_risk'].includes(t)) {
+      sources.push('FMEA rows');
+    }
+    if (['risk_controls_doc', 'residual_risk'].includes(t)) {
+      sources.push('Risk Controls');
+      sources.push('Risk Items');
+    }
+    if (t === 'rmf') {
+      sources.push('Compiled from other docs');
+    }
+    return Array.from(new Set(sources));
+  }, [docType]);
 
   const load = async () => {
     if (!finalProjectId || !finalDocId) return;
@@ -97,6 +123,13 @@ export default function ProjectDocumentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalProjectId, finalDocId]);
 
+  // When navigating between documents, reset the UI to Preview by default.
+  useEffect(() => {
+    setTab('preview');
+    setPreviewHtml('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finalProjectId, finalDocId]);
+
   useEffect(() => {
     if (tab === 'preview' && finalProjectId && finalDocId) {
       loadPreview();
@@ -106,6 +139,10 @@ export default function ProjectDocumentPage() {
 
   const save = async () => {
     if (!finalProjectId || !finalDocId) return;
+    if (isRmf) {
+      setError("RMF is compiled and cannot be edited manually. Use 'Compile Risk Management File'.");
+      return;
+    }
     setSaving(true);
     setError('');
     try {
@@ -196,6 +233,31 @@ export default function ProjectDocumentPage() {
     }
   };
 
+  const generateAiSample = async () => {
+    if (!finalProjectId || !docType) return;
+    if (!doc) return;
+    setSaving(true);
+    setError('');
+    try {
+      if (!authService.isAuthenticated()) {
+        await authService.authenticate();
+      }
+      const updated = await documentsApi.generateAiSampleForType(finalProjectId, docType);
+      setDoc(updated);
+      setName(updated.name || '');
+      setStatus((updated.status as any) || 'draft');
+      setContent(updated.content || '');
+      setSelectedVersionNo(null);
+      setTab('preview');
+      await loadPreview();
+      alert('AI sample added as a new draft version.');
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || e?.message || 'Failed to generate AI sample');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const openVersions = async () => {
     if (!finalProjectId || !finalDocId) return;
     setShowVersions(true);
@@ -245,6 +307,12 @@ export default function ProjectDocumentPage() {
 
   return (
     <div className="p-6">
+      <DocumentGuidanceHeader
+        documentType={docType || 'document'}
+        hasAiSample={hasAiSample}
+        onGenerateAiSample={generateAiSample}
+        populationSources={populationSources}
+      />
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -259,12 +327,12 @@ export default function ProjectDocumentPage() {
               onClick={() => setShowGenerate(true)}
               disabled={saving}
             >
-              Generate New
+              {isRmf ? 'Compile RMF' : 'Generate New'}
             </button>
             <button
               className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-400"
               onClick={save}
-              disabled={saving}
+              disabled={saving || isRmf}
               title="Save Draft"
             >
               {saving ? 'Saving…' : 'Save Draft'}
@@ -303,6 +371,7 @@ export default function ProjectDocumentPage() {
             <button
               className={`px-4 py-2 rounded-md ${tab === 'edit' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'}`}
               onClick={() => setTab('edit')}
+              disabled={isRmf}
             >
               Edit
             </button>
@@ -318,7 +387,7 @@ export default function ProjectDocumentPage() {
           </div>
         </div>
 
-        {tab === 'edit' ? (
+        {tab === 'edit' && !isRmf ? (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

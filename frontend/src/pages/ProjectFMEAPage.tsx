@@ -25,6 +25,13 @@ type GeneratedRow = {
   finalRpn: number;
 };
 
+function getRpnClass(rpn: number) {
+  // Align with `FMEAPage.tsx` (low < 50, medium 50–99, high >= 100)
+  if (rpn >= 100) return 'bg-red-100 text-red-800';
+  if (rpn >= 50) return 'bg-yellow-100 text-yellow-800';
+  return 'bg-green-100 text-green-800';
+}
+
 function clampScore(n: any): number {
   const v = Number(n);
   if (!Number.isFinite(v)) return 1;
@@ -300,7 +307,16 @@ export default function ProjectFMEAPage() {
                     <td className="px-3 py-3 border-b text-center align-top">{r.severity}</td>
                     <td className="px-3 py-3 border-b text-center align-top">{r.occurrence}</td>
                     <td className="px-3 py-3 border-b text-center align-top">{r.detection}</td>
-                    <td className="px-3 py-3 border-b text-center align-top font-semibold">{r.rpn}</td>
+                    <td className="px-3 py-3 border-b text-center align-top">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${getRpnClass(
+                          r.rpn
+                        )}`}
+                        title="RPN (Risk Priority Number)"
+                      >
+                        {r.rpn}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 border-b align-top">
                       {r.currentControls || r.recommendedActions || ''}
                     </td>

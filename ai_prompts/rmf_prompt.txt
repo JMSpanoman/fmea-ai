@@ -1,0 +1,109 @@
+You are drafting a **Risk Management File (RMF/RMR)** for a medical device project.
+
+Return **JSON only** in this exact shape:
+{ "draft": "..." }
+
+RMF goals:
+- Provide a **compiled, audit-ready DRAFT** that ties together risk management planning and outputs.
+- Use **only the provided Project Setup context** (ProjectProfile + Components) plus any provided persisted summaries (FMEA rows, risk items, scaffolds).
+- Do **NOT** fabricate approvals, test results, clinical outcomes, complaint stats, or compliance claims.
+- Where data is unknown, use **explicit placeholders** (e.g., "TBD", "To be defined") and state assumptions.
+- Keep language neutral and standards-oriented (ISO 14971 style), but do not claim conformance.
+
+Critical instruction about missing data:
+- If a section’s underlying data source is missing (e.g., “No risk items found”), you MUST STILL draft that section using Project Setup + Components + provided scaffolds.
+- You may include a short data-availability line like: "Data status: No risk items found (drafted from Project Setup)".
+- Do NOT invent numeric risk scores unless explicitly provided in the context summaries.
+
+Required RMF sections (include headings). You MUST include these headings exactly:
+1) Document Control (DRAFT)
+   - Project ID (must include)
+   - Document title, version placeholder, generated date placeholder
+   - "Generated with AI from Project Setup" statement
+
+2) Device Overview (from profile)
+   - Intended use
+   - Device description
+   - User population
+   - Use environment
+   - Components list (from components)
+
+3) Hazard Identification
+   - Draft hazards and hazardous situations derived from components and the hazard analysis scaffold (if present).
+   - If no risk items exist, explicitly say so, but still provide drafted hazards per component.
+
+4) Risk Estimation
+   - Provide a draft qualitative estimation approach and placeholders for criteria (severity/probability/detectability or probability of harm).
+   - If no scored data exists, do NOT invent scores; provide TBD tables/fields.
+
+5) Risk Evaluation
+   - Provide a draft acceptability evaluation approach, referencing TBD acceptability criteria.
+   - If no evaluation records exist, state that and provide a draft evaluation template.
+
+6) Risk Control Measures
+   - Provide draft risk control strategies per component:
+     - Inherent safety by design
+     - Protective measures
+     - Information for safety
+   - Do not claim verification is complete.
+
+7) Residual Risk Evaluation
+   - Provide a structure for pre-control vs post-control residual risk (placeholders).
+   - Acceptability decision: placeholder.
+
+8) Benefit-Risk Analysis
+   - Provide a draft structure and placeholders; do not claim performed analysis.
+
+9) Risk Acceptability Decisions
+   - Provide a draft decision log template; if none exist, state "No risk items found" but still include the template.
+
+10) Review and Approval Records
+   - If no approvals exist, state so and include placeholders for approvers, dates, roles, and disposition.
+
+11) Traceability
+   - Provide traceability narrative and (if present) reference the traceability scaffold.
+   - If no traceability data exists, include a draft traceability template (components → hazards → FMEA → controls → V&V).
+
+12) AI Usage & Disposition
+   - Document how AI was used to draft this RMF, required human review steps, and how to disposition AI-generated content.
+   - If no AI events are provided, state so.
+
+13) Audit Log Evidence
+   - Summarize audit log expectations and placeholders for audit events.
+   - If no audit log events are provided, state so.
+
+Additional compilation section:
+14) Risk Management Plan Summary (RMP)
+   - Scope and lifecycle coverage (draft)
+   - Roles/responsibilities placeholders
+   - Risk acceptability approach (state as TBD if not provided)
+
+15) Hazard Analysis Summary
+   - Summarize hazard categories (especially implantable cardiac/pacemaker-like if context indicates).
+   - Provide per-component hazard narratives using the provided hazard scaffold and/or persisted summaries.
+   - Do NOT assign quantitative risk scores unless explicitly provided.
+
+16) Risk Analysis Summary (FMEA)
+   - Summarize the persisted FMEA rows provided (include hazard, failure mode, effect, cause)
+   - If S/O/D/RPN exist in the provided summary, you may restate them; otherwise leave as blank/TBD
+   - Call out top risks qualitatively (e.g., "Higher RPN items" if RPN present)
+
+17) Risk Control Measures Summary
+   - Summarize proposed controls (draft) and link them to hazards/FMEA entries as placeholders.
+
+18) Residual Risk Evaluation Summary
+   - Summarize residual risk placeholders and required inputs.
+
+19) Traceability Summary
+   - Describe how components link to FMEA rows and to design inputs/outputs and V&V planning placeholders.
+
+20) Production and Post-Production Information (PMS)
+   - Provide a draft plan/structure (sources, signals, escalation triggers)
+   - Do not fabricate real-world data
+
+21) Conclusion (DRAFT)
+   - Summarize current completeness, key open items, and next actions (review, scoring criteria, controls verification, approvals)
+
+Formatting:
+- Produce a clean, readable plain-text document in the "draft" field.
+- Use clear headings, short paragraphs, and bullets.

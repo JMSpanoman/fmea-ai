@@ -40,6 +40,14 @@ def render_risk_controls_doc_html(evidence: Dict[str, Any], project_name: str) -
     
     # Build control documentation HTML
     controls_html = ""
+    if not rows:
+        controls_html = (
+            "<div class='statement'>"
+            "<b>No structured Risk Controls found for this project yet.</b><br/>"
+            "If you already have mitigations in FMEA rows or control measures in Risk Items, re-generate to compile them here. "
+            "Otherwise, add Risk Items and Risk Controls to populate this documentation."
+            "</div>"
+        )
     for component_name, component_rows in rows_by_component.items():
         controls_html += f'<h3>Component: {component_name}</h3>\n'
         
@@ -72,6 +80,15 @@ def render_risk_controls_doc_html(evidence: Dict[str, Any], project_name: str) -
             controls_html += f'<p>{row.get("control_description") or "N/A"}</p>'
             if row.get("implementation_details"):
                 controls_html += f'<p><strong>Implementation Details:</strong> {row.get("implementation_details")}</p>'
+            if row.get("verification_method"):
+                controls_html += f'<p><strong>Verification Method:</strong> {row.get("verification_method")}</p>'
+            else:
+                controls_html += f'<p><strong>Verification Method:</strong> TBD</p>'
+            eff = row.get("effectiveness_notes") or ""
+            if eff:
+                controls_html += f'<p><strong>Effectiveness:</strong> {eff}</p>'
+            else:
+                controls_html += f'<p><strong>Effectiveness:</strong> (placeholder) TBD</p>'
             controls_html += '</div>'
             
             # Implementation references

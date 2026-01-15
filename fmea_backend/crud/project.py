@@ -4,12 +4,45 @@ from schemas.project import ProjectCreate, ProjectUpdate
 from typing import List, Optional
 import uuid
 
+
+def _next_sequential_project_name(db: Session, *, user_id: str, prefix: str = "FMEA") -> str:
+    """
+    Returns the next sequential project name for a user in the format: PREFIX-<n>
+    Example: FMEA-1, FMEA-2, ...
+    """
+    # Note: keep this deterministic and lightweight (SQLite friendly).
+    like_prefix = f"{prefix}-%"
+    rows = (
+        db.query(Project.name)
+        .filter(Project.user_id == user_id, Project.name.like(like_prefix))
+        .all()
+    )
+
+    max_n = 0
+    for (name,) in rows:
+        if not name:
+            continue
+        if not name.startswith(f"{prefix}-"):
+            continue
+        suffix = name[len(prefix) + 1 :].strip()
+        try:
+            n = int(suffix)
+            if n > max_n:
+                max_n = n
+        except Exception:
+            continue
+    return f"{prefix}-{max_n + 1}"
+
 def create_project(db: Session, project: ProjectCreate, user_id: str) -> Project:
     """Create a new project"""
     try:
+        name = (project.name or "").strip()
+        if not name:
+            name = _next_sequential_project_name(db, user_id=user_id, prefix="FMEA")
+
         db_project = Project(
             id=str(uuid.uuid4()),
-            name=project.name,
+            name=name,
             description=project.description,
             user_id=user_id
         )

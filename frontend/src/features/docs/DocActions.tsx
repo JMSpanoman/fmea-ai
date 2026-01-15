@@ -24,6 +24,7 @@ export function DocActions({
   onExport: () => void;
 }) {
   const showGenerate = canGenerate(docType.id);
+  const isRmf = docType.id === 'rmf';
 
   const primaryCta =
     instance.status === 'not_started'
@@ -43,7 +44,7 @@ export function DocActions({
           onClick={onOpenEditor}
           className="px-3 py-2 rounded-md text-sm border border-gray-300 bg-white hover:bg-gray-50"
         >
-          Open/Edit
+          {isRmf ? 'Open' : 'Open/Edit'}
         </button>
       ) : null}
       {showGenerate ? (
@@ -54,7 +55,17 @@ export function DocActions({
             generating ? 'bg-primary/50 cursor-not-allowed' : 'bg-primary hover:bg-primary/90'
           }`}
         >
-          {generating ? 'Generating…' : instance.status === 'not_started' ? 'Generate' : 'Regenerate'}
+          {generating
+            ? isRmf
+              ? 'Compiling…'
+              : 'Generating…'
+            : instance.status === 'not_started'
+              ? isRmf
+                ? 'Compile Risk Management File'
+                : 'Generate'
+              : isRmf
+                ? 'Recompile Risk Management File'
+                : 'Regenerate'}
         </button>
       ) : null}
 

@@ -104,7 +104,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       {/* Sidebar */}
       <aside
         className={`
-          ${sidebarCollapsed ? 'w-18' : 'w-72'}
+          ${sidebarCollapsed ? 'w-18' : 'w-80'}
           bg-sky-50 border-r border-sky-100
           flex flex-col transition-smooth-slow
           flex-shrink-0

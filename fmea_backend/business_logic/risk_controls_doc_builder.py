@@ -9,6 +9,7 @@ from models.risk_control import RiskControl
 from models.risk_item_version import RiskItemVersion
 from models.trace_link import TraceLink
 from models.component import Component
+from models.fmea import FMEARow
 from sqlalchemy import or_
 
 def get_artifact_display(db: Session, artifact_type: str, artifact_id: str) -> str:
@@ -95,6 +96,22 @@ def build_risk_controls_doc_evidence(
     total_controls = 0
     missing_implementation = 0
     missing_verification = 0
+
+    # Track emitted control signatures to avoid duplicates when a control is represented multiple ways.
+    emitted: set[str] = set()
+
+    def _emit(row: Dict[str, Any]):
+        nonlocal control_rows, emitted, missing_implementation, missing_verification
+        sig = f"{row.get('control_id') or ''}|{row.get('control_key') or ''}|{row.get('risk_item_id') or ''}|{row.get('control_name') or ''}|{row.get('component_id') or ''}"
+        if sig in emitted:
+            return
+        emitted.add(sig)
+        # maintain counts for missing evidence
+        if row.get("flags", {}).get("missing_implementation"):
+            missing_implementation += 1
+        if row.get("flags", {}).get("missing_verification"):
+            missing_verification += 1
+        control_rows.append(row)
     
     for risk_item in risk_items:
         # Get controls for this risk item
@@ -190,6 +207,7 @@ def build_risk_controls_doc_evidence(
                 "control_description": control.control_description,
                 "implementation_details": control.implementation_details,
                 "verification_method": control.verification_method,
+                "effectiveness_notes": control.effectiveness_notes,
                 "implementation_refs": implementation_refs,
                 "verification_methods": verification_methods,
                 "flags": {
@@ -197,8 +215,87 @@ def build_risk_controls_doc_evidence(
                     "missing_verification": not has_verification
                 }
             }
-            
-            control_rows.append(row)
+
+            _emit(row)
+
+        # If the project has risk items but no structured RiskControl rows yet, treat free-text as an existing control source.
+        if len(controls) == 0:
+            text_sources = []
+            if getattr(risk_item, "mitigation_strategy", None):
+                text_sources.append(("mitigation_strategy", str(risk_item.mitigation_strategy)))
+            if getattr(risk_item, "control_measures", None):
+                text_sources.append(("control_measures", str(risk_item.control_measures)))
+
+            for src, txt in text_sources:
+                if not (txt or "").strip():
+                    continue
+                pseudo = {
+                    "risk_item_id": risk_item.id,
+                    "risk_key": risk_item.risk_key or f"R-{risk_item.id[:8]}",
+                    "component_name": component_name,
+                    "hazard": current_version.hazard if current_version and hasattr(current_version, 'hazard') else None,
+                    "harm": current_version.harm if current_version and hasattr(current_version, 'harm') else None,
+                    "component_id": risk_item.component_id,
+                    "control_id": None,
+                    "control_key": f"{src.upper()}-{risk_item.id[:8]}",
+                    "control_name": f"{src.replace('_', ' ').title()} (from Risk Item)",
+                    "control_type": "TBD",
+                    "control_status": "draft",
+                    "control_description": txt.strip(),
+                    "implementation_details": None,
+                    "verification_method": None,
+                    "effectiveness_notes": None,
+                    "implementation_refs": [],
+                    "verification_methods": [],
+                    "flags": {"missing_implementation": True, "missing_verification": True},
+                }
+                total_controls += 1
+                _emit(pseudo)
+
+    # Also derive controls from FMEA mitigation text (common in early projects before Risk Items / RiskControls exist).
+    fmea_q = db.query(FMEARow).filter(FMEARow.project_id == project_id)
+    if component_ids:
+        fmea_q = fmea_q.filter(FMEARow.component_id.in_(component_ids))
+    fmea_rows = fmea_q.all()
+
+    comp_name_by_id: Dict[str, str] = {
+        str(c.id): (c.name or "") for c in db.query(Component).filter(Component.project_id == project_id).all()
+    }
+
+    for r in fmea_rows:
+        mit = (getattr(r, "mitigation", None) or "").strip()
+        if not mit:
+            continue
+        cid = str(getattr(r, "component_id", None) or "")
+        cname = comp_name_by_id.get(cid) or "Unknown"
+        hazard = None
+        try:
+            meta0 = r.ai_metadata if isinstance(getattr(r, "ai_metadata", None), dict) else {}
+            hazard = meta0.get("hazard")
+        except Exception:
+            hazard = None
+        pseudo = {
+            "risk_item_id": None,
+            "risk_key": f"FMEA-{str(r.id)[:8]}",
+            "component_name": cname,
+            "hazard": hazard,
+            "harm": None,
+            "component_id": cid or None,
+            "control_id": None,
+            "control_key": f"FMEA-MIT-{str(r.id)[:8]}",
+            "control_name": "Mitigation (from FMEA row)",
+            "control_type": "TBD",
+            "control_status": "draft",
+            "control_description": mit,
+            "implementation_details": None,
+            "verification_method": None,
+            "effectiveness_notes": None,
+            "implementation_refs": [],
+            "verification_methods": [],
+            "flags": {"missing_implementation": True, "missing_verification": True},
+        }
+        total_controls += 1
+        _emit(pseudo)
     
     return {
         "project_id": project_id,

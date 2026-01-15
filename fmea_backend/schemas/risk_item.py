@@ -1,6 +1,14 @@
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List, TYPE_CHECKING
 from datetime import datetime
+import re
+
+try:
+    # Pydantic v2
+    from pydantic import field_validator  # type: ignore
+except Exception:  # pragma: no cover
+    # Pydantic v1 fallback
+    field_validator = None  # type: ignore
 
 if TYPE_CHECKING:
     from schemas.risk_item import RiskItemVersionOut
@@ -165,6 +173,33 @@ class RiskControlBase(BaseModel):
     verified_date: Optional[datetime] = None
     effectiveness_notes: Optional[str] = None
     ai_metadata: Optional[Dict[str, Any]] = None
+
+    # Enforce a structured text format (not free notes).
+    # Accepted examples:
+    # - "Test: <...>"
+    # - "Inspection: <...>"
+    # - "Analysis: <...>"
+    # - "Demonstration: <...>"
+    # - Multi-line with a first line starting with one of the above prefixes.
+    if field_validator:
+        @field_validator("verification_method")  # type: ignore[misc]
+        @classmethod
+        def _validate_verification_method(cls, v: Optional[str]):
+            if v is None:
+                return v
+            s = str(v).strip()
+            if not s:
+                return None
+            if len(s) > 1200:
+                raise ValueError("verification_method is too long (max 1200 chars)")
+            first_line = s.splitlines()[0].strip()
+            ok = bool(re.match(r"^(Test|Inspection|Analysis|Demonstration)\\s*:\\s*.+", first_line, flags=re.IGNORECASE))
+            if not ok:
+                raise ValueError(
+                    "verification_method must be structured text starting with one of: "
+                    "'Test:', 'Inspection:', 'Analysis:', 'Demonstration:'"
+                )
+            return s
 
 class RiskControlCreate(RiskControlBase):
     risk_item_id: str  # UUID

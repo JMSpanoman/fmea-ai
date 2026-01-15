@@ -267,13 +267,19 @@ def test_initialize_from_profile_creates_versions_and_is_idempotent() -> List[Te
             db.add(c1)
             db.commit()
 
-            # Create the 4 docs as "not started" placeholders
+            # Create the docs as "not started" placeholders
             docs = []
             for t, name, content in [
                 ("rmp", "RMP", "RMP Starter (edit this document):\n- Scope:\n"),
                 ("hazard_analysis", "Hazard Analysis", "Hazard Analysis export configuration starter. Use Hazard Analysis page to generate."),
                 ("fmea", "FMEA", "FMEA starter. Use FMEA Generator to add rows and save to the project."),
                 ("design_inputs_doc", "Design Inputs", "Design Inputs Documentation starter. Use Generate New to compile component-scoped requirements and trace evidence."),
+                ("design_outputs_doc", "Design Outputs", "Design Outputs Documentation starter. Use Generate New to compile component-scoped implementation artifacts and trace evidence."),
+                ("vv_plan", "V&V Plan", "V&V Plan starter. Use Generate New to compile verification/validation plan scaffolding and trace links."),
+                ("vv_evidence", "V&V Evidence", "V&V Evidence Report starter. Use Generate New to compile component-scoped verification/validation evidence and trace links."),
+                ("traceability_matrix", "Traceability Matrix", "Traceability Matrix export configuration starter."),
+                ("residual_risk", "Residual Risk", "Residual Risk Evaluation export configuration starter. Use Residual Risk Evaluation page to generate."),
+                ("risk_controls_doc", "Risk Controls Doc", "Risk Control Measures Documentation export configuration starter. Use Risk Controls Documentation page to generate."),
             ]:
                 d = Document(id=str(uuid.uuid4()), project_id=p.id, name=name, type=t, content=content, version=1, status="Not started")
                 db.add(d)
@@ -285,11 +291,24 @@ def test_initialize_from_profile_creates_versions_and_is_idempotent() -> List[Te
                 db.commit()
                 docs.append(d)
 
-            # First run should update all 4 docs and increment versions
+            # First run should update expected docs and increment versions
             s1 = initialize_project_from_profile(db, project_id=p.id)
             updated_types_1 = set(s1.get("updated_documents") or [])
 
-            ok_updated = updated_types_1.issuperset({"rmp", "hazard_analysis", "fmea", "design_inputs_doc"})
+            ok_updated = updated_types_1.issuperset(
+                {
+                    "rmp",
+                    "hazard_analysis",
+                    "fmea",
+                    "design_inputs_doc",
+                    "design_outputs_doc",
+                    "vv_plan",
+                    "vv_evidence",
+                    "traceability_matrix",
+                    "residual_risk",
+                    "risk_controls_doc",
+                }
+            )
             if not ok_updated:
                 results.append(TestResult("initialize-from-profile updates expected docs", False, f"updated={updated_types_1}"))
             else:
@@ -319,10 +338,404 @@ def test_initialize_from_profile_creates_versions_and_is_idempotent() -> List[Te
                 results.append(TestResult("initialize-from-profile idempotent", True))
             else:
                 results.append(TestResult("initialize-from-profile idempotent", False, f"s2={s2} versions={[d.version for d in docs]}"))
+
+            # Ensure re-running does not overwrite user-edited content
+            edited = db.query(Document).filter(Document.project_id == p.id, Document.type == "rmp").first()
+            edited.content = "USER EDITED CONTENT"
+            db.commit()
+            v_before = edited.version
+            s3 = initialize_project_from_profile(db, project_id=p.id)
+            db.refresh(edited)
+            if edited.content == "USER EDITED CONTENT" and edited.version == v_before and (s3.get("updated_documents") == [] or s3.get("updated_documents") is None):
+                results.append(TestResult("initialize-from-profile preserves user edits on rerun", True))
+            else:
+                results.append(TestResult("initialize-from-profile preserves user edits on rerun", False, f"s3={s3} content={edited.content} v={edited.version}"))
         finally:
             db.close()
     except Exception as e:
         results.append(TestResult("initialize-from-profile", False, "Error testing initialize-from-profile", e))
+    return results
+
+
+def test_generate_all_docs_with_ai_from_setup_does_not_overwrite_user_edits() -> List[TestResult]:
+    """AI generation should only fill placeholders/scaffolds and never overwrite user-edited content."""
+    results: List[TestResult] = []
+    try:
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        from database import Base
+        from models.user import User
+        from models.project import Project
+        from models.component import Component
+        from models.project_profile import ProjectProfile
+        from models.document import Document
+        from services.project_ai_doc_generator import generate_all_docs_with_ai_from_setup
+        from services.project_profile_initializer import initialize_project_from_profile
+        import uuid
+
+        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+        TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        Base.metadata.create_all(bind=engine)
+
+        db = TestingSessionLocal()
+        try:
+            u = User(email="aiinit@example.com", auth0_id="aiinit")
+            db.add(u)
+            db.commit()
+            db.refresh(u)
+
+            p = Project(user_id=u.id, name="P", description=None)
+            db.add(p)
+            db.commit()
+            db.refresh(p)
+
+            prof = ProjectProfile(
+                id=str(uuid.uuid4()),
+                project_id=p.id,
+                intended_use="Pacemaker intended use",
+                device_description="Cardiac pacemaker",
+                user_population="Clinicians",
+                use_environment="Hospital",
+                key_safety_characteristics=["therapy continuity"],
+            )
+            db.add(prof)
+            c1 = Component(id=str(uuid.uuid4()), project_id=p.id, name="Battery", description=None)
+            db.add(c1)
+            db.commit()
+
+            # Seed deterministic scaffolds into docs (creates required docs + content)
+            initialize_project_from_profile(db, project_id=p.id)
+
+            # User edits RMP -> should never be overwritten by AI generator
+            rmp = db.query(Document).filter(Document.project_id == p.id, Document.type == "rmp").first()
+            rmp.content = "USER EDITED RMP CONTENT"
+            db.commit()
+            v_before = rmp.version
+
+            def stub_ai(doc_type: str, context: str, meta: dict) -> str:
+                if doc_type == "rmf_addendum":
+                    return (
+                        "RMF Addendum — DRAFT\n"
+                        f"Project ID: {meta.get('project_id')}\n\n"
+                        "ADDED: Supplemental RMF compilation notes."
+                    )
+                return (
+                    "DRAFT — Generated with AI from Project Setup\n"
+                    f"Project ID: {meta.get('project_id')}\n\n"
+                    f"AI CONTENT FOR {doc_type}"
+                )
+
+            def stub_fmea_rows(context: str, meta: dict):
+                # Always return one scored row for the Battery component
+                return [
+                    {
+                        "component_id": c1.id,
+                        "component_name": "Battery",
+                        "hazard": "Loss of pacing therapy due to power failure",
+                        "failure_mode": "Battery depletion earlier than expected",
+                        "effect": "Therapy interruption; bradycardia not treated",
+                        "cause": "High current draw; manufacturing variability",
+                        "occurrence": 3,
+                        "severity": 9,
+                        "detection": 4,
+                        "mitigation": "Battery monitoring; derating; end-of-life alerting",
+                    }
+                ]
+
+            out = generate_all_docs_with_ai_from_setup(
+                db, project_id=p.id, ai_draft_fn=stub_ai, ai_fmea_rows_fn=stub_fmea_rows
+            )
+            db.refresh(rmp)
+
+            if rmp.content == "USER EDITED RMP CONTENT" and rmp.version == v_before:
+                results.append(TestResult("AI generator preserves user-edited content", True))
+            else:
+                results.append(
+                    TestResult(
+                        "AI generator preserves user-edited content",
+                        False,
+                        f"content={rmp.content} v={rmp.version} out={out}",
+                    )
+                )
+
+            # Should update at least one scaffold doc
+            if (out.get("attempted", 0) >= 1) and (len(out.get("updated") or []) >= 1):
+                results.append(TestResult("AI generator updates scaffold docs", True))
+            else:
+                results.append(TestResult("AI generator updates scaffold docs", False, f"out={out}"))
+
+            # RMF should be eligible (starts as placeholder from REQUIRED_DOCS) and should be updated by AI.
+            if "rmf" in [str(x).lower() for x in (out.get("updated") or [])]:
+                results.append(TestResult("AI generator populates RMF from setup", True))
+            else:
+                results.append(TestResult("AI generator populates RMF from setup", False, f"out.updated={out.get('updated')}"))
+
+            # If RMF already has user content, generator should append an addendum (not overwrite).
+            rmf = db.query(Document).filter(Document.project_id == p.id, Document.type == "rmf").first()
+            rmf.content = "USER RMF CONTENT"
+            db.commit()
+            v_rmf_before = rmf.version
+
+            out_rmf_add = generate_all_docs_with_ai_from_setup(
+                db, project_id=p.id, doc_types=["rmf"], ai_draft_fn=stub_ai, ai_fmea_rows_fn=stub_fmea_rows
+            )
+            db.refresh(rmf)
+            if rmf.content.startswith("USER RMF CONTENT") and "AI ADDENDUM" in rmf.content and rmf.version == v_rmf_before + 1:
+                results.append(TestResult("AI generator appends RMF addendum when RMF has existing content", True))
+            else:
+                results.append(
+                    TestResult(
+                        "AI generator appends RMF addendum when RMF has existing content",
+                        False,
+                        f"v_before={v_rmf_before} v_after={rmf.version} out={out_rmf_add} content_snip={rmf.content[:200]!r}",
+                    )
+                )
+
+            # Re-run should be idempotent: should not append the same addendum twice.
+            v_rmf_before2 = rmf.version
+            out_rmf_add2 = generate_all_docs_with_ai_from_setup(
+                db, project_id=p.id, doc_types=["rmf"], ai_draft_fn=stub_ai, ai_fmea_rows_fn=stub_fmea_rows
+            )
+            db.refresh(rmf)
+            if rmf.version == v_rmf_before2:
+                results.append(TestResult("AI generator RMF addendum idempotent", True))
+            else:
+                results.append(TestResult("AI generator RMF addendum idempotent", False, f"out2={out_rmf_add2} v={rmf.version}"))
+
+            # Re-run should be idempotent once AI content is present (not scaffold and not placeholder)
+            out2 = generate_all_docs_with_ai_from_setup(
+                db, project_id=p.id, ai_draft_fn=stub_ai, ai_fmea_rows_fn=stub_fmea_rows
+            )
+            if len(out2.get("updated") or []) == 0:
+                results.append(TestResult("AI generator idempotent after AI content", True))
+            else:
+                results.append(TestResult("AI generator idempotent after AI content", False, f"out2={out2}"))
+
+            # FMEA row should now have hazard + scores populated (from stub_fmea_rows)
+            from models.fmea import FMEARow
+            row = db.query(FMEARow).filter(FMEARow.project_id == p.id, FMEARow.component_id == c1.id).first()
+            ok_hazard = bool(isinstance(row.ai_metadata, dict) and (row.ai_metadata.get("hazard") or "").strip())
+            ok_scores = (row.severity == 9 and row.probability == 3 and row.detection == 4)
+            if ok_hazard and ok_scores:
+                results.append(TestResult("AI generator populates scored FMEA row + hazard", True))
+            else:
+                results.append(TestResult("AI generator populates scored FMEA row + hazard", False, f"hazard_ok={ok_hazard} scores=({row.severity},{row.probability},{row.detection}) meta={row.ai_metadata}"))
+
+            # User edits the FMEA row scores -> AI generator must not overwrite
+            row.severity = 1
+            row.probability = 1
+            row.detection = 1
+            row.failure_mode = "USER EDITED FAILURE MODE"
+            db.commit()
+            out3 = generate_all_docs_with_ai_from_setup(
+                db, project_id=p.id, ai_draft_fn=stub_ai, ai_fmea_rows_fn=stub_fmea_rows
+            )
+            db.refresh(row)
+            if row.severity == 1 and row.probability == 1 and row.detection == 1 and row.failure_mode == "USER EDITED FAILURE MODE":
+                results.append(TestResult("AI generator does not overwrite user-edited FMEA row fields", True))
+            else:
+                results.append(TestResult("AI generator does not overwrite user-edited FMEA row fields", False, f"out3={out3} row=({row.failure_mode},{row.severity},{row.probability},{row.detection})"))
+        finally:
+            db.close()
+    except Exception as e:
+        results.append(TestResult("AI generator", False, "Error testing AI generator", e))
+    return results
+
+def test_risk_controls_doc_includes_existing_controls() -> List[TestResult]:
+    """Risk Controls doc should compile existing RiskControl entities (and not be empty when controls exist)."""
+    results: List[TestResult] = []
+    try:
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        from database import Base
+        from models.user import User
+        from models.project import Project
+        from models.component import Component
+        from models.project_profile import ProjectProfile
+        from models.document import Document
+        from models.risk_item import RiskItem
+        from models.risk_control import RiskControl
+        from services.project_profile_initializer import initialize_project_from_profile
+        import uuid
+
+        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+        TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        Base.metadata.create_all(bind=engine)
+
+        db = TestingSessionLocal()
+        try:
+            u = User(email="rcdoc@example.com", auth0_id="rcdoc")
+            db.add(u)
+            db.commit()
+            db.refresh(u)
+
+            p = Project(user_id=u.id, name="Pacemaker Project", description=None)
+            db.add(p)
+            db.commit()
+            db.refresh(p)
+
+            prof = ProjectProfile(
+                id=str(uuid.uuid4()),
+                project_id=p.id,
+                intended_use="Pacemaker intended use",
+                device_description="Cardiac pacemaker",
+                user_population="Clinicians",
+                use_environment="Hospital",
+                key_safety_characteristics=["therapy continuity"],
+            )
+            db.add(prof)
+
+            c1 = Component(id=str(uuid.uuid4()), project_id=p.id, name="Battery", description=None)
+            db.add(c1)
+            db.commit()
+
+            # Create a RiskItem + one structured RiskControl
+            ri = RiskItem(
+                id=str(uuid.uuid4()),
+                project_id=p.id,
+                component_id=c1.id,
+                component_name="Battery",
+                title="Battery depletion risk",
+                description="Risk of therapy interruption due to battery depletion.",
+                status="open",
+                risk_key="R-001",
+            )
+            db.add(ri)
+            db.commit()
+            db.refresh(ri)
+
+            rc = RiskControl(
+                id=str(uuid.uuid4()),
+                risk_item_id=ri.id,
+                project_id=p.id,
+                control_key="RC-001",
+                control_name="Battery end-of-life alert",
+                control_description="Provide end-of-life alerting and battery status monitoring.",
+                control_type="information",
+                verification_method=None,
+                status="active",
+            )
+            db.add(rc)
+            db.commit()
+
+            # Run initializer: should populate risk_controls_doc if placeholder/empty, creating a new version
+            out = initialize_project_from_profile(db, project_id=p.id)
+            doc = db.query(Document).filter(Document.project_id == p.id, Document.type == "risk_controls_doc").first()
+            ok_present = doc is not None and "Battery end-of-life alert" in (doc.content or "")
+            if ok_present:
+                results.append(TestResult("Risk Controls doc includes structured RiskControl", True))
+            else:
+                results.append(TestResult("Risk Controls doc includes structured RiskControl", False, f"out={out} content_snip={(doc.content or '')[:200] if doc else None!r}"))
+        finally:
+            db.close()
+    except Exception as e:
+        results.append(TestResult("Risk Controls doc includes structured RiskControl", False, "Error testing risk controls doc generation", e))
+    return results
+
+
+def test_risk_control_verification_method_creates_vv_activity_and_is_traceable() -> List[TestResult]:
+    """Creating a RiskControl with structured verification_method should auto-create a draft VVTest and TraceLink."""
+    results: List[TestResult] = []
+    try:
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        from database import Base
+        from models.user import User
+        from models.project import Project
+        from models.component import Component
+        from models.project_profile import ProjectProfile
+        from models.document import Document
+        from models.risk_item import RiskItem
+        from models.trace_link import TraceLink
+        from models.vv_test import VVTest
+        from crud import risk_control as risk_control_crud
+        from schemas.risk_item import RiskControlCreate
+        from services.project_profile_initializer import initialize_project_from_profile
+        import uuid
+
+        engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
+        TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        Base.metadata.create_all(bind=engine)
+
+        db = TestingSessionLocal()
+        try:
+            u = User(email="rcvv@example.com", auth0_id="rcvv")
+            db.add(u)
+            db.commit()
+            db.refresh(u)
+
+            p = Project(user_id=u.id, name="Pacemaker Project", description=None)
+            db.add(p)
+            db.commit()
+            db.refresh(p)
+
+            prof = ProjectProfile(
+                id=str(uuid.uuid4()),
+                project_id=p.id,
+                intended_use="Pacemaker intended use",
+                device_description="Cardiac pacemaker",
+                user_population="Clinicians",
+                use_environment="Hospital",
+                key_safety_characteristics=["therapy continuity"],
+            )
+            db.add(prof)
+            c1 = Component(id=str(uuid.uuid4()), project_id=p.id, name="Battery", description=None)
+            db.add(c1)
+            db.commit()
+
+            ri = RiskItem(
+                id=str(uuid.uuid4()),
+                project_id=p.id,
+                component_id=c1.id,
+                component_name="Battery",
+                title="Battery depletion risk",
+                description="Risk of therapy interruption due to battery depletion.",
+                status="open",
+                risk_key="R-001",
+            )
+            db.add(ri)
+            db.commit()
+            db.refresh(ri)
+
+            rc = risk_control_crud.create_risk_control(
+                db,
+                RiskControlCreate(
+                    risk_item_id=ri.id,
+                    project_id=p.id,
+                    control_name="Battery end-of-life alert",
+                    control_description="Provide end-of-life alerting and battery status monitoring.",
+                    control_type="information",
+                    verification_method="Test: Verify end-of-life alert triggers at defined threshold; record results. [DRAFT]",
+                ),
+                created_by=u.id,
+            )
+
+            # VVTest created + trace link created
+            vt = db.query(VVTest).filter(VVTest.project_id == p.id).first()
+            link = db.query(TraceLink).filter(
+                TraceLink.project_id == p.id,
+                TraceLink.from_type == "risk_control",
+                TraceLink.from_id == rc.id,
+                TraceLink.to_type == "vv_test",
+            ).first()
+
+            if vt and link and rc.trace_to_verification_test == vt.id and vt.status == "draft":
+                results.append(TestResult("RiskControl verification_method auto-creates draft VVTest + TraceLink", True))
+            else:
+                results.append(TestResult("RiskControl verification_method auto-creates draft VVTest + TraceLink", False, f"vt={bool(vt)} link={bool(link)} rc.trace_to_verification_test={getattr(rc,'trace_to_verification_test',None)} vt_status={getattr(vt,'status',None) if vt else None}"))
+
+            # V&V Plan doc should include a reference to the verification activity (generated from profile initializer)
+            initialize_project_from_profile(db, project_id=p.id)
+            vv_doc = db.query(Document).filter(Document.project_id == p.id, Document.type == "vv_plan").first()
+            ok_vv_plan = vv_doc is not None and "Risk Control Verification Activities" in (vv_doc.content or "") and (vt.vv_key or vt.id[:8]) in (vv_doc.content or "")
+            if ok_vv_plan:
+                results.append(TestResult("V&V Plan includes risk-control verification activity reference", True))
+            else:
+                results.append(TestResult("V&V Plan includes risk-control verification activity reference", False, f"snip={(vv_doc.content or '')[:250] if vv_doc else None!r}"))
+        finally:
+            db.close()
+    except Exception as e:
+        results.append(TestResult("RiskControl verification_method creates VV activity", False, "Error testing verification method -> VV activity", e))
     return results
 
 def test_generated_artifact_cleanup() -> List[TestResult]:
@@ -1054,6 +1467,7 @@ def main():
         ("Components Bulk Create/Replace (Wizard)", test_components_bulk_create_replace_safety),
         ("Project Initialize (Wizard Prefill)", test_initialize_project_content_idempotent),
         ("Project Initialize From Profile (Draft Docs)", test_initialize_from_profile_creates_versions_and_is_idempotent),
+        ("AI Docs From Setup (No Overwrite)", test_generate_all_docs_with_ai_from_setup_does_not_overwrite_user_edits),
     ]
     
     for suite_name, test_func in test_suites:

@@ -40,13 +40,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     setSuccess('');
 
     try {
-      if (!formData.name.trim()) {
-        setError('Project name is required.');
-        setIsLoading(false);
-        return;
-      }
-
       const projectData = {
+        // Backend will auto-name sequentially (FMEA-1, FMEA-2, ...) when name is blank.
         name: formData.name.trim(),
         description: formData.description.trim() || undefined
       };
@@ -94,15 +89,14 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
 
         <form onSubmit={handleSubmit} className="modal-content">
           <div className="form-group">
-            <label htmlFor="name">Project Name *</label>
+            <label htmlFor="name">Project Name</label>
             <input
               type="text"
               id="name"
               name="name"
               value={formData.name}
               onChange={handleInputChange}
-              placeholder="Enter project name"
-              required
+              placeholder="Leave blank for auto (FMEA-1, FMEA-2, …)"
               disabled={isLoading}
               className="form-input"
             />
@@ -133,7 +127,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isLoading || !formData.name.trim()}
+              disabled={isLoading}
               className="create-button"
             >
               {isLoading ? (

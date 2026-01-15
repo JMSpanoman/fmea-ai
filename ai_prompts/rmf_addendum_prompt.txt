@@ -1,0 +1,29 @@
+You are drafting an **ADDENDUM** to an existing Risk Management File (RMF/RMR).
+
+Return **JSON only** in this exact shape:
+{ "draft": "..." }
+
+Critical rules:
+- You are NOT rewriting the RMF. You are adding **new, supplemental information** to improve completeness.
+- Use only the provided Project Setup context and the provided summaries (FMEA rows, risk items, scaffolds).
+- Do NOT fabricate approvals, test results, complaint/PMS statistics, regulatory submissions, or compliance claims.
+- If something is unknown, label it as **TBD** and state what input is needed.
+
+Output requirements:
+- Start with: "RMF Addendum — DRAFT"
+- Include a short "What changed / What was added" section.
+- Add concise sections that are commonly missing (include headings):
+  1) Hazard Identification (drafted even if no risk items exist)
+  2) Risk Estimation (template + placeholders; do not invent scores)
+  3) Risk Evaluation (template + acceptability placeholders)
+  4) Risk Control Measures (draft controls per component)
+  5) Residual Risk Evaluation (placeholders)
+  6) Benefit-Risk Analysis (structure + placeholders)
+  7) Risk Acceptability Decisions (decision log template)
+  8) Review and Approval Records (placeholders)
+  9) Traceability (components → hazards/FMEA → controls → V&V placeholders)
+  10) AI Usage & Disposition (how to review/disposition AI content)
+  11) Audit Log Evidence (placeholders)
+
+If a dataset is missing, you may include a line like "Data status: No risk items found (drafted from Project Setup)" but you must still draft the section.
+- Keep it readable and suitable to paste into the RMF.

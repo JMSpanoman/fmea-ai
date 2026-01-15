@@ -37,6 +37,17 @@ def get_document(db: Session, document_id: str, project_id: str) -> Optional[Doc
         Document.project_id == project_id
     ).first()
 
+def get_document_by_type(db: Session, *, project_id: str, doc_type: str) -> Optional[Document]:
+    """Get the most recent document by type for a project (current row in documents table)."""
+    t = (doc_type or "").strip().lower()
+    if not t:
+        return None
+    return (
+        db.query(Document)
+        .filter(Document.project_id == project_id, Document.type == t)
+        .first()
+    )
+
 def update_document(db: Session, document_id: str, document: DocumentUpdate, project_id: str) -> Optional[Document]:
     """Update a document"""
     db_doc = get_document(db, document_id, project_id)

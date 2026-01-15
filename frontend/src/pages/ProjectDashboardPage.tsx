@@ -14,10 +14,22 @@ import { ProjectReadinessCard } from './projectDashboard/ProjectReadinessCard';
 import { TraceabilityHealthCard } from './projectDashboard/TraceabilityHealthCard';
 import { RiskHotspotsCard } from './projectDashboard/RiskHotspotsCard';
 import { RecentActivityCard } from './projectDashboard/RecentActivityCard';
+import { projectGenerateAiDraftsFromSetupApi } from '../services/apiPhase1';
 
 type LoadState = 'idle' | 'loading' | 'error' | 'ready';
 
-const setupDraftDocTypes = new Set(['rmp', 'hazard_analysis', 'fmea', 'design_inputs_doc']);
+const setupDraftDocTypes = new Set([
+  'rmp',
+  'hazard_analysis',
+  'fmea',
+  'design_inputs_doc',
+  'design_outputs_doc',
+  'vv_plan',
+  'vv_evidence',
+  'traceability_matrix',
+  'residual_risk',
+  'risk_controls_doc',
+]);
 
 function normalizeContent(s: string | null | undefined) {
   return String(s || '').trim().toLowerCase();
@@ -99,10 +111,13 @@ export default function ProjectDashboardPage() {
 
   const [state, setState] = useState<LoadState>('idle');
   const [error, setError] = useState<string>('');
+  const [actionError, setActionError] = useState<string>('');
+  const [actionInfo, setActionInfo] = useState<string>('');
   const [documents, setDocuments] = useState<Document[]>([]);
   const [setupIncomplete, setSetupIncomplete] = useState(false);
   const [setupExists, setSetupExists] = useState(false);
   const [generatingInitialDrafts, setGeneratingInitialDrafts] = useState(false);
+  const [generatingAiFmea, setGeneratingAiFmea] = useState(false);
 
   const finalProjectId = projectId || '';
 
@@ -292,17 +307,76 @@ export default function ProjectDashboardPage() {
   const runInitializeFromProfile = async () => {
     if (!finalProjectId) return;
     setGeneratingInitialDrafts(true);
-    setError('');
+    setActionError('');
+    setActionInfo('');
     try {
-      await api.post(`/projects/${finalProjectId}/initialize-from-profile`);
+      const res = await api.post(`/projects/${finalProjectId}/initialize-from-profile`);
+      const updated = Array.isArray(res?.data?.stats?.updated_documents) ? res.data.stats.updated_documents : [];
+      setActionInfo(updated.length ? `Generated drafts: ${updated.join(', ')}` : 'No drafts generated (nothing eligible).');
       await load();
     } catch (e: any) {
       const msg = e?.message || e?.response?.data?.detail || 'Failed to generate initial drafts';
-      setError(String(msg));
+      setActionError(String(msg));
     } finally {
       setGeneratingInitialDrafts(false);
     }
   };
+
+  const runAiFmeaFromSetup = async () => {
+    if (!finalProjectId) return;
+    setGeneratingAiFmea(true);
+    setActionError('');
+    setActionInfo('');
+    try {
+      const out = await projectGenerateAiDraftsFromSetupApi.run(finalProjectId, ['fmea']);
+      const updated = Array.isArray(out?.stats?.updated) ? out.stats.updated : [];
+      const skipped = Array.isArray(out?.stats?.skipped) ? out.stats.skipped : [];
+      if (updated.length) {
+        setActionInfo(`AI FMEA updated: ${updated.join(', ')}`);
+      } else if (skipped.length) {
+        setActionInfo(`AI FMEA skipped: ${skipped.join(', ')}`);
+      } else {
+        setActionInfo('AI FMEA completed (no changes).');
+      }
+      await load();
+    } catch (e: any) {
+      const msg = e?.message || e?.response?.data?.detail || 'Failed to generate AI FMEA from setup';
+      setActionError(String(msg));
+    } finally {
+      setGeneratingAiFmea(false);
+    }
+  };
+
+  // Auto-run AI FMEA scoring once per project (per components count) after setup exists.
+  useEffect(() => {
+    if (!finalProjectId) return;
+    if (!setupExists) return;
+    if (state !== 'ready') return;
+    if (generatingAiFmea) return;
+
+    const key = `ai_fmea_autogen_${finalProjectId}`;
+    const compsCount = String(
+      (documents || []).length // fallback: keep key stable even if docs list changes
+    );
+    // Store a simple marker; if components change later, user can regenerate by revisiting after clearing localStorage.
+    const marker = localStorage.getItem(key);
+    if (marker) return;
+
+    // Fire-and-forget with visible error banner on failure.
+    // We intentionally do not show success banners by default to reduce noise.
+    runAiFmeaFromSetup()
+      .then(() => {
+        try {
+          localStorage.setItem(key, `1:${compsCount}`);
+        } catch {
+          // ignore
+        }
+      })
+      .catch(() => {
+        // runAiFmeaFromSetup sets actionError
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finalProjectId, setupExists, state]);
 
   return (
     <div className="p-6">
@@ -336,6 +410,20 @@ export default function ProjectDashboardPage() {
           </button>
         </div>
       </div>
+
+      {actionError ? (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-red-800 font-medium">Action failed</p>
+          <p className="text-red-700 text-sm mt-1">{actionError}</p>
+        </div>
+      ) : null}
+      {/* Keep success info subtle: show only when user explicitly triggers actions like deterministic drafts. */}
+      {actionInfo && !actionInfo.toLowerCase().includes('ai fmea') ? (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <p className="text-blue-900 font-medium">Action result</p>
+          <p className="text-blue-800 text-sm mt-1">{actionInfo}</p>
+        </div>
+      ) : null}
 
       {anySetupDraftsGenerated ? (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 mb-6">

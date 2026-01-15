@@ -12,6 +12,24 @@ from datetime import datetime, timezone
 
 router = APIRouter(prefix="/projects/{project_id}", tags=["Document Control"])
 
+
+def _safe_meta(d: any) -> dict:
+    return d if isinstance(d, dict) else {}
+
+
+def _append_ai_sample_section(existing: str, draft: str) -> str:
+    divider = "\n" + ("=" * 72) + "\n"
+    header = (
+        f"{divider}"
+        "AI Sample / Draft\n"
+        "AI samples are examples only and must be reviewed before use.\n"
+        f"{divider}\n"
+    )
+    base = (existing or "").rstrip()
+    if base:
+        return base + "\n\n" + header + (draft or "").strip() + "\n"
+    return header + (draft or "").strip() + "\n"
+
 @router.get("/documents", response_model=List[doc_schemas.DocumentOut])
 def get_documents(
     project_id: str,
@@ -77,6 +95,16 @@ def update_document(
     project = project_crud.get_project(db, project_id, current_user.id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+
+    # RMF is compiled and must not be manually edited.
+    existing = doc_crud.get_document(db, document_id, project_id)
+    if existing and (existing.type or "").lower() == "rmf":
+        update_data = document.model_dump(exclude_unset=True) if hasattr(document, "model_dump") else document.dict(exclude_unset=True)
+        if "content" in update_data:
+            raise HTTPException(
+                status_code=403,
+                detail="RMF is a compiled document and cannot be edited manually. Use 'Compile Risk Management File'.",
+            )
     
     updated_doc = doc_crud.update_document(db, document_id, document, project_id)
     if not updated_doc:
@@ -181,16 +209,10 @@ def generate_document_version(
     rendered_html: str
 
     if doc_type == "rmf":
-        from business_logic import rmf_builder, rmf_renderer
-        evidence = rmf_builder.build_rmf_evidence(
-            db=db,
-            project_id=project_id,
-            component_filter=component_filter,
-            include_ai_events=bool(options.get("include_ai_events", False)),
-            include_audit_log=bool(options.get("include_audit_log", False)),
-            include_traceability=bool(options.get("include_traceability", True)),
-        )
-        rendered_html = rmf_renderer.render_rmf_html(evidence, project.name)
+        # Evidence-based compilation: RMF is compiled from authoritative project documents.
+        # It must not invent content; it only references document existence/status and links.
+        from services.rmf_compiler import compile_rmf
+        rendered_html, _ready = compile_rmf(db, project_id=project_id, project_name=project.name)
     elif doc_type == "hazard_analysis":
         from business_logic import hazard_analysis_builder, hazard_analysis_renderer
         evidence = hazard_analysis_builder.build_hazard_analysis(
@@ -230,10 +252,32 @@ def generate_document_version(
         rows = db.query(FMEARow).filter(FMEARow.project_id == project_id).all()
         trs = []
         for r in rows:
+            hazard = ""
+            try:
+                if isinstance(getattr(r, "ai_metadata", None), dict):
+                    hazard = str(r.ai_metadata.get("hazard") or "")
+            except Exception:
+                hazard = ""
+            # Color-code RPN as low / medium / high for quick scanning.
+            rpn_val = None
+            try:
+                rpn_val = int(r.rpn) if r.rpn is not None else None
+            except Exception:
+                rpn_val = None
+            if rpn_val is None:
+                rpn_html = ""
+            else:
+                rpn_class = "rpn-low"
+                if rpn_val >= 100:
+                    rpn_class = "rpn-high"
+                elif rpn_val >= 50:
+                    rpn_class = "rpn-med"
+                rpn_html = f"<span class='rpn-pill {rpn_class}'>{rpn_val}</span>"
+
             trs.append(
-                f"<tr><td>{r.id}</td><td>{r.failure_mode or ''}</td><td>{r.effect or ''}</td><td>{r.cause or ''}</td>"
+                f"<tr><td>{r.id}</td><td>{hazard}</td><td>{r.failure_mode or ''}</td><td>{r.effect or ''}</td><td>{r.cause or ''}</td>"
                 f"<td>{r.severity or ''}</td><td>{r.probability or ''}</td><td>{r.detection or ''}</td>"
-                f"<td>{r.rpn or ''}</td><td>{r.mitigation or ''}</td></tr>"
+                f"<td style='text-align:center'>{rpn_html}</td><td>{r.mitigation or ''}</td></tr>"
             )
         empty_banner = ""
         if not trs:
@@ -246,13 +290,22 @@ def generate_document_version(
             )
         rendered_html = f"""<!doctype html>
 <html><head><meta charset="utf-8"/><title>FMEA — {project.name}</title>
-<style>body{{font-family:Arial,sans-serif;margin:24px}} table{{border-collapse:collapse;width:100%}} th,td{{border:1px solid #ddd;padding:8px}} th{{background:#f3f4f6}}</style>
+<style>
+  body{{font-family:Arial,sans-serif;margin:24px}}
+  table{{border-collapse:collapse;width:100%}}
+  th,td{{border:1px solid #ddd;padding:8px;vertical-align:top}}
+  th{{background:#f3f4f6}}
+  .rpn-pill{{display:inline-block;padding:2px 10px;border-radius:9999px;font-weight:700;font-size:12px}}
+  .rpn-low{{background:#dcfce7;color:#166534}}
+  .rpn-med{{background:#fef9c3;color:#854d0e}}
+  .rpn-high{{background:#fee2e2;color:#991b1b}}
+</style>
 </head><body>
 <h1>FMEA</h1>
 <div>Project: {project.name}</div>
 <div>Generated: {datetime.now(timezone.utc).isoformat()}</div>
 {empty_banner}
-<table><thead><tr><th>ID</th><th>Failure Mode</th><th>Effect</th><th>Cause</th><th>S</th><th>P</th><th>D</th><th>RPN</th><th>Mitigation</th></tr></thead>
+<table><thead><tr><th>ID</th><th>Hazard</th><th>Failure Mode</th><th>Effect</th><th>Cause</th><th>S</th><th>O</th><th>D</th><th>RPN</th><th>Mitigation</th></tr></thead>
 <tbody>{''.join(trs) if trs else ''}</tbody></table>
 </body></html>"""
     elif doc_type == "rmp":
@@ -381,6 +434,112 @@ def generate_document_version(
         "rendered_html": rendered_html,
         "updated_at": document.updated_at,
     }
+
+
+@router.post("/documents/{document_type}/ai-sample", response_model=doc_schemas.DocumentOut)
+def generate_ai_sample(
+    project_id: str,
+    document_type: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Generate an opt-in AI Sample / Draft for a document type.
+
+    Hard rules:
+    - Must not overwrite user-entered content (we append in a NEW document version)
+    - Must be clearly labeled as AI Sample / Draft
+    - Must set ai_metadata flags so UI can hide the button once generated
+    """
+    project = project_crud.get_project(db, project_id, current_user.id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    doc_type = (document_type or "").strip().lower()
+    if not doc_type:
+        raise HTTPException(status_code=400, detail="document_type is required")
+
+    # Some document types (e.g., RMF) must not invent content.
+    from services.document_guidance_registry import get_document_guidance_registry
+
+    reg = get_document_guidance_registry()
+    entry = reg.get(doc_type)
+    if entry and not bool(entry.get("ai_available", False)):
+        raise HTTPException(status_code=400, detail=f"AI sample is not available for '{doc_type}'")
+
+    doc = doc_crud.get_document_by_type(db, project_id=project_id, doc_type=doc_type)
+    if not doc:
+        raise HTTPException(status_code=404, detail=f"Document of type '{doc_type}' not found for project")
+
+    meta0 = _safe_meta(getattr(doc, "ai_metadata", None))
+    if meta0.get("ai_sample_generated") is True or meta0.get("default_sample_provided") is True:
+        raise HTTPException(status_code=409, detail="AI sample already provided for this document")
+
+    # Build a deterministic context pack (ProjectProfile + Components) like other AI services.
+    from crud import project_profile as profile_crud
+    from crud import component as component_crud
+    from services.project_profile_initializer import build_project_setup_scaffolds
+
+    profile = profile_crud.get_project_profile(db, project_id)
+    components = component_crud.get_components_by_project(db, project_id)
+    scaffolds = build_project_setup_scaffolds(db, project_id=project_id)
+
+    component_lines = [
+        f"- {getattr(c, 'name', '')} (id={getattr(c, 'id', '')})" + (f": {getattr(c, 'description', '')}" if getattr(c, "description", None) else "")
+        for c in components
+    ]
+    scaffold = scaffolds.get(doc_type) if isinstance(scaffolds, dict) else None
+    context = (
+        f"Project ID: {project_id}\n"
+        f"Project name: {project.name}\n"
+        "Profile:\n"
+        f"- intended_use: {getattr(profile, 'intended_use', None)}\n"
+        f"- device_description: {getattr(profile, 'device_description', None)}\n"
+        f"- user_population: {getattr(profile, 'user_population', None)}\n"
+        f"- use_environment: {getattr(profile, 'use_environment', None)}\n"
+        f"- key_safety_characteristics: {getattr(profile, 'key_safety_characteristics', None)}\n\n"
+        "Components:\n"
+        + ("\n".join(component_lines) if component_lines else "- (none)\n")
+        + "\n\n"
+        + ("Deterministic scaffold (reference only):\n" + (scaffold or "(none)") + "\n")
+    )
+
+    # Generate with OpenAI (explicit opt-in; endpoint is only called on user click).
+    try:
+        from services.project_ai_doc_generator import _default_ai_draft_fn
+
+        draft = _default_ai_draft_fn(
+            doc_type,
+            context,
+            {
+                "project_id": project_id,
+                "project_name": project.name,
+                "doc_type": doc_type,
+                "mode": "ai_sample",
+            },
+        )
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+    now = datetime.now(timezone.utc).isoformat()
+    new_meta = {
+        **meta0,
+        "ai_sample_generated": True,
+        "ai_sample_generated_at": now,
+        "ai_sample_source": "document_ai_sample_endpoint",
+        "generated_with_ai": True,
+    }
+
+    new_content = _append_ai_sample_section(doc.content or "", draft)
+    updated = doc_crud.update_document(
+        db,
+        doc.id,
+        doc_schemas.DocumentUpdate(content=new_content, status="draft", ai_metadata=new_meta),
+        project_id,
+    )
+    if not updated:
+        raise HTTPException(status_code=500, detail="Failed to update document")
+    return updated
 
 
 @router.get("/documents/{document_id}/export/html", response_class=HTMLResponse)
