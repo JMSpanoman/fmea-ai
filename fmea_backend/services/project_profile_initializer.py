@@ -59,6 +59,8 @@ def _content_is_placeholder_for_type(doc_type: str, content: Optional[str]) -> b
         return True
     if doc_type == "design_inputs_doc" and c.startswith("design inputs documentation starter"):
         return True
+    if doc_type == "risk_acceptability_criteria" and c.startswith("risk acceptability criteria starter"):
+        return True
     if doc_type == "rmp" and c.startswith("rmp starter"):
         return True
     if doc_type == "design_outputs_doc" and c.startswith("design outputs documentation starter"):
@@ -71,10 +73,159 @@ def _content_is_placeholder_for_type(doc_type: str, content: Optional[str]) -> b
         return True
     if doc_type == "residual_risk" and c.startswith("residual risk evaluation export configuration starter"):
         return True
+    if doc_type == "benefit_risk_analysis" and c.startswith("benefit–risk analysis starter"):
+        return True
     if doc_type == "risk_controls_doc" and c.startswith("risk control measures documentation export configuration starter"):
+        return True
+    if doc_type == "risk_management_review" and c.startswith("risk management review starter"):
         return True
 
     return False
+
+
+def _draft_risk_acceptability_criteria(*, project_id: str, profile: Any, residual_risk_doc: Any) -> str:
+    """
+    Deterministic, conservative template. No thresholds are invented.
+    """
+    ref = ""
+    if residual_risk_doc is not None:
+        ref = f"Reference: Residual Risk Evaluation (type=residual_risk, doc_id={getattr(residual_risk_doc, 'id', '')}, status={getattr(residual_risk_doc, 'status', '')}, version=v{getattr(residual_risk_doc, 'version', '')})"
+    else:
+        ref = "Reference: Residual Risk Evaluation (type=residual_risk) — (not present yet)"
+
+    device_desc = (getattr(profile, "device_description", None) or "").strip() if profile else ""
+    intended_use = (getattr(profile, "intended_use", None) or "").strip() if profile else ""
+
+    return (
+        "Risk Acceptability Criteria — Draft\n"
+        "\n"
+        "SYSTEM-GENERATED DRAFT (deterministic)\n"
+        f"Project ID: {project_id}\n"
+        f"Device description (from profile): {device_desc or 'TBD'}\n"
+        f"Intended use (from profile): {intended_use or 'TBD'}\n"
+        "\n"
+        "Purpose\n"
+        "- Define how the project determines whether risks are acceptable.\n"
+        "- This document provides placeholders and must be reviewed and approved by the team.\n"
+        "\n"
+        "1. Concept of Risk Acceptability\n"
+        "- Risk acceptability describes the criteria used to decide whether a risk is acceptable, tolerable with controls, or unacceptable.\n"
+        "- Acceptability should consider severity of harm, probability of occurrence, and the effectiveness of risk control measures.\n"
+        "\n"
+        "2. Criteria Types (placeholders)\n"
+        "- Qualitative criteria: (e.g., categories such as acceptable / ALARP / unacceptable) — TBD by the team.\n"
+        "- Quantitative criteria: (e.g., numerical thresholds for risk indices) — TBD by the team.\n"
+        "- Important: SmartQS does NOT invent thresholds. Enter approved thresholds here.\n"
+        "\n"
+        "3. Application to Residual Risk Evaluation\n"
+        f"- {ref}\n"
+        "- Residual risks shall be evaluated against the criteria defined in this document.\n"
+        "\n"
+        "4. References\n"
+        "- ISO 14971: Risk management for medical devices (project/team to specify edition).\n"
+        "- Project Risk Management Plan (type=rmp).\n"
+    )
+
+
+def _draft_benefit_risk_analysis(*, project_id: str, profile: Any, residual_risk_doc: Any) -> str:
+    """
+    Structure-only template. No decisions or conclusions.
+    """
+    ref = ""
+    if residual_risk_doc is not None:
+        ref = f"Reference: Residual Risk Evaluation (type=residual_risk, doc_id={getattr(residual_risk_doc, 'id', '')}, status={getattr(residual_risk_doc, 'status', '')}, version=v{getattr(residual_risk_doc, 'version', '')})"
+    else:
+        ref = "Reference: Residual Risk Evaluation (type=residual_risk) — (not present yet)"
+
+    device_desc = (getattr(profile, "device_description", None) or "").strip() if profile else ""
+    intended_use = (getattr(profile, "intended_use", None) or "").strip() if profile else ""
+
+    return (
+        "Benefit–Risk Analysis — Draft\n"
+        "\n"
+        "SYSTEM-GENERATED DRAFT (deterministic)\n"
+        f"Project ID: {project_id}\n"
+        f"Device description (from profile): {device_desc or 'TBD'}\n"
+        f"Intended use (from profile): {intended_use or 'TBD'}\n"
+        "\n"
+        "Important\n"
+        "- Structure only. This draft does not contain conclusions, decisions, or acceptability statements.\n"
+        "- The benefit–risk decision must be made explicitly by the project team.\n"
+        "\n"
+        "1. Summary of Residual Risks (placeholders)\n"
+        f"- {ref}\n"
+        "- Residual risk summary: (TBD — populate from approved residual risk evaluation)\n"
+        "\n"
+        "2. Anticipated Clinical Benefits (placeholders)\n"
+        "- Clinical benefits summary: (TBD — to be provided by clinical/medical input)\n"
+        "- Target population benefit considerations: (TBD)\n"
+        "\n"
+        "3. Benefit–Risk Justification (explicitly empty)\n"
+        "- (Intentionally left blank — requires explicit team input and approval.)\n"
+        "\n"
+        "4. References\n"
+        "- Project Risk Management Plan (type=rmp).\n"
+        "- Hazard Analysis (type=hazard_analysis).\n"
+        "- Residual Risk Evaluation (type=residual_risk).\n"
+    )
+
+
+def _draft_risk_management_review(
+    *,
+    project_id: str,
+    profile: Any,
+    artifacts: dict[str, Any],
+) -> str:
+    """
+    Meeting-style review template. No implied approval, no auto-date/signatures.
+    """
+    device_desc = (getattr(profile, "device_description", None) or "").strip() if profile else ""
+    intended_use = (getattr(profile, "intended_use", None) or "").strip() if profile else ""
+
+    def _fmt_art(label: str, doc: Any) -> str:
+        if not doc:
+            return f"- {label}: (not present yet)"
+        return (
+            f"- {label}: doc_id={getattr(doc, 'id', '')} "
+            f"(type={getattr(doc, 'type', '')}, status={getattr(doc, 'status', '')}, version=v{getattr(doc, 'version', '')})"
+        )
+
+    reviewed_lines = [
+        _fmt_art("Risk Management Plan (RMP)", artifacts.get("rmp")),
+        _fmt_art("Hazard Analysis", artifacts.get("hazard_analysis")),
+        _fmt_art("FMEA", artifacts.get("fmea")),
+        _fmt_art("Risk Control Measures Documentation", artifacts.get("risk_controls_doc")),
+        _fmt_art("Residual Risk Evaluation", artifacts.get("residual_risk")),
+        _fmt_art("Risk Acceptability Criteria", artifacts.get("risk_acceptability_criteria")),
+        _fmt_art("Benefit–Risk Analysis", artifacts.get("benefit_risk_analysis")),
+        _fmt_art("Traceability Matrix", artifacts.get("traceability_matrix")),
+    ]
+
+    return (
+        "Risk Management Review — Draft\n"
+        "\n"
+        "SYSTEM-GENERATED DRAFT (deterministic)\n"
+        f"Project ID: {project_id}\n"
+        f"Device description (from profile): {device_desc or 'TBD'}\n"
+        f"Intended use (from profile): {intended_use or 'TBD'}\n"
+        "\n"
+        "Meeting Details\n"
+        "- Date: (TBD — entered by the team)\n"
+        "- Attendees: (TBD — entered by the team)\n"
+        "- Chair/Facilitator: (TBD)\n"
+        "\n"
+        "Reviewed Artifacts (auto-referenced; presence/status only)\n"
+        + "\n".join(reviewed_lines)
+        + "\n\n"
+        "Summary of Findings (placeholders)\n"
+        "- (TBD — summarize key findings, gaps, and changes since last review)\n"
+        "\n"
+        "Actions / Decisions (placeholders)\n"
+        "- (TBD — record action items, owners, due dates; no implied approval)\n"
+        "\n"
+        "Signatures / Approvals\n"
+        "- (Intentionally blank — approvals must be recorded explicitly.)\n"
+    )
 
 
 def _should_populate(doc: Document) -> bool:
@@ -954,6 +1105,20 @@ def initialize_project_from_profile(db: Session, *, project_id: str) -> Dict[str
         document_crud.update_document(db, rr.id, DocumentUpdate(content=rr_content, status="draft"), project_id)
         stats.updated_documents.append("residual_risk")
 
+    # 9b) Risk Acceptability Criteria (conservative template; no thresholds invented)
+    rac = by_type.get("risk_acceptability_criteria")
+    if rac and _should_populate(rac):
+        rac_content = _draft_risk_acceptability_criteria(project_id=project_id, profile=profile, residual_risk_doc=rr)
+        document_crud.update_document(db, rac.id, DocumentUpdate(content=rac_content, status="draft"), project_id)
+        stats.updated_documents.append("risk_acceptability_criteria")
+
+    # 9c) Benefit–Risk Analysis (structure only; no conclusions/decisions)
+    bra = by_type.get("benefit_risk_analysis")
+    if bra and _should_populate(bra):
+        bra_content = _draft_benefit_risk_analysis(project_id=project_id, profile=profile, residual_risk_doc=rr)
+        document_crud.update_document(db, bra.id, DocumentUpdate(content=bra_content, status="draft"), project_id)
+        stats.updated_documents.append("benefit_risk_analysis")
+
     # 10) Traceability Matrix
     tm = by_type.get("traceability_matrix")
     if tm and _should_populate(tm):
@@ -969,6 +1134,28 @@ def initialize_project_from_profile(db: Session, *, project_id: str) -> Dict[str
         )
         document_crud.update_document(db, tm.id, DocumentUpdate(content=tm_content, status="draft"), project_id)
         stats.updated_documents.append("traceability_matrix")
+
+    # 11) Risk Management Review (meeting-style template; auto-reference artifacts; no implied approval)
+    rmr = by_type.get("risk_management_review")
+    if rmr and _should_populate(rmr):
+        refreshed = document_crud.get_documents_by_project(db, project_id)
+        refreshed_by_type = {(d.type or "").lower(): d for d in refreshed}
+        rmr_content = _draft_risk_management_review(
+            project_id=project_id,
+            profile=profile,
+            artifacts={
+                "rmp": refreshed_by_type.get("rmp"),
+                "hazard_analysis": refreshed_by_type.get("hazard_analysis"),
+                "fmea": refreshed_by_type.get("fmea"),
+                "risk_controls_doc": refreshed_by_type.get("risk_controls_doc"),
+                "residual_risk": refreshed_by_type.get("residual_risk"),
+                "risk_acceptability_criteria": refreshed_by_type.get("risk_acceptability_criteria"),
+                "benefit_risk_analysis": refreshed_by_type.get("benefit_risk_analysis"),
+                "traceability_matrix": refreshed_by_type.get("traceability_matrix"),
+            },
+        )
+        document_crud.update_document(db, rmr.id, DocumentUpdate(content=rmr_content, status="draft"), project_id)
+        stats.updated_documents.append("risk_management_review")
 
     return stats.as_dict()
 
@@ -1005,8 +1192,15 @@ def build_project_setup_scaffolds(
     return {
         "rmp": _draft_rmp(project_id=project_id, profile=profile, components=components),
         "rmf": _draft_rmf_scaffold(project_id=project_id, profile=profile, components=components),
+        "risk_acceptability_criteria": _draft_risk_acceptability_criteria(project_id=project_id, profile=profile, residual_risk_doc=None),
         "hazard_analysis": _draft_hazard_analysis(project_id=project_id, profile=profile, components=components),
+        "benefit_risk_analysis": _draft_benefit_risk_analysis(project_id=project_id, profile=profile, residual_risk_doc=None),
         "fmea": fmea_content,
+        "risk_management_review": _draft_risk_management_review(
+            project_id=project_id,
+            profile=profile,
+            artifacts={},
+        ),
         "design_inputs_doc": di_content,
         "design_outputs_doc": do_content,
         "vv_plan": vv_plan_content,
