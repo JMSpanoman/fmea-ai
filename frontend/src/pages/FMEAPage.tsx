@@ -61,7 +61,7 @@ const FmeaPage: React.FC = () => {
       
       console.log(`Auto-exporting first ${rowsToExport.length} FMEA rows to MasterControl (creating ${rowsToExport.length} forms)`);
       
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
       
       // Export each row separately to create individual MasterControl forms
       for (let i = 0; i < rowsToExport.length; i++) {

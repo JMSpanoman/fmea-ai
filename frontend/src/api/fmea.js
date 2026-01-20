@@ -28,7 +28,7 @@ class FMEAApi {
     async devLogin() {
         try {
             // Use native fetch for dev-login to avoid circular dependency
-            const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+            const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
             
             const response = await fetch(`${baseURL}/auth/dev-login`, {
                 method: 'POST',
