@@ -107,7 +107,7 @@ export default function ProjectDashboardPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentProject, setCurrentProject } = useProject();
+  const { currentProject, setCurrentProject, clearCurrentProject } = useProject();
 
   const [state, setState] = useState<LoadState>('idle');
   const [error, setError] = useState<string>('');
@@ -197,6 +197,18 @@ export default function ProjectDashboardPage() {
       // Non-blocking: compute setup completeness banner
       checkSetup();
     } catch (e: any) {
+      const status = e?.response?.status;
+      const detail = e?.response?.data?.detail;
+      // Self-heal: if a stale/foreign projectId is saved in localStorage, clear it and redirect.
+      if (status === 404 && String(detail || '').toLowerCase().includes('project not found')) {
+        try {
+          clearCurrentProject();
+        } catch {
+          // ignore
+        }
+        navigate('/projects', { replace: true });
+        return;
+      }
       const msg =
         e?.message ||
         e?.response?.data?.detail ||
