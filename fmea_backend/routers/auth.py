@@ -107,11 +107,10 @@ def dev_login(payload: dict = Body(default=None)):
     If you explicitly enable it (e.g., for demos), it should be gated by env flags.
     """
     env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
-    allow_in_prod = str(os.getenv("ALLOW_DEV_LOGIN") or "").strip().lower() in ("1", "true", "yes", "on")
     is_prod_like = env in ("production", "prod", "staging")
-    if is_prod_like and not allow_in_prod:
-        # Fail closed: hide endpoint in production-like environments unless explicitly enabled
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    # NOTE: This endpoint is intentionally email-gated in production-like environments:
+    # - requires explicit email (no implicit dev@example.com)
+    # - optional allowlist via DEV_LOGIN_ALLOWED_EMAILS
 
     from auth.security import create_dev_token
     from crud import project as project_crud
