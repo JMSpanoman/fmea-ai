@@ -114,6 +114,7 @@ export default function ProjectDashboardPage() {
   const [actionError, setActionError] = useState<string>('');
   const [actionInfo, setActionInfo] = useState<string>('');
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [openingWizard, setOpeningWizard] = useState(false);
   const [setupIncomplete, setSetupIncomplete] = useState(false);
   const [setupExists, setSetupExists] = useState(false);
   const [generatingInitialDrafts, setGeneratingInitialDrafts] = useState(false);
@@ -257,6 +258,43 @@ export default function ProjectDashboardPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalProjectId]);
+
+  const openProjectWizard = async () => {
+    setOpeningWizard(true);
+    setActionError('');
+    try {
+      // Clear any stale selected project before creating a new one.
+      try {
+        clearCurrentProject();
+      } catch {
+        // ignore
+      }
+
+      // Create a starter project (backend will auto-name if blank after trimming).
+      const created = await api.post('/projects', {
+        name: '',
+        description: 'Starter project created from Mission Control. Complete Project Setup to begin.',
+      });
+      const p = created?.data;
+      if (p?.id) {
+        try {
+          setCurrentProject(p);
+        } catch {
+          // ignore
+        }
+        navigate(`/projects/${p.id}/setup`, { replace: true });
+        return;
+      }
+
+      // Conservative fallback
+      navigate('/projects', { replace: true });
+    } catch (e: any) {
+      const msg = e?.response?.data?.detail || e?.message || 'Failed to open Project Wizard';
+      setActionError(String(msg));
+    } finally {
+      setOpeningWizard(false);
+    }
+  };
 
   const downloadHtml = async (doc: Document) => {
     try {
@@ -502,12 +540,26 @@ export default function ProjectDashboardPage() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
           <p className="text-red-800 font-medium">Failed to load project documents</p>
           <p className="text-red-700 text-sm mt-1">{error}</p>
-          <button
-            className="mt-3 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
-            onClick={load}
-          >
-            Retry
-          </button>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+              onClick={load}
+              type="button"
+            >
+              Retry
+            </button>
+            {String(error || '').toLowerCase().includes('project not found') ? (
+              <button
+                className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 disabled:opacity-50"
+                onClick={openProjectWizard}
+                type="button"
+                disabled={openingWizard}
+                title="Create a new project and open the Project Setup Wizard"
+              >
+                {openingWizard ? 'Opening…' : 'Project wizard'}
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
 
