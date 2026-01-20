@@ -53,6 +53,7 @@ import LoginNotifications from './components/LoginNotifications';
 import TrialStatusBanner from './components/TrialStatusBanner';
 import UsageDashboard from './components/UsageDashboard';
 import DashboardPageNew from './pages/DashboardPageNew';
+import LandingPage from './pages/LandingPage';
 import ProjectDashboardPage from './pages/ProjectDashboardPage';
 import ProjectDocumentPage from './pages/ProjectDocumentPage';
 import DocumentsPage from './features/docs/DocumentsPage';
@@ -77,8 +78,8 @@ function App() {
               <AppShell>
                 <ErrorBoundary>
                   <Routes>
-                  <Route path="/" element={<DashboardPageNew />} />
-                  <Route path="/dashboard" element={<DashboardPageNew />} />
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/dashboard" element={<LandingPage />} />
                   <Route path="/home" element={<HomePage />} />
                   <Route path="/nonconformance" element={<NonConformancePage />} />
                   <Route path="/capa" element={<CapaPage />} />
