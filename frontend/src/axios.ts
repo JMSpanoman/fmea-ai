@@ -1,10 +1,8 @@
 // src/axios.ts
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
-// Use VITE_API_URL or VITE_API_BASE_URL, fallback to localhost
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-                     import.meta.env.VITE_API_BASE_URL || 
-                     'http://localhost:8000';
+// Single source of truth: VITE_API_BASE_URL (Render sets this), fallback to localhost for dev.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
