@@ -5,6 +5,7 @@ from database import get_db
 from models.user import User
 from crud import user as user_crud
 from auth.security import verify_token
+import os
 
 security = HTTPBearer()
 
@@ -61,6 +62,14 @@ def get_current_user(
     # Special-case: John has admin access
     if str(token_email).lower() == "john@fotonconsulting.com":
         token_role = "admin"
+
+    # Production allowlist: only allow specific users (default: John).
+    env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
+    if env in ("production", "prod", "staging"):
+        allowed = str(os.getenv("DEV_LOGIN_ALLOWED_EMAILS") or "").strip() or "john@fotonconsulting.com"
+        allowed_set = {e.strip().lower() for e in allowed.split(",") if e.strip()}
+        if token_email.lower() not in allowed_set:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not allowed")
 
     try:
         setattr(user, "email", token_email or getattr(user, "email", ""))

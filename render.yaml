@@ -29,7 +29,7 @@ services:
       - key: ALLOW_DEV_LOGIN
         value: "true"
       - key: DEV_LOGIN_ALLOWED_EMAILS
-        sync: false  # Comma-separated allowlist, e.g. john@fotonconsulting.com,admin@foton.com
+        value: "john@fotonconsulting.com"  # Expand later as needed (comma-separated)
       - key: PORT
         value: 8000
 

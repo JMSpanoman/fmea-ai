@@ -131,15 +131,17 @@ def dev_login(payload: dict = Body(default=None)):
         if raw_role:
             role = raw_role
 
-    # In production-like environments (when enabled), require explicit email and (optionally) allowlist it.
+    # In production-like environments, require explicit email and enforce allowlist.
     if is_prod_like:
         if not isinstance(payload, dict) or not str(payload.get("email") or "").strip():
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="email is required")
         allowed = str(os.getenv("DEV_LOGIN_ALLOWED_EMAILS") or "").strip()
-        if allowed:
-            allowed_set = {e.strip().lower() for e in allowed.split(",") if e.strip()}
-            if email.lower() not in allowed_set:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not allowed")
+        if not allowed:
+            # Default lock-down: only John is allowed unless explicitly expanded.
+            allowed = "john@fotonconsulting.com"
+        allowed_set = {e.strip().lower() for e in allowed.split(",") if e.strip()}
+        if email.lower() not in allowed_set:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not allowed")
 
     # Special-case: John has admin rights in dev
     if email.lower() == "john@fotonconsulting.com" and (not isinstance(payload, dict) or not payload.get("role")):
