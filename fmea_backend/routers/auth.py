@@ -103,11 +103,14 @@ def login_user(user_credentials: UserLogin, db: Session = Depends(get_db)):
 def dev_login(payload: dict = Body(default=None)):
     """
     Development-only login endpoint.
-    SECURITY: This endpoint MUST NOT be available in production.
+    SECURITY: This endpoint is disabled in production by default.
+    If you explicitly enable it (e.g., for demos), it should be gated by env flags.
     """
     env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
-    if env in ("production", "prod", "staging"):
-        # Fail closed: hide endpoint in production-like environments
+    allow_in_prod = str(os.getenv("ALLOW_DEV_LOGIN") or "").strip().lower() in ("1", "true", "yes", "on")
+    is_prod_like = env in ("production", "prod", "staging")
+    if is_prod_like and not allow_in_prod:
+        # Fail closed: hide endpoint in production-like environments unless explicitly enabled
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
     from auth.security import create_dev_token
@@ -128,6 +131,16 @@ def dev_login(payload: dict = Body(default=None)):
         raw_role = str(payload.get("role") or "").strip()
         if raw_role:
             role = raw_role
+
+    # In production-like environments (when enabled), require explicit email and (optionally) allowlist it.
+    if is_prod_like:
+        if not isinstance(payload, dict) or not str(payload.get("email") or "").strip():
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="email is required")
+        allowed = str(os.getenv("DEV_LOGIN_ALLOWED_EMAILS") or "").strip()
+        if allowed:
+            allowed_set = {e.strip().lower() for e in allowed.split(",") if e.strip()}
+            if email.lower() not in allowed_set:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not allowed")
 
     # Special-case: John has admin rights in dev
     if email.lower() == "john@fotonconsulting.com" and (not isinstance(payload, dict) or not payload.get("role")):

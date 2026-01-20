@@ -20,6 +20,11 @@ services:
         generateValue: true
       - key: OPENAI_API_KEY
         sync: false  # Set this in Render dashboard
+      # Optional: enable /auth/dev-login for demos in production. If enabled, set an allowlist.
+      - key: ALLOW_DEV_LOGIN
+        value: "true"
+      - key: DEV_LOGIN_ALLOWED_EMAILS
+        sync: false  # Comma-separated allowlist, e.g. john@fotonconsulting.com,admin@foton.com
       - key: PORT
         value: 8000
 

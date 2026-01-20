@@ -18,6 +18,10 @@ async function ensureValidToken(): Promise<string | null> {
     try {
       console.log('[axios] No token found, attempting dev-login...');
       const devEmail = localStorage.getItem('dev_login_email') || '';
+      if (!devEmail) {
+        // Avoid implicit "dev@example.com" logins; require an explicit user choice.
+        return null;
+      }
       // Use native fetch to avoid circular dependency
       const response = await fetch(`${API_BASE_URL}/auth/dev-login`, {
         method: 'POST',

@@ -29,12 +29,14 @@ class FMEAApi {
         try {
             // Use native fetch for dev-login to avoid circular dependency
             const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+            const email = localStorage.getItem('dev_login_email') || '';
             
             const response = await fetch(`${baseURL}/auth/dev-login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
-                }
+                },
+                body: email ? JSON.stringify({ email }) : undefined,
             });
 
             if (response.ok) {
