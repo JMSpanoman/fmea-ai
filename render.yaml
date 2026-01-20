@@ -20,6 +20,11 @@ services:
         generateValue: true
       - key: OPENAI_API_KEY
         sync: false  # Set this in Render dashboard
+      # Render starter instances are memory-constrained; keep concurrency low to avoid OOM.
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: GUNICORN_TIMEOUT
+        value: "120"
       # Optional: enable /auth/dev-login for demos in production. If enabled, set an allowlist.
       - key: ALLOW_DEV_LOGIN
         value: "true"

@@ -21,12 +21,12 @@ RUN mkdir -p /app/data /app/logs /app/uploads /app/db
 # Make startup script executable
 RUN chmod +x /app/start.sh
 
-# Expose port (Render will set PORT env var)
-EXPOSE $PORT
+# Expose port (Render uses $PORT=8000 for this service)
+EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:$PORT/health || exit 1
+    CMD curl -f http://localhost:8000/health || exit 1
 
 # Start the application with startup script
 CMD ["/app/start.sh"]
