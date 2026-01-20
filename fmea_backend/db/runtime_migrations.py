@@ -33,3 +33,20 @@ def ensure_component_columns(engine: Engine) -> None:
         if not _has_column_sqlite(conn, "components", "updated_at"):
             conn.execute(text("ALTER TABLE components ADD COLUMN updated_at DATETIME"))
 
+
+def ensure_user_columns(engine: Engine) -> None:
+    """
+    SQLite-friendly runtime migration for auth:
+    Older demo DB initializers created a `users` table without `auth0_id` and `created_at`.
+    The running app expects these columns for /auth/me and token->user resolution.
+    """
+    dialect = engine.dialect.name
+    if dialect != "sqlite":
+        return
+
+    with engine.begin() as conn:
+        if not _has_column_sqlite(conn, "users", "auth0_id"):
+            conn.execute(text("ALTER TABLE users ADD COLUMN auth0_id VARCHAR"))
+
+        if not _has_column_sqlite(conn, "users", "created_at"):
+            conn.execute(text("ALTER TABLE users ADD COLUMN created_at DATETIME"))

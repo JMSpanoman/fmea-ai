@@ -5,11 +5,9 @@ export PORT="${PORT:-8000}"
 export WEB_CONCURRENCY="${WEB_CONCURRENCY:-1}"
 export GUNICORN_TIMEOUT="${GUNICORN_TIMEOUT:-120}"
 
-# Initialize database (only if missing)
-echo "Initializing database (if needed)..."
-if [ ! -f "/app/db/fmea.db" ]; then
-  python /app/init_db.py
-fi
+# Database initialization is handled by SQLAlchemy on app startup (see main.py lifespan).
+# We intentionally do not run init_db.py here because it can create a schema that does not
+# match the SQLAlchemy models (causing auth/runtime failures).
 
 # Start the application
 echo "Starting application..."
