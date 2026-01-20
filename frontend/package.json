@@ -9,6 +9,9 @@
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.3.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.7",
     "axios": "^1.6.0",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
