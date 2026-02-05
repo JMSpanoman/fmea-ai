@@ -1,7 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../axios';
-import { fmeaApi, projectsApi } from '../services/apiPhase1';
+import { componentsApi, fmeaApi, projectInitializeApi, projectsApi } from '../services/apiPhase1';
+import { FmeaRow } from '../types';
+import FmeaTable from '../components/FMEA/FmeaTable';
 
 type GeneratedRow = {
   id: string;
@@ -71,11 +73,63 @@ export default function ProjectFMEAPage() {
   const [info, setInfo] = useState<string>('');
   const [rows, setRows] = useState<GeneratedRow[]>([]);
 
+  // Persisted rows (includes wizard-seeded starter rows)
+  const [savedRows, setSavedRows] = useState<FmeaRow[]>([]);
+  const [loadingSaved, setLoadingSaved] = useState(false);
+  const [savedError, setSavedError] = useState<string>('');
+  const [componentNameById, setComponentNameById] = useState<Record<string, string>>({});
+
   const canSave = rows.length > 0 && !isGenerating && !isSaving && !!projectId;
 
   const title = useMemo(() => {
     return fmeaType === 'process' ? 'Process FMEA (PFMEA)' : 'Design FMEA (DFMEA)';
   }, [fmeaType]);
+
+  const loadSaved = async () => {
+    if (!projectId) return;
+    setLoadingSaved(true);
+    setSavedError('');
+    try {
+      const [comps, fmea] = await Promise.all([
+        componentsApi.getByProject(projectId).catch(() => []),
+        fmeaApi.getByProject(projectId).catch(() => []),
+      ]);
+      const map: Record<string, string> = {};
+      if (Array.isArray(comps)) {
+        for (const c of comps as any[]) {
+          if (c?.id && c?.name) map[String(c.id)] = String(c.name);
+        }
+      }
+      setComponentNameById(map);
+      setSavedRows(Array.isArray(fmea) ? fmea : []);
+    } catch (e: any) {
+      setSavedError(e?.message || 'Failed to load saved FMEA rows.');
+      setSavedRows([]);
+    } finally {
+      setLoadingSaved(false);
+    }
+  };
+
+  const seedStarterRows = async () => {
+    if (!projectId) return;
+    setSavedError('');
+    setInfo('');
+    setLoadingSaved(true);
+    try {
+      await projectInitializeApi.run(projectId);
+      await loadSaved();
+      setInfo('Seeded starter FMEA rows from components.');
+    } catch (e: any) {
+      setSavedError(e?.message || 'Failed to seed starter rows.');
+    } finally {
+      setLoadingSaved(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSaved();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   const handleGenerate = async () => {
     if (!projectId) return;
@@ -178,6 +232,8 @@ export default function ProjectFMEAPage() {
       });
 
       setInfo(`Saved ${results.length} FMEA rows to this project.`);
+      // Refresh persisted table (so the user immediately sees what was saved).
+      await loadSaved();
     } catch (e: any) {
       setError(e?.message || 'Failed to save rows to project.');
     } finally {
@@ -272,6 +328,49 @@ export default function ProjectFMEAPage() {
             {isSaving ? 'Saving…' : 'Save to Project'}
           </button>
         </div>
+      </div>
+
+      <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-lg font-semibold text-gray-900">Saved FMEA Rows</div>
+            <div className="text-sm text-gray-600">
+              These include starter rows created from your Wizard components (at least 5 per component).
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={loadSaved}
+              disabled={loadingSaved}
+              className="px-3 py-2 rounded-md text-sm border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50"
+            >
+              {loadingSaved ? 'Refreshing…' : 'Refresh'}
+            </button>
+            <button
+              type="button"
+              onClick={seedStarterRows}
+              disabled={loadingSaved}
+              className="px-3 py-2 rounded-md text-sm border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50"
+              title="Runs project initializer to seed starter FMEA rows from components"
+            >
+              Seed starter rows
+            </button>
+          </div>
+        </div>
+
+        {savedError ? (
+          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{savedError}</div>
+        ) : null}
+
+        {!loadingSaved && savedRows.length === 0 ? (
+          <div className="mt-4 text-sm text-gray-600">
+            No saved rows yet. If you just finished the Wizard, click <b>Refresh</b>. If this is an older project,
+            click <b>Seed starter rows</b>.
+          </div>
+        ) : null}
+
+        {savedRows.length > 0 ? <FmeaTable fmeaRows={savedRows} componentNameById={componentNameById} /> : null}
       </div>
 
       {rows.length ? (

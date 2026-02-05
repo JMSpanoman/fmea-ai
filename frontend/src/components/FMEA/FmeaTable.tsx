@@ -18,6 +18,7 @@ import { FmeaRow } from '../../types';
 
 interface FmeaTableProps {
   fmeaRows: FmeaRow[];
+  componentNameById?: Record<string, string>;
   onEdit?: (row: FmeaRow) => void;
   onViewHistory?: (row: FmeaRow) => void;
   onAiSuggest?: (row: FmeaRow) => void;
@@ -25,6 +26,7 @@ interface FmeaTableProps {
 
 const FmeaTable: React.FC<FmeaTableProps> = ({
   fmeaRows,
+  componentNameById,
   onEdit,
   onViewHistory,
   onAiSuggest,
@@ -34,6 +36,14 @@ const FmeaTable: React.FC<FmeaTableProps> = ({
     if (rpn >= 200) return 'error';
     if (rpn >= 100) return 'warning';
     return 'success';
+  };
+
+  const getComponentLabel = (row: FmeaRow) => {
+    const id = row.component_id || '';
+    if (id && componentNameById && componentNameById[id]) return componentNameById[id];
+    const metaName = row.ai_metadata && (row.ai_metadata as any).component_name;
+    if (typeof metaName === 'string' && metaName.trim()) return metaName.trim();
+    return id || '-';
   };
 
   return (
@@ -90,7 +100,7 @@ const FmeaTable: React.FC<FmeaTableProps> = ({
                   )}
                 </Box>
               </TableCell>
-              <TableCell>{row.component_id || '-'}</TableCell>
+              <TableCell>{getComponentLabel(row)}</TableCell>
               <TableCell>{row.failure_mode || '-'}</TableCell>
               <TableCell>{row.effect || '-'}</TableCell>
               <TableCell>{row.cause || '-'}</TableCell>

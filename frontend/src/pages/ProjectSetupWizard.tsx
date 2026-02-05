@@ -1,6 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { componentsApi, projectInitializeFromProfileApi, projectProfileApi, projectsApi, ProjectProfile } from '../services/apiPhase1';
+import {
+  componentsApi,
+  projectInitializeApi,
+  projectInitializeFromProfileApi,
+  projectProfileApi,
+  projectsApi,
+  ProjectProfile,
+} from '../services/apiPhase1';
 import { useProject } from '../contexts/ProjectContext';
 
 type WizardStep = 1 | 2 | 3;
@@ -203,6 +210,12 @@ export default function ProjectSetupWizard() {
       // Save profile + components first
       await projectProfileApi.upsert(validProjectId, trimmedProfile);
       await componentsApi.bulkReplace(validProjectId, trimmedComponents);
+
+      // Ensure baseline project content exists after wizard completion:
+      // - required docs exist
+      // - risk items seeded (if empty)
+      // - FMEA rows seeded (>= 5 per component)
+      await projectInitializeApi.run(validProjectId);
 
       // Setup is no longer "skipped"
       localStorage.removeItem(setupSkippedKey(validProjectId));
