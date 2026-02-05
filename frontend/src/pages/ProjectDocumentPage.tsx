@@ -3,11 +3,17 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../axios';
 import authService from '../services/authService';
 import { documentsApi } from '../services/apiPhase3';
+import { componentsApi, projectInitializeApi } from '../services/apiPhase1';
 import type { Document } from '../types';
 import DocumentGuidanceHeader from '../components/documents/DocumentGuidanceHeader';
 
 type Tab = 'edit' | 'preview';
 type VersionScope = 'approved_only' | 'current' | 'all';
+
+type ComponentDraft = {
+  name: string;
+  description?: string;
+};
 
 export default function ProjectDocumentPage() {
   const { projectId, docId } = useParams<{ projectId: string; docId: string }>();
@@ -23,6 +29,12 @@ export default function ProjectDocumentPage() {
   const [status, setStatus] = useState<Document['status']>('draft');
   const [content, setContent] = useState('');
   const [previewHtml, setPreviewHtml] = useState<string>('');
+
+  // Add Component modal state (FMEA docs)
+  const [showAddComponent, setShowAddComponent] = useState(false);
+  const [componentDrafts, setComponentDrafts] = useState<ComponentDraft[]>([{ name: '', description: '' }]);
+  const [addComponentBulk, setAddComponentBulk] = useState('');
+  const [addComponentInfo, setAddComponentInfo] = useState<string>('');
 
   // Generate New modal state
   const [showGenerate, setShowGenerate] = useState(false);
@@ -59,8 +71,13 @@ export default function ProjectDocumentPage() {
   const title = useMemo(() => doc?.name || 'Document', [doc]);
   const docType = (doc?.type || '').toLowerCase();
   const isRmf = docType === 'rmf';
+  const isFmea = docType === 'fmea';
   const hasAiSample = Boolean((doc as any)?.ai_metadata?.ai_sample_generated || (doc as any)?.ai_metadata?.default_sample_provided);
   const missingSetupMessage = 'Project setup information is missing. Complete Project Setup to generate better examples.';
+
+  function normalize(s: string | null | undefined) {
+    return (s || '').trim();
+  }
 
   const populationSources = useMemo(() => {
     // Optional, friendly chips in the header. Keep conservative and deterministic.
@@ -229,6 +246,91 @@ export default function ProjectDocumentPage() {
       alert(`Generated version v${newVersionNo}`);
     } catch (e: any) {
       setError(e?.response?.data?.detail || e?.message || 'Failed to generate new version');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const addComponentRow = () => {
+    setComponentDrafts((prev) => [...prev, { name: '', description: '' }]);
+  };
+
+  const removeComponentRow = (idx: number) => {
+    setComponentDrafts((prev) => {
+      const next = prev.filter((_, i) => i !== idx);
+      return next.length ? next : [{ name: '', description: '' }];
+    });
+  };
+
+  const applyAddComponentBulk = () => {
+    const lines = addComponentBulk
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
+    if (!lines.length) return;
+    setComponentDrafts((prev) => {
+      const existing = new Set(prev.map((c) => normalize(c.name).toLowerCase()).filter(Boolean));
+      const additions: ComponentDraft[] = [];
+      for (const name of lines) {
+        const key = name.toLowerCase();
+        if (existing.has(key)) continue;
+        existing.add(key);
+        additions.push({ name, description: '' });
+      }
+      const cleanedPrev = prev.filter((c) => normalize(c.name) || normalize(c.description));
+      const base = cleanedPrev.length ? cleanedPrev : [];
+      return [...base, ...additions, ...(base.length || additions.length ? [] : [{ name: '', description: '' }])];
+    });
+    setAddComponentBulk('');
+  };
+
+  const addComponentsToProject = async () => {
+    if (!finalProjectId) return;
+    setSaving(true);
+    setError('');
+    setAddComponentInfo('');
+    try {
+      if (!authService.isAuthenticated()) {
+        await authService.authenticate();
+      }
+
+      const toCreate = componentDrafts
+        .map((c) => ({ name: normalize(c.name), description: normalize(c.description) }))
+        .filter((c) => c.name);
+
+      if (toCreate.length === 0) {
+        setError('Please enter at least one component name.');
+        return;
+      }
+
+      // Create components
+      for (const c of toCreate) {
+        await componentsApi.create(finalProjectId, { name: c.name, description: c.description || undefined });
+      }
+
+      // Seed baseline FMEA rows (>= 5 rows per component)
+      await projectInitializeApi.run(finalProjectId);
+
+      // For FMEA docs, regenerate so the preview table reflects the newly seeded rows.
+      if (isFmea && finalDocId) {
+        const payload = {
+          components: [],
+          version_scope: versionScope,
+          options: genOptions,
+        };
+        const res = await api.post(`/projects/${finalProjectId}/documents/${finalDocId}/generate`, payload);
+        const html = res.data?.rendered_html || '';
+        setSelectedVersionNo(null);
+        setPreviewHtml(html);
+        setTab('preview');
+        await load(); // refresh doc metadata/version
+      }
+
+      setAddComponentInfo(`Added ${toCreate.length} component${toCreate.length === 1 ? '' : 's'} and seeded FMEA rows.`);
+      setShowAddComponent(false);
+      setComponentDrafts([{ name: '', description: '' }]);
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || e?.message || 'Failed to add component(s)');
     } finally {
       setSaving(false);
     }
@@ -419,11 +521,29 @@ export default function ProjectDocumentPage() {
             >
               Preview
             </button>
+            {isFmea ? (
+              <button
+                className="px-4 py-2 rounded-md bg-gray-200 text-gray-900 hover:bg-gray-300"
+                onClick={() => {
+                  setAddComponentInfo('');
+                  setShowAddComponent(true);
+                }}
+                type="button"
+              >
+                Add Component
+              </button>
+            ) : null}
           </div>
           <div className="text-sm text-gray-500">
             {selectedVersionNo ? `Viewing version v${selectedVersionNo}` : `Current version v${doc?.version || 1}`}
           </div>
         </div>
+
+        {addComponentInfo ? (
+          <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+            {addComponentInfo}
+          </div>
+        ) : null}
 
         {tab === 'edit' && !isRmf ? (
           <div className="space-y-4">
@@ -471,6 +591,128 @@ export default function ProjectDocumentPage() {
           </div>
         )}
       </div>
+
+      {/* Add Component Modal (FMEA) */}
+      {showAddComponent && isFmea && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">Add Component(s) to Project</h3>
+              <button
+                className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                onClick={() => setShowAddComponent(false)}
+                type="button"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="text-sm text-gray-700 mb-4">
+              This will add component(s) to your project and seed <b>at least 5 FMEA rows per component</b>.
+              {isFmea ? ' The FMEA document preview will be regenerated to include the new rows.' : null}
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <div className="text-sm font-semibold text-gray-900 mb-2">Bulk add</div>
+                <div className="text-sm text-gray-600 mb-2">Paste one component name per line.</div>
+                <textarea
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  rows={4}
+                  value={addComponentBulk}
+                  onChange={(e) => setAddComponentBulk(e.target.value)}
+                  placeholder="e.g.\nBattery pack\nCharging port\nSensor assembly"
+                />
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={applyAddComponentBulk}
+                    className="px-3 py-2 rounded-md text-sm border border-gray-300 bg-white hover:bg-gray-50"
+                    disabled={!addComponentBulk.trim()}
+                  >
+                    Add lines
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-sm font-semibold text-gray-900">Components to add</div>
+                  <button
+                    type="button"
+                    onClick={addComponentRow}
+                    className="px-3 py-2 rounded-md text-sm border border-gray-300 bg-white hover:bg-gray-50"
+                  >
+                    + Add row
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {componentDrafts.map((c, idx) => (
+                    <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-start">
+                      <div className="md:col-span-4">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                        <input
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                          value={c.name}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setComponentDrafts((prev) => prev.map((x, i) => (i === idx ? { ...x, name: v } : x)));
+                          }}
+                          placeholder="Component name"
+                        />
+                      </div>
+                      <div className="md:col-span-7">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Description (optional)</label>
+                        <input
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                          value={c.description || ''}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            setComponentDrafts((prev) =>
+                              prev.map((x, i) => (i === idx ? { ...x, description: v } : x))
+                            );
+                          }}
+                          placeholder="Short description"
+                        />
+                      </div>
+                      <div className="md:col-span-1 flex md:justify-end pt-6">
+                        <button
+                          type="button"
+                          className="px-3 py-2 rounded-md text-sm border border-gray-300 bg-white hover:bg-gray-50"
+                          onClick={() => removeComponentRow(idx)}
+                          title="Remove"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  className="px-4 py-2 rounded-md text-sm border border-gray-300 bg-white hover:bg-gray-50"
+                  onClick={() => setShowAddComponent(false)}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="px-4 py-2 rounded-md text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                  onClick={addComponentsToProject}
+                  disabled={saving}
+                >
+                  {saving ? 'Adding…' : 'Add component(s)'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Generate New Modal */}
       {showGenerate && (
