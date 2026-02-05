@@ -12,8 +12,9 @@ from dotenv import load_dotenv
 from database import get_db
 from auth.dependencies import verify_token
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from `.env` only in non-production environments.
+if os.getenv("ENVIRONMENT", "").lower() not in ("production", "prod"):
+    load_dotenv()
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

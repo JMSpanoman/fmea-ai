@@ -13,8 +13,12 @@ import logging
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from `.env` only in non-production environments.
+# On Render, environment variables are injected by the platform and we do NOT
+# want a baked-in `.env` file (copied into the Docker image) to override or
+# mislead configuration.
+if os.getenv("ENVIRONMENT", "").lower() not in ("production", "prod"):
+    load_dotenv()
 
 from database import get_db
 from models.project import Project
@@ -290,11 +294,17 @@ def root():
 # Health check endpoint
 @app.get("/health")
 def health_check():
+    openai_key = os.getenv("OPENAI_API_KEY", "")
+    openai_configured = bool(openai_key)
+    # Heuristic to detect placeholder keys without logging secrets
+    openai_key_looks_valid = openai_key.startswith("sk-") and len(openai_key) > 20
     return {
         "status": "healthy", 
         "message": "Smart FMEA Builder API is running",
         "environment": os.getenv("ENVIRONMENT", "development"),
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "openai_configured": openai_configured,
+        "openai_key_looks_valid": openai_key_looks_valid,
     }
 
 # Test endpoint for debugging

@@ -5,8 +5,9 @@ import os
 from typing import Optional
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from `.env` only in non-production environments.
+if os.getenv("ENVIRONMENT", "").lower() not in ("production", "prod"):
+    load_dotenv()
 
 # Get database URL from environment variable
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:////app/db/fmea.db")

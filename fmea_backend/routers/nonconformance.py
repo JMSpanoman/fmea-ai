@@ -15,8 +15,9 @@ from auth.dependencies import get_current_user
 from models.user import User
 from crud import project as project_crud
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from `.env` only in non-production environments.
+if os.getenv("ENVIRONMENT", "").lower() not in ("production", "prod"):
+    load_dotenv()
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

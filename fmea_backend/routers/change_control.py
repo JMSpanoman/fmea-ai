@@ -12,8 +12,9 @@ from dotenv import load_dotenv
 from database import get_db
 from auth.dependencies import verify_token
 
-# Load environment variables
-load_dotenv()
+# Load environment variables from `.env` only in non-production environments.
+if os.getenv("ENVIRONMENT", "").lower() not in ("production", "prod"):
+    load_dotenv()
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -179,7 +180,8 @@ def generate_change_control(request: ChangeControlGenerateRequest):
     
     # Check if we used mock data (no API key or AI failed)
     # Reload environment variables to ensure we have the latest
-    load_dotenv()
+    if os.getenv("ENVIRONMENT", "").lower() not in ("production", "prod"):
+        load_dotenv()
     is_mock = not os.getenv("OPENAI_API_KEY") or len(change_control_data) == 0
     
     logger.info(f"Generated {len(change_control_data)} Change Control entries (mock: {is_mock})")

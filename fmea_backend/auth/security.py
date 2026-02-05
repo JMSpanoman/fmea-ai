@@ -7,7 +7,9 @@ from datetime import datetime, timedelta
 from passlib.context import CryptContext
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load environment variables from `.env` only in non-production environments.
+if os.getenv("ENVIRONMENT", "").lower() not in ("production", "prod"):
+    load_dotenv()
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

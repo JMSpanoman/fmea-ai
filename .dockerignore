@@ -1,0 +1,19 @@
+## Python caches
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+
+## Node / build output
+**/node_modules/
+frontend/dist/
+
+## VCS / editor
+.git/
+.DS_Store
+.vscode/
+.idea/
+
+## Secrets (never bake into Docker images)
+**/.env
+**/.env.*
