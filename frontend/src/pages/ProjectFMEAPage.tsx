@@ -78,6 +78,10 @@ export default function ProjectFMEAPage() {
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [savedError, setSavedError] = useState<string>('');
   const [componentNameById, setComponentNameById] = useState<Record<string, string>>({});
+  const [savedView, setSavedView] = useState<'grid' | 'table'>(() => {
+    const raw = localStorage.getItem('project_fmea_saved_view');
+    return raw === 'table' ? 'table' : 'grid';
+  });
 
   const canSave = rows.length > 0 && !isGenerating && !isSaving && !!projectId;
 
@@ -110,6 +114,14 @@ export default function ProjectFMEAPage() {
     }
   };
 
+  const getComponentLabel = (row: FmeaRow) => {
+    const id = row.component_id || '';
+    if (id && componentNameById[id]) return componentNameById[id];
+    const metaName = row.ai_metadata && (row.ai_metadata as any).component_name;
+    if (typeof metaName === 'string' && metaName.trim()) return metaName.trim();
+    return id || '—';
+  };
+
   const seedStarterRows = async () => {
     if (!projectId) return;
     setSavedError('');
@@ -130,6 +142,14 @@ export default function ProjectFMEAPage() {
     loadSaved();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('project_fmea_saved_view', savedView);
+    } catch {
+      // ignore
+    }
+  }, [savedView]);
 
   const handleGenerate = async () => {
     if (!projectId) return;
@@ -339,6 +359,28 @@ export default function ProjectFMEAPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <div className="inline-flex rounded-md border border-gray-300 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setSavedView('grid')}
+                className={`px-3 py-2 text-sm ${
+                  savedView === 'grid' ? 'bg-gray-100 text-gray-900' : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+                title="Grid view"
+              >
+                Grid
+              </button>
+              <button
+                type="button"
+                onClick={() => setSavedView('table')}
+                className={`px-3 py-2 text-sm border-l border-gray-300 ${
+                  savedView === 'table' ? 'bg-gray-100 text-gray-900' : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+                title="Table view"
+              >
+                Table
+              </button>
+            </div>
             <button
               type="button"
               onClick={loadSaved}
@@ -370,7 +412,69 @@ export default function ProjectFMEAPage() {
           </div>
         ) : null}
 
-        {savedRows.length > 0 ? <FmeaTable fmeaRows={savedRows} componentNameById={componentNameById} /> : null}
+        {savedRows.length > 0 && savedView === 'table' ? (
+          <FmeaTable fmeaRows={savedRows} componentNameById={componentNameById} />
+        ) : null}
+
+        {savedRows.length > 0 && savedView === 'grid' ? (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {savedRows.map((r) => (
+              <div key={r.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">{getComponentLabel(r)}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">Row ID: {r.id}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs text-gray-500">RPN</div>
+                    <div className="text-sm font-bold text-gray-900">{r.rpn ?? '—'}</div>
+                  </div>
+                </div>
+
+                <div className="mt-3 space-y-2 text-sm">
+                  <div>
+                    <div className="text-xs font-medium text-gray-500">Failure mode</div>
+                    <div className="text-gray-900">{r.failure_mode || '—'}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-gray-500">Effect</div>
+                    <div className="text-gray-900">{r.effect || '—'}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-gray-500">Cause</div>
+                    <div className="text-gray-900">{r.cause || '—'}</div>
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-4 gap-2 text-center">
+                  <div className="rounded-md bg-gray-50 p-2">
+                    <div className="text-[11px] text-gray-500">S</div>
+                    <div className="text-sm font-semibold text-gray-900">{r.severity ?? '—'}</div>
+                  </div>
+                  <div className="rounded-md bg-gray-50 p-2">
+                    <div className="text-[11px] text-gray-500">P</div>
+                    <div className="text-sm font-semibold text-gray-900">{r.probability ?? '—'}</div>
+                  </div>
+                  <div className="rounded-md bg-gray-50 p-2">
+                    <div className="text-[11px] text-gray-500">D</div>
+                    <div className="text-sm font-semibold text-gray-900">{r.detection ?? '—'}</div>
+                  </div>
+                  <div className="rounded-md bg-gray-50 p-2">
+                    <div className="text-[11px] text-gray-500">v</div>
+                    <div className="text-sm font-semibold text-gray-900">{r.version ?? '—'}</div>
+                  </div>
+                </div>
+
+                {r.mitigation ? (
+                  <div className="mt-3">
+                    <div className="text-xs font-medium text-gray-500">Mitigation</div>
+                    <div className="text-sm text-gray-900">{r.mitigation}</div>
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       {rows.length ? (
