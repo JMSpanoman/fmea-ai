@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { componentsApi, projectInitializeFromProfileApi, projectProfileApi, ProjectProfile } from '../services/apiPhase1';
+import { componentsApi, projectInitializeFromProfileApi, projectProfileApi, projectsApi, ProjectProfile } from '../services/apiPhase1';
+import { useProject } from '../contexts/ProjectContext';
 
 type WizardStep = 1 | 2 | 3;
 
@@ -28,6 +29,7 @@ function isProfileFilled(p: ProjectProfile) {
 export default function ProjectSetupWizard() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const { clearCurrentProject } = useProject();
 
   const [step, setStep] = useState<WizardStep>(1);
   const [loading, setLoading] = useState(true);
@@ -54,6 +56,28 @@ export default function ProjectSetupWizard() {
       setLoading(true);
       setError(null);
       try {
+        // Validate the project exists for the current user.
+        // This prevents confusing "Project not found" errors when the URL/localStorage
+        // contains a stale projectId after switching backends or redeploys.
+        try {
+          await projectsApi.getById(validProjectId);
+        } catch (e: any) {
+          const msg = String(e?.message || '');
+          if (msg.toLowerCase().includes('project not found')) {
+            try {
+              clearCurrentProject();
+            } catch {
+              // ignore
+            }
+            if (!cancelled) {
+              setError('Project not found. Please select or create a project again.');
+              // Redirect back to project list to recover.
+              navigate('/projects', { replace: true });
+            }
+            return;
+          }
+        }
+
         // Profile: 404 means "not set yet" (treat as empty)
         try {
           const p = await projectProfileApi.get(validProjectId);
@@ -184,7 +208,16 @@ export default function ProjectSetupWizard() {
       localStorage.removeItem(setupSkippedKey(validProjectId));
       setFinished(true);
     } catch (e: any) {
-      setError(e?.message || 'Failed to finish setup. Please try again.');
+      const msg = String(e?.message || 'Failed to finish setup. Please try again.');
+      setError(msg);
+      if (msg.toLowerCase().includes('project not found')) {
+        try {
+          clearCurrentProject();
+        } catch {
+          // ignore
+        }
+        navigate('/projects', { replace: true });
+      }
     } finally {
       setSaving(false);
     }
