@@ -191,34 +191,50 @@ def _seed_risk_items_from_profile_components(
 
 def _seed_fmea_rows_from_components(db: Session, *, project_id: str) -> int:
     """
-    Deterministically create baseline FMEA rows, one per component, if none exist yet.
-    """
-    existing = db.query(FMEARow).filter(FMEARow.project_id == project_id).count()
-    if existing > 0:
-        return 0
+    Deterministically ensure each component has a baseline set of FMEA rows.
 
+    Requirement: seed **at least 5 rows per component** so the FMEA table and generated
+    exports have meaningful starter content even before AI generation.
+    """
     components = component_crud.get_components_by_project(db, project_id)
     if not components:
         return 0
 
     seeded = 0
     for c in components:
-        fmea_crud.create_fmea_row(
-            db,
-            FMEARowCreate(
-                project_id=project_id,
-                component_id=c.id,
-                failure_mode=f"{c.name}: TBD failure mode",
-                effect="TBD effect on system/user",
-                cause="TBD cause / mechanism",
-                severity=5,
-                probability=3,
-                detection=4,
-                mitigation="TBD mitigation / control",
-                ai_metadata={"seeded_by": "wizard_initialize", "component_name": c.name},
-            ),
-        )
-        seeded += 1
+        try:
+            existing_for_component = (
+                db.query(FMEARow)
+                .filter(FMEARow.project_id == project_id, FMEARow.component_id == c.id)
+                .count()
+            )
+        except Exception:
+            existing_for_component = 0
+
+        to_create = max(0, 5 - int(existing_for_component or 0))
+        for i in range(to_create):
+            n = int(existing_for_component or 0) + i + 1
+            fmea_crud.create_fmea_row(
+                db,
+                FMEARowCreate(
+                    project_id=project_id,
+                    component_id=c.id,
+                    failure_mode=f"{c.name}: TBD failure mode #{n}",
+                    effect="TBD effect on system/user",
+                    cause="TBD cause / mechanism",
+                    severity=5,
+                    probability=3,
+                    detection=4,
+                    mitigation="TBD mitigation / control",
+                    ai_metadata={
+                        "seeded_by": "wizard_initialize",
+                        "component_name": c.name,
+                        # Used by FMEA export rendering (hazard column).
+                        "hazard": f"{c.name}: TBD hazard",
+                    },
+                ),
+            )
+            seeded += 1
 
     return seeded
 

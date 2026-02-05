@@ -293,6 +293,11 @@ def generate_document_version(
     elif doc_type == "fmea":
         # Deterministic table export from persisted FMEA rows
         from models.fmea import FMEARow
+        from models.component import Component as ComponentModel
+
+        components = db.query(ComponentModel).filter(ComponentModel.project_id == project_id).all()
+        component_name_by_id = {str(c.id): str(c.name or "") for c in components}
+
         rows = db.query(FMEARow).filter(FMEARow.project_id == project_id).all()
         trs = []
         for r in rows:
@@ -302,6 +307,12 @@ def generate_document_version(
                     hazard = str(r.ai_metadata.get("hazard") or "")
             except Exception:
                 hazard = ""
+            component_name = ""
+            try:
+                if getattr(r, "component_id", None):
+                    component_name = component_name_by_id.get(str(r.component_id), "") or ""
+            except Exception:
+                component_name = ""
             # Color-code RPN as low / medium / high for quick scanning.
             rpn_val = None
             try:
@@ -319,7 +330,7 @@ def generate_document_version(
                 rpn_html = f"<span class='rpn-pill {rpn_class}'>{rpn_val}</span>"
 
             trs.append(
-                f"<tr><td>{r.id}</td><td>{hazard}</td><td>{r.failure_mode or ''}</td><td>{r.effect or ''}</td><td>{r.cause or ''}</td>"
+                f"<tr><td>{r.id}</td><td>{component_name}</td><td>{hazard}</td><td>{r.failure_mode or ''}</td><td>{r.effect or ''}</td><td>{r.cause or ''}</td>"
                 f"<td>{r.severity or ''}</td><td>{r.probability or ''}</td><td>{r.detection or ''}</td>"
                 f"<td style='text-align:center'>{rpn_html}</td><td>{r.mitigation or ''}</td></tr>"
             )
@@ -349,7 +360,7 @@ def generate_document_version(
 <div>Project: {project.name}</div>
 <div>Generated: {datetime.now(timezone.utc).isoformat()}</div>
 {empty_banner}
-<table><thead><tr><th>ID</th><th>Hazard</th><th>Failure Mode</th><th>Effect</th><th>Cause</th><th>S</th><th>O</th><th>D</th><th>RPN</th><th>Mitigation</th></tr></thead>
+<table><thead><tr><th>ID</th><th>Component</th><th>Hazard</th><th>Failure Mode</th><th>Effect</th><th>Cause</th><th>S</th><th>O</th><th>D</th><th>RPN</th><th>Mitigation</th></tr></thead>
 <tbody>{''.join(trs) if trs else ''}</tbody></table>
 </body></html>"""
     elif doc_type == "rmp":
