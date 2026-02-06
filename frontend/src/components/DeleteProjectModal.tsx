@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import './DeleteProjectModal.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
 interface Project {
   id: number;
   name: string;
@@ -37,7 +39,7 @@ const DeleteProjectModal: React.FC<DeleteProjectModalProps> = ({
         return;
       }
 
-      const response = await fetch(`http://localhost:8000/projects/${project.id}`, {
+      const response = await fetch(`${API_BASE_URL}/projects/${project.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

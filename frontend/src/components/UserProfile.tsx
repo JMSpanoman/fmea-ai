@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './UserProfile.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
 interface User {
   id: number;
   username: string;
@@ -65,7 +67,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onLogout }) => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/auth/me', {
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

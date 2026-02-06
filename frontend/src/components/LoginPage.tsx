@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './LoginPage.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+
 interface LoginFormData {
   username: string;
   password: string;
@@ -60,7 +62,7 @@ const LoginPage: React.FC = () => {
     setSuccess('');
 
     try {
-      const response = await fetch('http://localhost:8000/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,7 +105,7 @@ const LoginPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/auth/register', {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -148,7 +150,7 @@ const LoginPage: React.FC = () => {
     setSuccess('');
 
     try {
-      const response = await fetch('http://localhost:8000/auth/dev-login', {
+      const response = await fetch(`${API_BASE_URL}/auth/dev-login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
