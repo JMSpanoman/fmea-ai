@@ -196,6 +196,136 @@ def generate_ai_example_for_document(
     existing_headings = _summarize_existing_headings(getattr(doc, "content", None))
     registry_block = _format_registry_entry(doc_type)
 
+    extra_context = ""
+    if doc_type == "benefit_risk_analysis":
+        # Keep this concise: high-signal snapshot of available evidence in the DB.
+        try:
+            from models.fmea import FMEARow
+            from models.risk_item_version import RiskItemVersion
+            from models.pms_signal import PMSSignal
+            from models.design_input import DesignInput
+            from models.design_output import DesignOutput
+            from models.vv_test import VVTest
+
+            fmea_rows = (
+                db.query(FMEARow)
+                .filter(FMEARow.project_id == project_id)
+                .all()
+            )
+            fmea_count = len(fmea_rows)
+            comps_covered = len({str(getattr(r, "component_id", "") or "") for r in fmea_rows if getattr(r, "component_id", None)})
+
+            # Top risks by residual_rpn then rpn (if present).
+            def _n(v: Any) -> int:
+                try:
+                    return int(v)
+                except Exception:
+                    return 0
+
+            top_fmea = sorted(
+                fmea_rows,
+                key=lambda r: (_n(getattr(r, "residual_rpn", None)), _n(getattr(r, "rpn", None))),
+                reverse=True,
+            )[:8]
+            top_fmea_lines: list[str] = []
+            for r in top_fmea:
+                # Prefer component name for readability (fallback to ID if needed)
+                comp = ""
+                try:
+                    comp = str(getattr(getattr(r, "component", None), "name", "") or "").strip()
+                except Exception:
+                    comp = ""
+                if not comp:
+                    try:
+                        comp = str(getattr(r, "component_id", "") or "").strip()
+                    except Exception:
+                        comp = ""
+
+                fm = (getattr(r, "failure_mode", None) or "").strip()
+                eff = (getattr(r, "effect", None) or "").strip()
+                cause = (getattr(r, "cause", None) or "").strip()
+                mit = (getattr(r, "mitigation", None) or "").strip()
+                rrpn = getattr(r, "residual_rpn", None)
+                rpn = getattr(r, "rpn", None)
+                hazard = ""
+                try:
+                    md = getattr(r, "ai_metadata", None)
+                    if isinstance(md, dict):
+                        hazard = str(md.get("hazard") or "").strip()
+                except Exception:
+                    hazard = ""
+                if fm:
+                    top_fmea_lines.append(
+                        f"- component: {comp[:80]} | hazard: {hazard[:120]} | failure_mode: {fm[:120]} | effect: {eff[:120]} | cause: {cause[:120]} | mitigation: {mit[:140]} | rpn={rpn} residual_rpn={rrpn}"
+                    )
+
+            risk_versions = (
+                db.query(RiskItemVersion)
+                .join(RiskItemVersion.risk_item)
+                .filter(getattr(RiskItemVersion.risk_item, "project_id") == project_id)  # type: ignore[attr-defined]
+                .all()
+            )
+            # Fallback if join attr access isn't available in some SQLAlchemy setups
+        except Exception:
+            risk_versions = []
+
+        try:
+            from models.risk_item import RiskItem
+            from models.risk_item_version import RiskItemVersion
+
+            current_versions = (
+                db.query(RiskItemVersion)
+                .join(RiskItem, RiskItem.current_version_id == RiskItemVersion.id)
+                .filter(RiskItem.project_id == project_id)
+                .all()
+            )
+        except Exception:
+            current_versions = []
+
+        try:
+            pms_signals = db.query(PMSSignal).filter(PMSSignal.project_id == project_id).all()  # type: ignore[name-defined]
+        except Exception:
+            pms_signals = []
+
+        try:
+            di_count = db.query(DesignInput).filter(DesignInput.project_id == project_id).count()  # type: ignore[name-defined]
+            do_count = db.query(DesignOutput).filter(DesignOutput.project_id == project_id).count()  # type: ignore[name-defined]
+            vv_count = db.query(VVTest).filter(VVTest.project_id == project_id).count()  # type: ignore[name-defined]
+        except Exception:
+            di_count = do_count = vv_count = 0
+
+        # Document presence (traceability placeholders)
+        try:
+            ha_doc = document_crud.get_document_by_type(db, project_id=project_id, doc_type="hazard_analysis")
+            fmea_doc = document_crud.get_document_by_type(db, project_id=project_id, doc_type="fmea")
+            rr_doc = document_crud.get_document_by_type(db, project_id=project_id, doc_type="residual_risk")
+            cer_doc = document_crud.get_document_by_type(db, project_id=project_id, doc_type="clinical_evaluation")
+        except Exception:
+            ha_doc = fmea_doc = rr_doc = cer_doc = None
+
+        def _exists(d: Any) -> str:
+            return "yes" if d else "no"
+
+        # PMS breakdown (simple counts)
+        pms_by_type: Dict[str, int] = {}
+        pms_by_trigger: Dict[str, int] = {}
+        for s in pms_signals:
+            t = str(getattr(s, "signal_type", "") or "").strip() or "unknown"
+            pms_by_type[t] = pms_by_type.get(t, 0) + 1
+            trig = str(getattr(s, "trigger_status", "") or "").strip() or "unknown"
+            pms_by_trigger[trig] = pms_by_trigger.get(trig, 0) + 1
+
+        extra_context = (
+            "\n\nAvailable evidence snapshot (from SmartQS database; may be incomplete):\n"
+            f"- FMEA rows: {fmea_count} (components covered by component_id: {comps_covered})\n"
+            + ("Top FMEA residual risks (draft):\n" + ("\n".join(top_fmea_lines) if top_fmea_lines else "- (none)") + "\n")
+            + f"- Risk items (current versions): {len(current_versions)}\n"
+            + f"- PMS signals: {len(pms_signals)} (by type: {pms_by_type or {}}; by trigger: {pms_by_trigger or {}})\n"
+            + f"- Design inputs: {di_count} | design outputs: {do_count} | V&V tests: {vv_count}\n"
+            + "Traceability targets (document instances exist?):\n"
+            + f"- Hazard Analysis: {_exists(ha_doc)} | FMEA: {_exists(fmea_doc)} | Residual Risk: {_exists(rr_doc)} | Clinical Evaluation (CER): {_exists(cer_doc)}\n"
+        )
+
     context = (
         f"Project ID: {project_id}\n"
         f"Project name: {project.name}\n\n"
@@ -208,7 +338,8 @@ def generate_ai_example_for_document(
         "Components:\n"
         + ("\n".join(component_lines) if component_lines else "- (none)\n")
         + "\n\n"
-        "Document AI prompt registry entry:\n"
+        + extra_context
+        + "Document AI prompt registry entry:\n"
         + registry_block
         + "\n"
         + ("Existing document headings (summary):\n" + (existing_headings or "- (none)") + "\n")

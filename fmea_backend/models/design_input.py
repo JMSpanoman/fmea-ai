@@ -29,3 +29,11 @@ class DesignInput(Base):
     creator = relationship("User", foreign_keys=[created_by])
     design_outputs = relationship("DesignOutput", back_populates="design_input", cascade="all, delete-orphan")
 
+    @property
+    def requirement_text(self) -> str:
+        """
+        Compatibility property for API schemas that expect `requirement_text`.
+        Prefer `requirement`, fallback to legacy `text`.
+        """
+        return str(self.requirement or self.text or "").strip()
+

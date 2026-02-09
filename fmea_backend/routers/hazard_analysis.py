@@ -24,6 +24,39 @@ class HazardAnalysisGenerateRequest(BaseModel):
     include_ai_assist_summary: bool = False
     format: str = "html"
 
+class HazardAnalysisEnrichRequest(BaseModel):
+    max_items: int = 25
+    only_if_missing: bool = True
+
+@router.post("/hazard-analysis/enrich-ai", status_code=status.HTTP_200_OK)
+def enrich_hazard_analysis_ai(
+    project_id: str,
+    request: HazardAnalysisEnrichRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Enrich RiskItem current versions with AI-generated:
+    - failure_mode
+    - sequence_of_events
+
+    Creates new immutable versions; does not overwrite prior versions.
+    """
+    project = project_crud.get_project(db, project_id, current_user.id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    from services.hazard_analysis_ai_enricher import enrich_hazard_analysis_fields
+
+    stats = enrich_hazard_analysis_fields(
+        db,
+        project_id=project_id,
+        user_id=current_user.id,
+        max_items=request.max_items,
+        only_if_missing=bool(request.only_if_missing),
+    )
+    return {"project_id": project_id, "stats": stats.as_dict()}
+
 @router.post("/hazard-analysis/generate", status_code=status.HTTP_200_OK)
 def generate_hazard_analysis(
     project_id: str,

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, field_validator
-from typing import List, Dict, Any, Literal
+from typing import List, Dict, Any, Literal, Optional
 from datetime import datetime
 
 # Canonical trace link types - SmartQS Connection Contract
@@ -45,6 +45,7 @@ class TraceLinkBase(BaseModel):
     to_type: ToType
     to_id: str  # UUID
     link_type: LinkType = "traces_to"  # Optional, defaults to traces_to
+    rationale: Optional[str] = None  # Optional justification text
 
     @field_validator('from_type', 'to_type')
     @classmethod
@@ -63,6 +64,7 @@ class TraceLinkOut(TraceLinkBase):
     id: str  # UUID
     project_id: str  # UUID
     link_type: LinkType = "traces_to"
+    rationale: Optional[str] = None
     created_at: datetime
 
     class Config:

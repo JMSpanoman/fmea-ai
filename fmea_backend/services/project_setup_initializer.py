@@ -16,11 +16,15 @@ from crud import risk_item as risk_item_crud
 from crud import risk_item_version as version_crud
 from crud import document as document_crud
 from crud import fmea as fmea_crud
+from crud import design_control as design_control_crud
+from crud import traceability as traceability_crud
 from models.fmea import FMEARow
 from models.document import Document
 from models.project import Project
 from schemas.fmea import FMEARowCreate, FMEARowUpdate
 from schemas.risk_item import RiskItemCreate, RiskItemVersionCreate
+from schemas.design_control import DesignInputCreate
+from schemas.design_control import DesignOutputCreate
 
 
 @dataclass
@@ -28,6 +32,8 @@ class InitializeStats:
     created_required_docs: int = 0
     seeded_risk_items: int = 0
     seeded_fmea_rows: int = 0
+    seeded_design_inputs: int = 0
+    seeded_design_outputs: int = 0
     updated_documents: int = 0
 
     def as_dict(self) -> dict:
@@ -35,6 +41,8 @@ class InitializeStats:
             "created_required_docs": self.created_required_docs,
             "seeded_risk_items": self.seeded_risk_items,
             "seeded_fmea_rows": self.seeded_fmea_rows,
+            "seeded_design_inputs": self.seeded_design_inputs,
+            "seeded_design_outputs": self.seeded_design_outputs,
             "updated_documents": self.updated_documents,
         }
 
@@ -284,8 +292,15 @@ def _seed_fmea_rows_from_components(db: Session, *, project_id: str) -> int:
             },
         ]
         out: List[Dict[str, Any]] = []
-        for i in range(max(0, int(count))):
+        n = max(0, int(count))
+        for i in range(n):
             item = dict(base[i % len(base)])
+            # If we exceed the base set, make a small deterministic variation so
+            # `failure_mode` remains unique and still reads naturally.
+            if i >= len(base):
+                variant = (i // len(base)) + 1
+                item["failure_mode"] = f"{item.get('failure_mode','').strip()} (scenario {variant})".strip()
+                item["hazard"] = f"{item.get('hazard','').strip()} (scenario {variant})".strip()
             out.append(item)
         return out
 
@@ -313,6 +328,7 @@ Return JSON array ONLY. Each object must have these keys:
 - mitigation (string)
 
 Keep each string concise (1-2 sentences). Avoid placeholder text like "TBD".
+Ensure all `failure_mode` values are unique (no duplicates).
 """
         client = openai.OpenAI(api_key=openai_key)
         models_to_try = ["gpt-4o", "gpt-3.5-turbo"]
@@ -354,6 +370,7 @@ Keep each string concise (1-2 sentences). Avoid placeholder text like "TBD".
             return []
 
         out: List[Dict[str, Any]] = []
+        seen_modes: set[str] = set()
         for i, item in enumerate(data):
             if not isinstance(item, dict):
                 continue
@@ -366,6 +383,10 @@ Keep each string concise (1-2 sentences). Avoid placeholder text like "TBD".
             # Skip obviously empty rows
             if not (hazard and failure_mode and effect and cause):
                 continue
+            key = re.sub(r"\s+", " ", failure_mode.strip().lower())
+            if not key or key in seen_modes:
+                continue
+            seen_modes.add(key)
 
             out.append(
                 {
@@ -383,6 +404,9 @@ Keep each string concise (1-2 sentences). Avoid placeholder text like "TBD".
                 break
         return out
 
+    def _mode_key(s: Any) -> str:
+        return re.sub(r"\s+", " ", str(s or "").strip().lower())
+
     components = component_crud.get_components_by_project(db, project_id)
     if not components:
         return 0
@@ -391,9 +415,16 @@ Keep each string concise (1-2 sentences). Avoid placeholder text like "TBD".
     for c in components:
         rows = db.query(FMEARow).filter(FMEARow.project_id == project_id, FMEARow.component_id == c.id).all()
         existing_for_component = len(rows)
+        used_modes = {_mode_key(getattr(r, "failure_mode", None)) for r in rows if _mode_key(getattr(r, "failure_mode", None))}
+        unique_mode_count = len(used_modes)
 
         placeholders = [r for r in rows if _is_placeholder_seed_row(r)]
-        to_create = max(0, 5 - existing_for_component)
+        # Ensure at least 5 rows AND at least 5 unique failure modes for each component.
+        to_create_for_min_rows = max(0, 5 - existing_for_component)
+        to_create_for_unique = max(0, 5 - unique_mode_count)
+        # If we already have >=5 rows but not enough unique modes, prefer adding new rows
+        # rather than mutating non-placeholder existing content.
+        to_create = max(to_create_for_min_rows, to_create_for_unique)
 
         target = max(5, to_create + len(placeholders))
         target = max(1, min(20, target))
@@ -401,6 +432,19 @@ Keep each string concise (1-2 sentences). Avoid placeholder text like "TBD".
         generated = _ai_rows(str(c.name), count=target)
         if not generated:
             generated = _fallback_rows(str(c.name), count=target)
+
+        # Filter generated to unique failure modes that aren't already present for the component.
+        filtered: List[Dict[str, Any]] = []
+        seen_new: set[str] = set()
+        for g in generated:
+            fm = _mode_key(g.get("failure_mode"))
+            if not fm:
+                continue
+            if fm in used_modes or fm in seen_new:
+                continue
+            seen_new.add(fm)
+            filtered.append(g)
+        generated = filtered
 
         # Upgrade placeholder rows first (only wizard-seeded placeholders).
         for idx, r in enumerate(placeholders):
@@ -432,13 +476,33 @@ Keep each string concise (1-2 sentences). Avoid placeholder text like "TBD".
             )
             if updated:
                 seeded += 1
+                used_modes.add(_mode_key(g.get("failure_mode")))
 
         # Create missing rows to reach 5 per component.
         offset = len(placeholders)
         for i in range(to_create):
             g = generated[offset + i] if (offset + i) < len(generated) else None
+            # If we ran out (or had too many duplicates), keep generating fallback
+            # rows until we find a new unique failure mode.
             if not g:
-                g = _fallback_rows(str(c.name), count=1)[0]
+                # try a few deterministic fallback variants
+                candidate = None
+                for k in range(1, 25):
+                    cand = _fallback_rows(str(c.name), count=k)[-1]
+                    fm = _mode_key(cand.get("failure_mode"))
+                    if fm and fm not in used_modes:
+                        candidate = cand
+                        break
+                g = candidate or _fallback_rows(str(c.name), count=1)[0
+                ]
+            fm_key = _mode_key(g.get("failure_mode"))
+            if fm_key and fm_key in used_modes:
+                # As a last resort, make the failure mode unique without changing meaning too much.
+                suffix = 1
+                base_fm = str(g.get("failure_mode") or "").strip()[:450]
+                while _mode_key(f"{base_fm} (variant {suffix})") in used_modes and suffix < 50:
+                    suffix += 1
+                g["failure_mode"] = f"{base_fm} (variant {suffix})".strip()
             fmea_crud.create_fmea_row(
                 db,
                 FMEARowCreate(
@@ -460,6 +524,198 @@ Keep each string concise (1-2 sentences). Avoid placeholder text like "TBD".
                 ),
             )
             seeded += 1
+            used_modes.add(_mode_key(g.get("failure_mode")))
+
+    return seeded
+
+
+def _seed_design_inputs_from_profile_components(
+    db: Session,
+    *,
+    project_id: str,
+    user_id: str,
+) -> int:
+    """
+    Create baseline Design Input records from ProjectProfile + Components (Wizard).
+    Idempotent: only seeds if the project currently has zero design inputs.
+
+    This ensures the "Design Inputs Documentation" and Design Inputs module are not blank
+    immediately after completing the wizard.
+    """
+    try:
+        existing = design_control_crud.get_design_inputs_by_project(db, project_id)
+        if existing:
+            return 0
+    except Exception:
+        # If the table doesn't exist / query fails, don't block the wizard initializer.
+        return 0
+
+    profile = profile_crud.get_project_profile(db, project_id)
+    components = component_crud.get_components_by_project(db, project_id)
+
+    intended_use = (getattr(profile, "intended_use", None) or "").strip() if profile else ""
+    use_env = (getattr(profile, "use_environment", None) or "").strip() if profile else ""
+    device_desc = (getattr(profile, "device_description", None) or "").strip() if profile else ""
+    user_pop = (getattr(profile, "user_population", None) or "").strip() if profile else ""
+
+    seeded = 0
+
+    def _create(title: str, requirement_text: str) -> None:
+        nonlocal seeded
+        title_s = (title or "").strip()
+        req_s = (requirement_text or "").strip()
+        if not title_s or not req_s:
+            return
+        design_control_crud.create_design_input(
+            db,
+            DesignInputCreate(
+                project_id=project_id,
+                title=title_s[:240],
+                requirement_text=req_s[:2000],
+                status="draft",
+                source="wizard_seed",
+                linked_risk_ids=[],
+                text=req_s[:2000],
+                requirement=req_s[:2000],
+            ),
+            created_by=user_id,
+        )
+        seeded += 1
+
+    # System-level (from profile)
+    if intended_use:
+        _create(
+            "Intended use (system requirement)",
+            f"The device shall support the intended use: {intended_use}.",
+        )
+    if device_desc:
+        _create(
+            "Device description (system requirement)",
+            f"The device shall conform to the described system architecture and features: {device_desc}.",
+        )
+    if user_pop:
+        _create(
+            "User/patient population (system requirement)",
+            f"The device shall be usable and safe for the intended user/patient population: {user_pop}.",
+        )
+    if use_env:
+        _create(
+            "Use environment (system requirement)",
+            f"The device shall be designed to operate safely in the intended use environment: {use_env}.",
+        )
+
+    # Always include a few generic baseline requirements
+    _create(
+        "Safety (general)",
+        "The device shall fail safely or enter a safe state upon detection of critical faults.",
+    )
+    _create(
+        "Labeling / Instructions for Use (general)",
+        "The device shall include labeling/IFU content sufficient to support safe use and to communicate residual risks.",
+    )
+    _create(
+        "Data integrity / auditability (general)",
+        "The system shall maintain integrity of safety-relevant configuration and shall record audit logs for critical changes.",
+    )
+
+    # Component-specific baseline requirements (from wizard components)
+    for c in components or []:
+        name = (getattr(c, "name", None) or "").strip()
+        if not name:
+            continue
+        desc = (getattr(c, "description", None) or "").strip()
+        role_hint = desc if desc else "its intended function"
+        _create(
+            f"{name}: functional requirement",
+            f"The system shall ensure the component '{name}' performs {role_hint}.",
+        )
+        _create(
+            f"{name}: monitoring / fault detection",
+            f"The system shall detect loss/degradation of function in '{name}' and provide an appropriate response (alarm, mitigation, or safe state).",
+        )
+
+    return seeded
+
+
+def _seed_design_outputs_from_design_inputs(
+    db: Session,
+    *,
+    project_id: str,
+    user_id: str,
+) -> int:
+    """
+    Create baseline Design Output records from existing Design Inputs.
+    Idempotent: only seeds if the project currently has zero design outputs.
+
+    Also creates trace_links: design_input -> design_output (implements).
+    """
+    try:
+        existing = design_control_crud.get_design_outputs_by_project(db, project_id)
+        if existing:
+            return 0
+    except Exception:
+        return 0
+
+    try:
+        design_inputs = design_control_crud.get_design_inputs_by_project(db, project_id)
+    except Exception:
+        design_inputs = []
+
+    if not design_inputs:
+        return 0
+
+    seeded = 0
+
+    for di in design_inputs:
+        di_id = str(getattr(di, "id", "") or "")
+        di_key = str(getattr(di, "di_key", "") or "")
+        di_title = str(getattr(di, "title", "") or "").strip() or "Design Input"
+        req = ""
+        try:
+            req = str(getattr(di, "requirement", None) or getattr(di, "text", None) or "").strip()
+        except Exception:
+            req = ""
+
+        # Create a baseline output artifact placeholder (implementation idea), not a claim of completion.
+        text = (
+            f"Implementation artifact for {di_key or di_title}:\n"
+            f"- Design Output Title: (draft)\n"
+            f"- Description: Implement requirement '{di_title}'.\n"
+            + (f"- Requirement: {req}\n" if req else "")
+            + "- Document reference: TBD\n"
+        ).strip()
+
+        do = design_control_crud.create_design_output(
+            db,
+            DesignOutputCreate(
+                project_id=project_id,
+                text=text[:4000],
+                source="wizard_seed",
+                linked_input_id=di_id or None,
+            ),
+            created_by=user_id,
+        )
+        seeded += 1
+
+        # Create trace link DI -> DO for traceability (best-effort).
+        try:
+            from schemas.trace import TraceLinkCreate
+
+            traceability_crud.create_trace_link(
+                db,
+                TraceLinkCreate(
+                    project_id=project_id,
+                    from_type="design_input",
+                    from_id=di_id,
+                    to_type="design_output",
+                    to_id=str(getattr(do, "id", "") or ""),
+                    link_type="implements",
+                    rationale="Auto-derived wizard seed: baseline Design Output created to implement seeded Design Input.",
+                ),
+            )
+        except Exception:
+            # Don't block initialization if trace link creation fails.
+            pass
 
     return seeded
 
@@ -519,6 +775,8 @@ def initialize_project_content(
 
     stats.seeded_risk_items = _seed_risk_items_from_profile_components(db, project_id=project_id, user_id=user_id)
     stats.seeded_fmea_rows = _seed_fmea_rows_from_components(db, project_id=project_id)
+    stats.seeded_design_inputs = _seed_design_inputs_from_profile_components(db, project_id=project_id, user_id=user_id)
+    stats.seeded_design_outputs = _seed_design_outputs_from_design_inputs(db, project_id=project_id, user_id=user_id)
     stats.updated_documents = _update_hazard_analysis_document_if_empty(db, project_id=project_id)
 
     return stats.as_dict()

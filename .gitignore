@@ -1,4 +1,6 @@
 .env
+.env.*
+fmea_backend/ENV.local
 *.pyc
 __pycache__/
 node_modules/

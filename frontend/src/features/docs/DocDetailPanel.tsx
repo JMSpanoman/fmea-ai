@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { docTypeById } from './docsRegistry';
 import { canGenerate, useDocs } from './DocumentsProvider';
@@ -8,6 +8,9 @@ import { ImpactBanner } from './ImpactBanner';
 import { DocActions } from './DocActions';
 import { ApproveModal } from './ApproveModal';
 import { htmlToText, isProbablyHtml } from './htmlUtils';
+import api from '../../axios';
+import authService from '../../services/authService';
+import { projectInitializeApi } from '../../services/apiPhase1';
 
 export function DocDetailPanel({
   onNavigate,
@@ -44,6 +47,50 @@ export function DocDetailPanel({
     }
     return { blocking: false, message: '' };
   }, [docType, state.instancesByTypeId]);
+
+  // Special-case: FMEA content is best represented as the persisted FMEA rows table.
+  // The registry instance content may be starter text, while the export endpoint renders
+  // a deterministic HTML table from saved rows (including wizard-seeded rows).
+  const [fmeaExportHtml, setFmeaExportHtml] = useState<string>('');
+  const [fmeaExportError, setFmeaExportError] = useState<string>('');
+  const [fmeaExportLoading, setFmeaExportLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadFmeaExport() {
+      setFmeaExportHtml('');
+      setFmeaExportError('');
+      if (docTypeId !== 'fmea') return;
+      if (!inst?.backendDocId) return;
+      setFmeaExportLoading(true);
+      try {
+        if (!authService.isAuthenticated()) {
+          await authService.authenticate();
+        }
+        // Ensure baseline rows exist for all components so the table isn't empty.
+        try {
+          await projectInitializeApi.run(state.projectId);
+        } catch {
+          // non-blocking; export may still work if rows already exist
+        }
+        const res = await api.get(`/projects/${state.projectId}/documents/${inst.backendDocId}/export/html`, {
+          responseType: 'blob',
+        });
+        const blob = new Blob([res.data], { type: 'text/html' });
+        const text = await blob.text();
+        if (!cancelled) setFmeaExportHtml(text || '');
+      } catch (e: any) {
+        if (!cancelled) setFmeaExportError(e?.message || 'Failed to load FMEA table preview.');
+      } finally {
+        if (!cancelled) setFmeaExportLoading(false);
+      }
+    }
+    loadFmeaExport();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [docTypeId, inst?.backendDocId, state.projectId]);
 
   if (!docTypeId || !docType || !inst) {
     return (
@@ -242,7 +289,26 @@ export function DocDetailPanel({
           <div>
             <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Content</div>
             <div className="mt-2">
-              {inst.backendDocId && isHtml ? (
+              {docTypeId === 'fmea' && inst.backendDocId ? (
+                <div className="space-y-2">
+                  <div className="text-xs text-gray-600">
+                    This preview is rendered from saved FMEA rows (wizard-seeded + saved rows). Use <b>Generate FMEA Rows</b> to add more.
+                  </div>
+                  {fmeaExportError ? (
+                    <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{fmeaExportError}</div>
+                  ) : null}
+                  <div className="rounded-md border border-gray-200 p-3 overflow-auto max-h-[520px]">
+                    {fmeaExportLoading ? (
+                      <div className="text-sm text-gray-600">Loading FMEA table…</div>
+                    ) : (
+                      <div
+                        className="prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: fmeaExportHtml || inst.content || '' }}
+                      />
+                    )}
+                  </div>
+                </div>
+              ) : inst.backendDocId && isHtml ? (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <button

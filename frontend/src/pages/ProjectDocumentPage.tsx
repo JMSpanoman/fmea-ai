@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../axios';
 import authService from '../services/authService';
 import { documentsApi } from '../services/apiPhase3';
-import { componentsApi, projectInitializeApi } from '../services/apiPhase1';
+import { componentsApi, projectInitializeApi, projectsApi } from '../services/apiPhase1';
 import type { Document } from '../types';
 import DocumentGuidanceHeader from '../components/documents/DocumentGuidanceHeader';
 
@@ -29,6 +29,8 @@ export default function ProjectDocumentPage() {
   const [status, setStatus] = useState<Document['status']>('draft');
   const [content, setContent] = useState('');
   const [previewHtml, setPreviewHtml] = useState<string>('');
+  const [didInitFmea, setDidInitFmea] = useState(false);
+  const [projectName, setProjectName] = useState<string>('');
 
   // Add Component modal state (FMEA docs)
   const [showAddComponent, setShowAddComponent] = useState(false);
@@ -72,6 +74,7 @@ export default function ProjectDocumentPage() {
   const docType = (doc?.type || '').toLowerCase();
   const isRmf = docType === 'rmf';
   const isFmea = docType === 'fmea';
+  const isHazardAnalysis = docType === 'hazard_analysis';
   const hasAiSample = Boolean((doc as any)?.ai_metadata?.ai_sample_generated || (doc as any)?.ai_metadata?.default_sample_provided);
   const missingSetupMessage = 'Project setup information is missing. Complete Project Setup to generate better examples.';
 
@@ -122,7 +125,20 @@ export default function ProjectDocumentPage() {
   };
 
   const loadPreview = async () => {
+    if (!finalProjectId || !finalDocId) return;
     try {
+      if (!authService.isAuthenticated()) {
+        await authService.authenticate();
+      }
+      // FMEA preview/export is rendered from persisted FMEA rows. Ensure baseline
+      // rows exist for all wizard components before exporting HTML.
+      if (isFmea && !didInitFmea) {
+        try {
+          await projectInitializeApi.run(finalProjectId);
+        } finally {
+          setDidInitFmea(true);
+        }
+      }
       const res = await api.get(
         `/projects/${finalProjectId}/documents/${finalDocId}/export/html`,
         { responseType: 'blob', params: selectedVersionNo ? { version: selectedVersionNo } : undefined }
@@ -141,10 +157,30 @@ export default function ProjectDocumentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalProjectId, finalDocId]);
 
+  // Fetch project name for display (so the header matches the wizard project name).
+  useEffect(() => {
+    let cancelled = false;
+    async function loadProjectName() {
+      setProjectName('');
+      if (!finalProjectId) return;
+      try {
+        const p = await projectsApi.getById(finalProjectId);
+        if (!cancelled) setProjectName(String((p as any)?.name || ''));
+      } catch {
+        // non-blocking: keep showing the ID if name can't be loaded
+      }
+    }
+    loadProjectName();
+    return () => {
+      cancelled = true;
+    };
+  }, [finalProjectId]);
+
   // When navigating between documents, reset the UI to Preview by default.
   useEffect(() => {
     setTab('preview');
     setPreviewHtml('');
+    setDidInitFmea(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finalProjectId, finalDocId]);
 
@@ -152,8 +188,7 @@ export default function ProjectDocumentPage() {
     if (tab === 'preview' && finalProjectId && finalDocId) {
       loadPreview();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, selectedVersionNo]);
+  }, [tab, selectedVersionNo, finalProjectId, finalDocId]);
 
   const save = async () => {
     if (!finalProjectId || !finalDocId) return;
@@ -201,6 +236,24 @@ export default function ProjectDocumentPage() {
     }
   };
 
+  const downloadCsv = async () => {
+    try {
+      const res = await api.get(`/projects/${finalProjectId}/documents/${finalDocId}/export/csv`, { responseType: 'blob' });
+      const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const v = selectedVersionNo || doc?.version || 1;
+      a.download = `${title}_v${v}.csv`.replace(/\s+/g, '_');
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to download CSV');
+    }
+  };
+
   const addGenComponentsFromInput = () => {
     const parts = genComponentInput
       .split(',')
@@ -218,6 +271,10 @@ export default function ProjectDocumentPage() {
     try {
       if (!authService.isAuthenticated()) {
         await authService.authenticate();
+      }
+      if (isFmea) {
+        await projectInitializeApi.run(finalProjectId);
+        setDidInitFmea(true);
       }
       const payload = {
         components: genComponents.map((name) => ({ name })),
@@ -345,6 +402,10 @@ export default function ProjectDocumentPage() {
       if (!authService.isAuthenticated()) {
         await authService.authenticate();
       }
+      if (isFmea) {
+        await projectInitializeApi.run(finalProjectId);
+        setDidInitFmea(true);
+      }
       const updated = await documentsApi.generateAiSampleForType(finalProjectId, docType);
       setDoc(updated);
       setName(updated.name || '');
@@ -370,15 +431,50 @@ export default function ProjectDocumentPage() {
       if (!authService.isAuthenticated()) {
         await authService.authenticate();
       }
-      const updated = await documentsApi.generateAiExampleForType(finalProjectId, docType);
-      setDoc(updated);
-      setName(updated.name || '');
-      setStatus((updated.status as any) || 'draft');
-      setContent(updated.content || '');
-      setSelectedVersionNo(null);
-      setTab('preview');
-      await loadPreview();
-      alert('AI example added as a new draft version.');
+      if (isFmea) {
+        await projectInitializeApi.run(finalProjectId);
+        setDidInitFmea(true);
+      }
+      if (isHazardAnalysis && finalDocId) {
+        // Hazard Analysis: "Generate with AI" enriches risk chain fields, then regenerates the deterministic table.
+        const enrichRes = await api.post(`/projects/${finalProjectId}/hazard-analysis/enrich-ai`, {
+          max_items: 50,
+          only_if_missing: true,
+        });
+        const stats = enrichRes?.data?.stats;
+
+        // Ensure the regenerated table actually shows the versions we just created.
+        // (Newly enriched versions are not "approved", so approved_only would look like "nothing happened".)
+        const nextVersionScope = versionScope === 'approved_only' ? 'current' : versionScope;
+        const payload = {
+          components: [],
+          version_scope: nextVersionScope,
+          options: { ...genOptions, include_unapproved: true },
+        };
+        const res = await api.post(`/projects/${finalProjectId}/documents/${finalDocId}/generate`, payload);
+        const html = res.data?.rendered_html || '';
+        setSelectedVersionNo(null);
+        setPreviewHtml(html);
+        setTab('preview');
+        await load(); // refresh doc metadata/version
+        if (stats && typeof stats.updated === 'number') {
+          alert(
+            `Hazard Analysis enrichment complete: updated ${stats.updated} item(s) (scanned ${stats.scanned || 0}). Regenerated table.`
+          );
+        } else {
+          alert('Filled missing hazard chain fields and regenerated Hazard Analysis.');
+        }
+      } else {
+        const updated = await documentsApi.generateWithAiForType(finalProjectId, docType);
+        setDoc(updated);
+        setName(updated.name || '');
+        setStatus((updated.status as any) || 'draft');
+        setContent(updated.content || '');
+        setSelectedVersionNo(null);
+        setTab('preview');
+        await loadPreview();
+        alert('AI populated draft created as a new version.');
+      }
     } catch (e: any) {
       setError(e?.response?.data?.detail || e?.message || 'Failed to generate with AI');
     } finally {
@@ -448,7 +544,8 @@ export default function ProjectDocumentPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
             <p className="text-gray-500 text-sm mt-1">
-              Project: <span className="font-mono">{finalProjectId}</span> · Doc: <span className="font-mono">{finalDocId}</span>
+              Project:{' '}
+              <span className="font-semibold text-gray-700">{projectName || '—'}</span>
             </p>
           </div>
           <div className="flex gap-2">
@@ -481,9 +578,9 @@ export default function ProjectDocumentPage() {
             </button>
             <button
               className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-              onClick={downloadHtml}
+              onClick={isFmea ? downloadCsv : downloadHtml}
             >
-              Download HTML
+              {isFmea ? 'Download CSV' : 'Download HTML'}
             </button>
           </div>
         </div>

@@ -58,6 +58,8 @@ export const documentsApi = {
     apiRequest<Document>(`/projects/${projectId}/documents/${documentType}/ai-sample`, { method: 'POST' }),
   generateAiExampleForType: (projectId: string, documentType: string): Promise<Document> =>
     apiRequest<Document>(`/projects/${projectId}/documents/${documentType}/generate-ai`, { method: 'POST' }),
+  generateWithAiForType: (projectId: string, documentType: string): Promise<Document> =>
+    apiRequest<Document>(`/projects/${projectId}/documents/${documentType}/generate-with-ai`, { method: 'POST' }),
   create: async (projectId: string, document: Partial<Document>): Promise<Document> => {
     const created = await apiRequest<Document>(`/projects/${projectId}/documents`, {
       method: 'POST',

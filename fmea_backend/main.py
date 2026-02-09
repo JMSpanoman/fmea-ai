@@ -10,15 +10,25 @@ import csv
 import io
 import os
 import logging
+import re
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+from pathlib import Path
 
-# Load environment variables from `.env` only in non-production environments.
+# Load environment variables only in non-production environments.
 # On Render, environment variables are injected by the platform and we do NOT
 # want a baked-in `.env` file (copied into the Docker image) to override or
 # mislead configuration.
 if os.getenv("ENVIRONMENT", "").lower() not in ("production", "prod"):
-    load_dotenv()
+    # Prefer a repo-local file that won't get accidentally committed.
+    # - `fmea_backend/ENV.local` (recommended)
+    # - fallback to standard `.env` behavior if present
+    try:
+        here = Path(__file__).resolve().parent
+        load_dotenv(dotenv_path=here / "ENV.local", override=False)
+    except Exception:
+        pass
+    load_dotenv(override=False)
 
 from database import get_db
 from models.project import Project
@@ -87,8 +97,22 @@ logger = logging.getLogger(__name__)
 
 # Get CORS origins from environment
 def get_cors_origins():
-    cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:4173")
+    cors_origins = os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:5174,http://localhost:4173",
+    )
     return [origin.strip() for origin in cors_origins.split(",")]
+
+
+def get_cors_origin_regex() -> Optional[str]:
+    """
+    In dev, Vite may auto-pick ports (5173, 5174, ...). Allow localhost/127.0.0.1
+    with any port to avoid CORS preflight failures during local development.
+    """
+    env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
+    if env in ("production", "prod", "staging"):
+        return None
+    return r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -219,6 +243,7 @@ app.include_router(mastercontrol_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_cors_origins(),
+    allow_origin_regex=get_cors_origin_regex(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -233,8 +258,18 @@ def get_cors_headers(request: Request) -> dict:
     """Get CORS headers for a request"""
     origin = request.headers.get("origin")
     allowed_origins = get_cors_origins()
+    origin_re = get_cors_origin_regex()
     
+    allowed = False
     if origin and origin in allowed_origins:
+        allowed = True
+    elif origin and origin_re:
+        try:
+            allowed = re.match(origin_re, origin) is not None
+        except Exception:
+            allowed = False
+
+    if origin and allowed:
         return {
             "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Credentials": "true",

@@ -107,9 +107,180 @@ def _default_ai_draft_fn(doc_type: str, context: str, meta: Dict[str, Any]) -> s
     import json
     import openai
 
+    def _fallback_draft() -> str:
+        """
+        Dev-friendly fallback (mirrors legacy FMEA behavior): if OpenAI isn't configured,
+        return a deterministic draft scaffold instead of erroring.
+        """
+        project_name = str(meta.get("project_name") or "Project").strip() or "Project"
+        dt = (doc_type or "").strip().lower()
+        if dt == "benefit_risk_analysis":
+            # Pull a few high-signal fields from the provided context so we can populate
+            # some "TBD" values even when OpenAI isn't configured.
+            import re
+
+            def _extract_profile_field(key: str) -> str:
+                m = re.search(rf"^- {re.escape(key)}:\s*(.*)$", context or "", flags=re.MULTILINE)
+                if not m:
+                    return ""
+                val = (m.group(1) or "").strip()
+                if val.lower() in {"none", "null"}:
+                    return ""
+                return val
+
+            intended_use = _extract_profile_field("intended_use") or "TBD"
+            device_description = _extract_profile_field("device_description") or "TBD"
+            use_env = _extract_profile_field("use_environment") or "TBD"
+            user_pop = _extract_profile_field("user_population") or "TBD"
+
+            # Extract top residual risks from the evidence snapshot (if present).
+            risk_lines: list[str] = []
+            in_block = False
+            for line in (context or "").splitlines():
+                if line.strip().lower().startswith("top fmea residual risks"):
+                    in_block = True
+                    continue
+                if in_block and line.strip().startswith("- "):
+                    risk_lines.append(line.strip()[2:])
+                    if len(risk_lines) >= 6:
+                        break
+                if in_block and line.strip().startswith("-") is False and line.strip().endswith(":"):
+                    break
+
+            def _parse_kv(text: str) -> dict:
+                parts = [p.strip() for p in text.split("|")]
+                out: dict = {}
+                for p in parts:
+                    if ":" in p:
+                        k, v = p.split(":", 1)
+                        out[k.strip().lower()] = v.strip()
+                return out
+
+            if risk_lines:
+                md_rows = []
+                for rl in risk_lines:
+                    kv = _parse_kv(rl)
+                    hazard = kv.get("hazard", "") or "TBD"
+                    fm = kv.get("failure_mode", "") or "TBD"
+                    eff = kv.get("effect", "") or "TBD"
+                    comp = kv.get("component", "") or "—"
+                    rrpn = kv.get("residual_rpn", "") or kv.get("residual rpn", "") or ""
+                    rpn = kv.get("rpn", "") or ""
+                    desc = f"{comp}: {fm}. {eff}"
+                    if rpn or rrpn:
+                        desc += f" (rpn={rpn or '—'} residual_rpn={rrpn or '—'})"
+                    md_rows.append(f"| {hazard} | {desc} | TBD | TBD |")
+                residual_risk_rows_md = "\n".join(md_rows)
+            else:
+                residual_risk_rows_md = "| TBD | TBD | TBD | TBD |"
+
+            mitigations: list[str] = []
+            for rl in risk_lines:
+                kv = _parse_kv(rl)
+                mit = kv.get("mitigation", "")
+                if mit and mit.lower() not in {"tbd", "—"}:
+                    mitigations.append(mit)
+                if len(mitigations) >= 5:
+                    break
+            mitigation_bullets = "\n".join([f"- {m}" for m in mitigations]) if mitigations else "- TBD (derive from FMEA mitigations and risk controls)"
+
+            return f"""# Benefit–Risk Analysis Report
+## {project_name}
+
+## 1. Document Control
+| Item | Description |
+|---|---|
+| Device Name | {project_name} |
+| Device Classification | TBD |
+| Intended Use | {intended_use} |
+| Applicable Regulations | ISO 14971:2019; 21 CFR 820 (TBD add others as applicable) |
+| Report Type | Benefit–Risk Analysis |
+| Lifecycle Phase | TBD |
+| Date | (Sample) |
+| Prepared By | TBD |
+| Approved By | TBD |
+
+## 2. Purpose of the Benefit–Risk Analysis
+This draft provides a structured Benefit–Risk Analysis framework (ISO 14971 benefit–risk). It **does not** claim conclusions.
+Populate with objective evidence from Clinical Evaluation (CER), Risk Management outputs, and post-market information.
+
+## 3. Device Description (Summary)
+{device_description}
+
+**Use environment:** {use_env}  
+**Target user/patient population:** {user_pop}
+
+## 4. Clinical Condition and Unmet Medical Need
+### 4.1 Target Condition
+TBD
+
+### 4.2 Severity of Condition
+TBD
+
+### 4.3 Existing Treatment Options / Alternatives (State-of-the-Art)
+TBD
+
+## 5. Identified Benefits
+| Benefit | Description | Clinical Relevance |
+|---|---|---|
+| TBD | TBD | TBD |
+
+## 6. Summary of Residual Risks
+| Hazard | Residual Risk Description | Severity | Probability |
+|---|---|---|---|
+{residual_risk_rows_md}
+
+## 7. Risk Control Measures Implemented
+From available project evidence (best-effort, draft):
+{mitigation_bullets}
+
+Additional controls to summarize (TBD):
+- Inherent safety by design (TBD)
+- Protective measures (TBD)
+- Information for safety (labeling/IFU/training) (TBD)
+
+## 8. Benefit–Risk Evaluation
+### 8.1 ISO 14971 Perspective
+TBD (state conditional rationale and identify missing evidence).
+
+### 8.2 FDA Benefit–Risk Factors
+| FDA Factor | Assessment |
+|---|---|
+| Severity of Condition | TBD |
+| Magnitude of Benefit | TBD |
+| Probability of Benefit | TBD |
+| Duration of Benefit | TBD |
+| Residual Risk Level | TBD |
+| Risk Mitigation | TBD |
+
+## 9. Overall Benefit–Risk Conclusion
+TBD (conditional: if CER confirms benefits and residual risks remain acceptable, benefit–risk may be favorable; list open items).
+
+## 10. References
+- ISO 14971:2019 — Medical devices — Application of risk management
+- FDA Guidance: *Factors to Consider When Making Benefit-Risk Determinations in Medical Device Premarket Approval and De Novo Classifications* (add version/date)
+- 21 CFR Part 820 — Quality System Regulation
+- Other standards (TBD if applicable)
+"""
+
+        # Generic fallback for other doc types
+        return f"""## AI Draft Unavailable (OpenAI not configured)
+
+OpenAI is not configured for this environment (`OPENAI_API_KEY` not set). This is a deterministic placeholder scaffold.
+
+- Document type: {dt}
+- Project: {project_name}
+
+### Draft
+TBD
+"""
+
     openai_api_key = os.getenv("OPENAI_API_KEY")
     if not openai_api_key:
-        raise RuntimeError("AI service unavailable. Please configure OPENAI_API_KEY.")
+        env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
+        if env in ("production", "prod", "staging"):
+            raise RuntimeError("AI service unavailable. Please configure OPENAI_API_KEY.")
+        return _fallback_draft()
 
     # Use the existing Phase 3 system prompt + document drafting prompt files if present.
     from pathlib import Path

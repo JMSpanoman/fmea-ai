@@ -129,6 +129,35 @@ def get_document_ai_prompt_registry() -> Dict[str, Dict[str, Any]]:
             "constraints": base_constraints,
             "style": ["Avoid conclusions; keep as structure and placeholders."],
         },
+        "benefit_risk_analysis": {
+            "purpose": (
+                "Benefit-Risk Analysis (ISO 14971): document the structured rationale comparing expected clinical benefits "
+                "to residual risks, considering state-of-the-art alternatives and post-market information."
+            ),
+            "required_sections": [
+                "Executive summary (draft)",
+                "Intended use & clinical context",
+                "Clinical benefits (magnitude / probability / duration) — evidence summary (placeholders)",
+                "Risk analysis & residual risks — evidence snapshot",
+                "State-of-the-art & alternatives — comparison (placeholders)",
+                "Post-market surveillance (PMS) summary (if available)",
+                "Usability / non-clinical evidence summary (if available)",
+                "Benefit-risk conclusion framework (no compliance claims; decision owner TBD)",
+                "Traceability (links to CER / Risk Management artifacts)",
+                "Open items / data needed",
+            ],
+            "constraints": base_constraints
+            + [
+                "Do NOT claim that benefits outweigh risks; provide a structured draft and state what evidence is missing.",
+                "Do NOT fabricate clinical outcomes, complaint counts, adverse event rates, or comparative market data.",
+                "Keep conclusions conditional (e.g., 'If the CER confirms X, then…').",
+            ],
+            "style": [
+                "Use clear headings and short paragraphs.",
+                "Include small tables for: benefits, top residual risks, and alternatives comparison (placeholders allowed).",
+                "Explicitly label any missing evidence as TBD / Not provided.",
+            ],
+        },
     }
 
     # Add compile-only docs with strict constraints.

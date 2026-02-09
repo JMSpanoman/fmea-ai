@@ -31,6 +31,8 @@ const FmeaTable: React.FC<FmeaTableProps> = ({
   onViewHistory,
   onAiSuggest,
 }) => {
+  const formatDisplayId = (idx: number) => `FMEA-${String(idx + 1).padStart(2, '0')}`;
+
   const getRpnColor = (rpn?: number): 'default' | 'error' | 'warning' | 'success' => {
     if (!rpn) return 'default';
     if (rpn >= 200) return 'error';
@@ -55,6 +57,7 @@ const FmeaTable: React.FC<FmeaTableProps> = ({
         <TableHead>
           <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
             <TableCell>Actions</TableCell>
+            <TableCell>ID</TableCell>
             <TableCell>Component</TableCell>
             <TableCell>Failure Mode</TableCell>
             <TableCell>Effect</TableCell>
@@ -73,7 +76,7 @@ const FmeaTable: React.FC<FmeaTableProps> = ({
           </TableRow>
         </TableHead>
         <TableBody>
-          {fmeaRows.map((row) => (
+          {fmeaRows.map((row, idx) => (
             <TableRow key={row.id} hover>
               <TableCell>
                 <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -100,6 +103,7 @@ const FmeaTable: React.FC<FmeaTableProps> = ({
                   )}
                 </Box>
               </TableCell>
+              <TableCell>{formatDisplayId(idx)}</TableCell>
               <TableCell>{getComponentLabel(row)}</TableCell>
               <TableCell>{row.failure_mode || '-'}</TableCell>
               <TableCell>{row.effect || '-'}</TableCell>

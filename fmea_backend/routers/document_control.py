@@ -7,8 +7,10 @@ from schemas import document as doc_schemas
 from crud import document as doc_crud
 from crud import project as project_crud
 from typing import List, Optional
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from datetime import datetime, timezone
+import io
+import csv
 
 router = APIRouter(prefix="/projects/{project_id}", tags=["Document Control"])
 
@@ -298,9 +300,15 @@ def generate_document_version(
         components = db.query(ComponentModel).filter(ComponentModel.project_id == project_id).all()
         component_name_by_id = {str(c.id): str(c.name or "") for c in components}
 
-        rows = db.query(FMEARow).filter(FMEARow.project_id == project_id).all()
+        rows = (
+            db.query(FMEARow)
+            .filter(FMEARow.project_id == project_id)
+            .order_by(FMEARow.created_at.asc(), FMEARow.id.asc())
+            .all()
+        )
         trs = []
-        for r in rows:
+        for idx, r in enumerate(rows):
+            display_id = f"FMEA-{str(idx + 1).zfill(2)}"
             hazard = ""
             try:
                 if isinstance(getattr(r, "ai_metadata", None), dict):
@@ -309,8 +317,19 @@ def generate_document_version(
                 hazard = ""
             component_name = ""
             try:
+                # Prefer the normalized component name from the project component list.
                 if getattr(r, "component_id", None):
                     component_name = component_name_by_id.get(str(r.component_id), "") or ""
+                # Fallback: some rows (e.g., AI-generated samples) may not have component_id set.
+                if not component_name and isinstance(getattr(r, "ai_metadata", None), dict):
+                    meta = r.ai_metadata
+                    component_name = str(
+                        meta.get("component_name")
+                        or meta.get("component")
+                        or meta.get("Component")
+                        or meta.get("componentName")
+                        or ""
+                    ).strip()
             except Exception:
                 component_name = ""
             # Color-code RPN as low / medium / high for quick scanning.
@@ -330,7 +349,7 @@ def generate_document_version(
                 rpn_html = f"<span class='rpn-pill {rpn_class}'>{rpn_val}</span>"
 
             trs.append(
-                f"<tr><td>{r.id}</td><td>{component_name}</td><td>{hazard}</td><td>{r.failure_mode or ''}</td><td>{r.effect or ''}</td><td>{r.cause or ''}</td>"
+                f"<tr><td>{display_id}</td><td>{component_name}</td><td>{hazard}</td><td>{r.failure_mode or ''}</td><td>{r.effect or ''}</td><td>{r.cause or ''}</td>"
                 f"<td>{r.severity or ''}</td><td>{r.probability or ''}</td><td>{r.detection or ''}</td>"
                 f"<td style='text-align:center'>{rpn_html}</td><td>{r.mitigation or ''}</td></tr>"
             )
@@ -430,7 +449,8 @@ def generate_document_version(
             search=options.get("search"),
             missing_output=options.get("missing_output"),
             missing_verification=options.get("missing_verification"),
-            include_unlinked=bool(options.get("include_unlinked", False)),
+            # Default: include unlinked requirements so wizard-seeded Design Inputs are visible immediately.
+            include_unlinked=bool(options.get("include_unlinked", True)),
         )
         rendered_html = design_inputs_report_renderer.render_design_inputs_html(evidence, project.name)
     elif doc_type == "vv_evidence":
@@ -647,6 +667,30 @@ def generate_ai_example(
     )
 
 
+@router.post("/documents/{document_type}/generate-with-ai", response_model=doc_schemas.DocumentOut)
+def generate_with_ai_populate(
+    project_id: str,
+    document_type: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Populate a document draft with applicable AI-generated content.
+
+    Behavior:
+    - If the document is empty/scaffold/placeholder-heavy, overwrite it with a new AI draft (new version).
+    - Otherwise, append an addendum to preserve user edits (new version).
+    """
+    from services.document_ai_populate import generate_ai_populated_draft_for_document
+
+    return generate_ai_populated_draft_for_document(
+        db=db,
+        project_id=project_id,
+        user_id=current_user.id,
+        document_type=document_type,
+    )
+
+
 @router.get("/documents/{document_id}/export/html", response_class=HTMLResponse)
 def export_document_html(
     project_id: str,
@@ -672,6 +716,49 @@ def export_document_html(
         if not v:
             raise HTTPException(status_code=404, detail="Document version not found")
         content = v.content or ""
+
+    # For deterministic exports, render from authoritative DB evidence by default (current view).
+    # If a specific version is requested, export that version's stored content for auditability.
+    doc_type = (document.type or "").lower()
+    if version is None and doc_type == "traceability_matrix":
+        from business_logic import traceability_matrix_builder, traceability_matrix_renderer
+
+        evidence = traceability_matrix_builder.build_traceability_matrix_evidence(
+            db=db,
+            project_id=project_id,
+            component_filter=None,
+        )
+        html = traceability_matrix_renderer.render_traceability_matrix_html(evidence, project.name)
+        return HTMLResponse(content=html)
+
+    if version is None and doc_type == "design_inputs_doc":
+        # Deterministic export: always compile from current DB state by default.
+        from business_logic import design_inputs_report_builder, design_inputs_report_renderer
+
+        evidence = design_inputs_report_builder.build_design_inputs_report_evidence(
+            db=db,
+            project_id=project_id,
+            component_filter=None,
+            status_filter=None,
+            search=None,
+            missing_output=None,
+            missing_verification=None,
+            include_unlinked=True,
+        )
+        html = design_inputs_report_renderer.render_design_inputs_html(evidence, project.name)
+        return HTMLResponse(content=html)
+
+    if version is None and doc_type == "design_outputs_doc":
+        # Deterministic export: always compile from current DB state by default.
+        from business_logic import design_outputs_doc_builder, design_outputs_doc_renderer
+
+        evidence = design_outputs_doc_builder.build_design_outputs_doc_evidence(
+            db=db,
+            project_id=project_id,
+            component_filter=None,
+        )
+        html = design_outputs_doc_renderer.render_design_outputs_doc_html(evidence)
+        return HTMLResponse(content=html)
 
     # If content already looks like full HTML, return as-is
     lowered = content.lstrip().lower()
@@ -703,4 +790,103 @@ def export_document_html(
   </body>
 </html>"""
     return HTMLResponse(content=html)
+
+
+@router.get("/documents/{document_id}/export/csv")
+def export_document_csv(
+    project_id: str,
+    document_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Export a document as CSV.
+
+    Currently supported:
+    - FMEA: exports a deterministic table from persisted FMEA rows
+    """
+    project = project_crud.get_project(db, project_id, current_user.id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    document = doc_crud.get_document(db, document_id, project_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    doc_type = (document.type or "").lower()
+    if doc_type != "fmea":
+        raise HTTPException(status_code=400, detail="CSV export is only supported for FMEA documents")
+
+    from models.fmea import FMEARow
+    from models.component import Component as ComponentModel
+
+    components = db.query(ComponentModel).filter(ComponentModel.project_id == project_id).all()
+    component_name_by_id = {str(c.id): str(c.name or "") for c in components}
+
+    rows = (
+        db.query(FMEARow)
+        .filter(FMEARow.project_id == project_id)
+        .order_by(FMEARow.created_at.asc(), FMEARow.id.asc())
+        .all()
+    )
+
+    def _component_name_for_row(r: FMEARow) -> str:
+        # Prefer component_id lookup, fallback to ai_metadata fields.
+        try:
+            if getattr(r, "component_id", None):
+                name = component_name_by_id.get(str(r.component_id), "") or ""
+                if name:
+                    return name
+        except Exception:
+            pass
+        try:
+            md = getattr(r, "ai_metadata", None)
+            if isinstance(md, dict):
+                return str(
+                    md.get("component_name")
+                    or md.get("component")
+                    or md.get("Component")
+                    or md.get("componentName")
+                    or ""
+                ).strip()
+        except Exception:
+            pass
+        return ""
+
+    def _hazard_for_row(r: FMEARow) -> str:
+        try:
+            md = getattr(r, "ai_metadata", None)
+            if isinstance(md, dict):
+                return str(md.get("hazard") or "")
+        except Exception:
+            return ""
+        return ""
+
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(["ID", "Component", "Hazard", "Failure Mode", "Effect", "Cause", "S", "O", "D", "RPN", "Mitigation"])
+    for idx, r in enumerate(rows):
+        display_id = f"FMEA-{str(idx + 1).zfill(2)}"
+        w.writerow(
+            [
+                display_id,
+                _component_name_for_row(r),
+                _hazard_for_row(r),
+                getattr(r, "failure_mode", None) or "",
+                getattr(r, "effect", None) or "",
+                getattr(r, "cause", None) or "",
+                getattr(r, "severity", None) or "",
+                getattr(r, "probability", None) or "",
+                getattr(r, "detection", None) or "",
+                getattr(r, "rpn", None) or "",
+                getattr(r, "mitigation", None) or "",
+            ]
+        )
+
+    filename = f"FMEA_{project.name}_v{document.version}.csv".replace(" ", "_")
+    return Response(
+        content=out.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 

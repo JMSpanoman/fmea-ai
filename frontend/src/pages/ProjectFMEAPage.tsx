@@ -78,12 +78,24 @@ export default function ProjectFMEAPage() {
   const [loadingSaved, setLoadingSaved] = useState(false);
   const [savedError, setSavedError] = useState<string>('');
   const [componentNameById, setComponentNameById] = useState<Record<string, string>>({});
-  const [savedView, setSavedView] = useState<'grid' | 'table'>(() => {
-    const raw = localStorage.getItem('project_fmea_saved_view');
-    return raw === 'table' ? 'table' : 'grid';
-  });
+  // Default view should be table (users can still toggle to grid per-session).
+  const [savedView, setSavedView] = useState<'grid' | 'table'>('table');
+  const [didAutoSeed, setDidAutoSeed] = useState(false);
 
   const canSave = rows.length > 0 && !isGenerating && !isSaving && !!projectId;
+
+  const sortedSavedRows = useMemo(() => {
+    const next = [...savedRows];
+    next.sort((a, b) => {
+      const ta = Date.parse(a.created_at || '') || 0;
+      const tb = Date.parse(b.created_at || '') || 0;
+      if (ta !== tb) return ta - tb;
+      return String(a.id).localeCompare(String(b.id));
+    });
+    return next;
+  }, [savedRows]);
+
+  const formatDisplayId = (idx: number) => `FMEA-${String(idx + 1).padStart(2, '0')}`;
 
   const title = useMemo(() => {
     return fmeaType === 'process' ? 'Process FMEA (PFMEA)' : 'Design FMEA (DFMEA)';
@@ -139,17 +151,31 @@ export default function ProjectFMEAPage() {
   };
 
   useEffect(() => {
-    loadSaved();
+    // Always default to table when entering the page for a project.
+    setSavedView('table');
+    setDidAutoSeed(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('project_fmea_saved_view', savedView);
-    } catch {
-      // ignore
-    }
-  }, [savedView]);
+    // Make older projects self-healing: ensure wizard components have seeded rows
+    // and ensure uniqueness rules are applied (>= 5 unique failure modes/component).
+    if (!projectId) return;
+    if (didAutoSeed) return;
+    setDidAutoSeed(true);
+    (async () => {
+      try {
+        await projectInitializeApi.run(projectId);
+      } catch {
+        // non-blocking; user can still click "Seed starter rows" and see error details
+      } finally {
+        await loadSaved();
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, didAutoSeed]);
+
+  // Note: intentionally not persisted to localStorage so "Table" remains the default view.
 
   const handleGenerate = async () => {
     if (!projectId) return;
@@ -412,18 +438,18 @@ export default function ProjectFMEAPage() {
           </div>
         ) : null}
 
-        {savedRows.length > 0 && savedView === 'table' ? (
-          <FmeaTable fmeaRows={savedRows} componentNameById={componentNameById} />
+        {sortedSavedRows.length > 0 && savedView === 'table' ? (
+          <FmeaTable fmeaRows={sortedSavedRows} componentNameById={componentNameById} />
         ) : null}
 
-        {savedRows.length > 0 && savedView === 'grid' ? (
+        {sortedSavedRows.length > 0 && savedView === 'grid' ? (
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {savedRows.map((r) => (
+            {sortedSavedRows.map((r, idx) => (
               <div key={r.id} className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-sm font-semibold text-gray-900">{getComponentLabel(r)}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">Row ID: {r.id}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">Row ID: {formatDisplayId(idx)}</div>
                   </div>
                   <div className="text-right">
                     <div className="text-xs text-gray-500">RPN</div>

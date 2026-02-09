@@ -111,6 +111,17 @@ def get_document_guidance_registry() -> Dict[str, Dict[str, Any]]:
                 "Risk scoring/acceptability must be reviewed and approved by the team."
             ),
         },
+        "benefit_risk_analysis": {
+            "purpose_text": (
+                "Documents the structured rationale comparing expected clinical benefits to residual risks "
+                "(ISO 14971 benefit-risk), including consideration of state-of-the-art alternatives and post-market data."
+            ),
+            "population_text": (
+                "SmartQS uses Project Setup context (intended use, clinical environment, components) plus any available evidence "
+                "(FMEA rows, residual risk evaluations, PMS signals, usability/non-clinical artifacts) to draft a conservative example. "
+                "It does not invent clinical outcomes, complaint rates, or market comparisons."
+            ),
+        },
         "traceability_matrix": {
             "purpose_text": (
                 "Provides traceability across components, risks, controls, and verification activities."
@@ -347,8 +358,14 @@ def get_document_guidance_registry() -> Dict[str, Dict[str, Any]]:
         # ensure required keys exist
         entry["purpose_text"] = str(entry.get("purpose_text") or "")
         entry["population_text"] = str(entry.get("population_text") or "")
-        entry["ai_available"] = bool(entry.get("ai_available", False))
-        entry["ai_button_text"] = str(entry.get("ai_button_text") or "Generate AI sample")
+        # User request: enable AI for all document types.
+        # Keep RMF compiled-only (it must not invent content).
+        if (t or "").strip().lower() == "rmf":
+            entry["ai_available"] = False
+            entry["ai_button_text"] = ""
+        else:
+            entry["ai_available"] = True
+            entry["ai_button_text"] = str(entry.get("ai_button_text") or "Generate AI sample") or "Generate AI sample"
         reg[t] = entry
 
     return reg

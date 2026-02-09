@@ -115,7 +115,8 @@ def create_trace_link(db: Session, trace_link: TraceLinkCreate) -> TraceLink:
         from_id=trace_link.from_id,
         to_type=trace_link.to_type,
         to_id=trace_link.to_id,
-        link_type=getattr(trace_link, 'link_type', 'traces_to')
+        link_type=getattr(trace_link, 'link_type', 'traces_to'),
+        rationale=getattr(trace_link, "rationale", None),
     )
     db.add(db_link)
     db.commit()

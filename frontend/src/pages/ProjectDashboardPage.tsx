@@ -435,7 +435,6 @@ export default function ProjectDashboardPage() {
           <div className="text-2xl font-bold text-gray-900">Mission Control</div>
           <div className="text-sm text-gray-600 mt-1">
             <span className="font-medium">Project:</span> {projectName}{' '}
-            <span className="text-gray-400">({finalProjectId})</span>
           </div>
         </div>
         <div className="flex gap-2">

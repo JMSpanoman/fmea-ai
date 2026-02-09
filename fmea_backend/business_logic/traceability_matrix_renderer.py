@@ -24,6 +24,7 @@ def render_traceability_matrix_html(evidence: Dict[str, Any], project_name: str)
     rows: List[Dict[str, Any]] = evidence.get("rows", [])
     components = evidence.get("components", [])
     counts = evidence.get("counts", {})
+    component_summary = evidence.get("component_summary", {}) if isinstance(evidence.get("component_summary"), dict) else {}
     generated_at = dt_datetime.now().isoformat()
 
     components_html = ""
@@ -37,13 +38,17 @@ def render_traceability_matrix_html(evidence: Dict[str, Any], project_name: str)
     # Table rows
     trs = ""
     for r in rows:
+        comp = _escape(str(r.get("component_name") or ""))
+        rationale = _escape(str(r.get("rationale") or "—"))
         trs += "<tr>"
+        trs += f"<td>{comp}</td>"
+        trs += f"<td>{_escape(str(r.get('row_source','')))}</td>"
         trs += f"<td>{_escape(r.get('from_type',''))}</td>"
         trs += f"<td>{_escape(r.get('from_display',''))}</td>"
         trs += f"<td>{_escape(r.get('link_type',''))}</td>"
         trs += f"<td>{_escape(r.get('to_type',''))}</td>"
         trs += f"<td>{_escape(r.get('to_display',''))}</td>"
-        trs += f"<td>{_escape(r.get('rationale') or '')}</td>"
+        trs += f"<td>{rationale}</td>"
         trs += f"<td>{_escape((r.get('created_at') or '')[:19])}</td>"
         trs += "</tr>\n"
 
@@ -84,6 +89,14 @@ def render_traceability_matrix_html(evidence: Dict[str, Any], project_name: str)
       <div class="count-label">Links</div>
       <div class="count-value">{counts.get("links", 0)}</div>
     </div>
+    <div class="count-box">
+      <div class="count-label">Components</div>
+      <div class="count-value">{component_summary.get("component_count", 0)}</div>
+    </div>
+    <div class="count-box">
+      <div class="count-label">FMEA Rows</div>
+      <div class="count-value">{component_summary.get("fmea_rows_total", 0)}</div>
+    </div>
   </div>
 
   <div class="section">
@@ -91,6 +104,8 @@ def render_traceability_matrix_html(evidence: Dict[str, Any], project_name: str)
     <table>
       <thead>
         <tr>
+          <th>Component</th>
+          <th>Source</th>
           <th>From Type</th>
           <th>From</th>
           <th>Link Type</th>
@@ -101,7 +116,7 @@ def render_traceability_matrix_html(evidence: Dict[str, Any], project_name: str)
         </tr>
       </thead>
       <tbody>
-        {trs if trs else "<tr><td colspan='7'>No trace links found for this project.</td></tr>"}
+        {trs if trs else "<tr><td colspan='9'>No trace links found for this project.</td></tr>"}
       </tbody>
     </table>
   </div>

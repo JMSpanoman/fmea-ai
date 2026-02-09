@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from models.user import User
 from typing import Optional
 import uuid
@@ -31,6 +32,23 @@ def create_user_from_auth0(db: Session, auth0_id: str, email: str) -> Optional[U
         db.commit()
         db.refresh(db_user)
         return db_user
+    except IntegrityError:
+        # Idempotency: if the user already exists (common in dev-login / repeated /auth/me),
+        # return the existing record instead of failing auth.
+        db.rollback()
+        existing = get_user_by_auth0_id(db, auth0_id) or get_user_by_email(db, email)
+        if existing:
+            # Best-effort keep email in sync
+            try:
+                if email and getattr(existing, "email", None) != email:
+                    existing.email = email
+                    db.add(existing)
+                    db.commit()
+                    db.refresh(existing)
+            except Exception:
+                db.rollback()
+            return existing
+        return None
     except Exception as e:
         db.rollback()
         import logging

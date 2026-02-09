@@ -1,0 +1,81 @@
+You are generating a Benefit–Risk Analysis Report draft for a medical device project, based on the provided SmartQS context.
+
+Return JSON ONLY in this exact shape:
+{ "draft": "<markdown content>" }
+
+Hard rules (audit safety):
+- Do NOT fabricate executed test results, approvals/signatures, meeting attendance, complaint counts, adverse event rates, or comparative market data.
+- Do NOT make compliance claims (e.g., "compliant", "meets ISO/FDA requirements") or pass/fail conclusions.
+- If information is missing, use explicit placeholders like "TBD" / "Not provided" and state what is missing.
+- Use conditional language for conclusions (e.g., "If CER confirms…, then…").
+- Keep tone professional, regulatory/audit-friendly.
+
+Draft requirements (structure and content):
+- Write the report using the following structure and headings (modeled after a pacemaker example), but tailored to THIS project and its context.
+- Use markdown headings and tables.
+- Populate fields using the provided context:
+  - Intended Use & Clinical Context (target patient group, condition, environment)
+  - Clinical Evaluation Data / Clinical Benefits (magnitude, probability, duration) — summarize as placeholders unless the context provides actual evidence
+  - Risk Analysis & Residual Risks — use available evidence snapshot if present; otherwise provide a conservative placeholder summary
+  - State-of-the-Art & Alternatives — provide comparison placeholders unless context provides specifics
+  - Post-Market Surveillance (PMS) — summarize signals if present; otherwise state "No PMS signals provided"
+  - Usability / Non-clinical Data — summarize available usability/bench/modeling evidence if present; otherwise placeholders
+  - Risk Mitigation — state that risks are reduced to lowest practicable level and list example control categories from context; do not claim verification was executed unless explicitly provided
+  - Traceability — include a section that explicitly links to: Risk Management artifacts (Hazard Analysis, FMEA, Residual Risk) and Clinical Evaluation (CER). If documents are missing, list as open items.
+
+Use this exact outline:
+
+# Benefit–Risk Analysis Report
+## <Device Name / Project Name>
+
+## 1. Document Control
+Create a table with:
+- Device Name
+- Device Classification (e.g., US FDA class if known; else TBD)
+- Intended Use
+- Applicable Regulations (e.g., ISO 14971:2019; 21 CFR 820; others if applicable — use TBD if unknown)
+- Report Type (Benefit–Risk Analysis)
+- Lifecycle Phase (e.g., Design & Development / Pre-Market; or inferred from context; else TBD)
+- Date (Sample)
+- Prepared By (TBD)
+- Approved By (TBD)
+
+## 2. Purpose of the Benefit–Risk Analysis
+Explain purpose and cite ISO 14971 benefit–risk concept. Mention FDA benefit–risk factors as a framework (no claims).
+
+## 3. Device Description (Summary)
+Summarize device based on project description and components.
+
+## 4. Clinical Condition and Unmet Medical Need
+### 4.1 Target Condition
+### 4.2 Severity of Condition
+### 4.3 Existing Treatment Options / Alternatives (State-of-the-Art)
+Provide placeholders if missing.
+
+## 5. Identified Benefits
+Create a table:
+Benefit | Description | Clinical Relevance (Critical/High/Medium/Low)
+
+## 6. Summary of Residual Risks
+Create a table:
+Hazard | Residual Risk Description | Severity | Probability
+Use residual risk evidence if available; otherwise state "TBD" and list top risk themes from available FMEA snapshot if present.
+
+## 7. Risk Control Measures Implemented
+List risk control categories and examples inferred from context (design controls, protective measures, information for safety). Avoid standards claims unless in context.
+
+## 8. Benefit–Risk Evaluation
+### 8.1 ISO 14971 Perspective
+### 8.2 FDA Benefit–Risk Factors
+Create a table:
+FDA Factor | Assessment
+Use conditional wording and placeholders where needed.
+
+## 9. Overall Benefit–Risk Conclusion
+Provide a conservative draft conclusion framework:
+- If benefits evidence supports X and residual risks remain within Y thresholds, then benefit–risk may be favorable.
+- Otherwise list what must be provided to reach a conclusion.
+
+## 10. References
+List likely references (ISO 14971:2019; FDA benefit–risk guidance; 21 CFR 820; IEC 62304/60601/etc only if relevant to context; otherwise "TBD").
+

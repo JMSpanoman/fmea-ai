@@ -44,6 +44,12 @@ class DesignOutputBase(BaseModel):
     text: str
     source: str  # "ai" or "user"
     linked_input_id: Optional[str] = None  # UUID
+    # Optional richer fields (kept compatible with DB model)
+    do_key: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    document_ref: Optional[str] = None
+    status: Optional[str] = "draft"
 
 class DesignOutputCreate(DesignOutputBase):
     project_id: str  # UUID
