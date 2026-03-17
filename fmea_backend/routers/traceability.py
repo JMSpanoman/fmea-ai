@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from models.risk_item import RiskItem
 from models.risk_control import RiskControl
@@ -11,7 +12,7 @@ from crud import traceability as trace_crud
 from crud import project as project_crud
 from typing import List, Dict, Any
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["Traceability"])
+router = APIRouter(prefix="/projects/{project_id}", tags=["Traceability"], dependencies=[Depends(require_pro)])
 
 @router.get("/trace", response_model=trace_schemas.TraceMatrixResponse)
 def get_trace_matrix(

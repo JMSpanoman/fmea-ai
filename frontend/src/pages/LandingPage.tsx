@@ -1,17 +1,24 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProject } from '../contexts/ProjectContext';
+import { useAuth } from '../contexts/AuthContext';
+import { isProPlan } from '../config/features';
 import api from '../axios';
 
 /**
  * Landing behavior:
- * - If any projects exist: open Mission Control for the selected (or most recent) project.
- * - If no projects exist yet: create a starter project and open the Project Setup Wizard.
+ * - Lite: redirect to /dfmea (standalone FMEA — no projects).
+ * - Pro: If any projects exist, open Mission Control for selected/most recent.
+ *        If none, create starter project and open Project Setup Wizard.
  */
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { currentProject, setCurrentProject, clearCurrentProject } = useProject();
   const ranRef = useRef(false);
+
+  const plan = user?.plan ?? 'lite';
+  const isPro = isProPlan(plan);
 
   useEffect(() => {
     if (ranRef.current) return;
@@ -19,6 +26,13 @@ export default function LandingPage() {
 
     (async () => {
       try {
+        // Lite plan: no projects — go to standalone FMEA
+        if (!isPro) {
+          navigate('/dfmea', { replace: true });
+          return;
+        }
+
+        // Pro: project-based flow
         // 1) If a project is already selected (persisted), verify it still exists for this user.
         const pid = currentProject?.id;
         if (pid) {
@@ -29,8 +43,6 @@ export default function LandingPage() {
           } catch (e: any) {
             if (e?.response?.status === 404) {
               clearCurrentProject();
-            } else {
-              // For non-404 errors, continue to list-based selection.
             }
           }
         }
@@ -51,12 +63,11 @@ export default function LandingPage() {
             navigate(`/projects/${p.id}/setup`, { replace: true });
             return;
           }
-          // Fallback if response shape is unexpected
           navigate('/projects', { replace: true });
           return;
         }
 
-        // 4) Otherwise, pick the most recently created project and open Mission Control
+        // 4) Pick the most recently created project and open Mission Control
         const sorted = projects
           .slice()
           .sort((a: any, b: any) => String(b?.created_at || '').localeCompare(String(a?.created_at || '')));
@@ -69,11 +80,10 @@ export default function LandingPage() {
 
         navigate('/projects', { replace: true });
       } catch {
-        // Conservative fallback
-        navigate('/projects', { replace: true });
+        navigate(isPro ? '/projects' : '/dfmea', { replace: true });
       }
     })();
-  }, [clearCurrentProject, currentProject?.id, navigate, setCurrentProject]);
+  }, [clearCurrentProject, currentProject?.id, isPro, navigate, setCurrentProject]);
 
   return null;
 }

@@ -42,6 +42,7 @@ class UserProfile(BaseModel):
     id: str
     username: str
     email: str
+    plan: str = "lite"  # "lite" | "pro" — SaaS tier
     full_name: Optional[str] = None
     role: str
     company: Optional[str] = None

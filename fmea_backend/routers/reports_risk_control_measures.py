@@ -3,12 +3,13 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from crud import project as project_crud
 from business_logic import risk_controls_doc_builder, risk_controls_doc_renderer
 from typing import List, Dict, Any, Optional
 
-router = APIRouter(prefix="/projects/{project_id}/reports", tags=["Reports - Risk Control Measures"])
+router = APIRouter(prefix="/projects/{project_id}/reports", tags=["Reports - Risk Control Measures"], dependencies=[Depends(require_pro)])
 
 @router.get("/risk-control-measures/data")
 def get_risk_control_measures_data(

@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from database import get_db
-from models.user import User
+from models.user import User, PLAN_LITE, PLAN_PRO
 from crud import user as user_crud
 from auth.security import verify_token
 import os
@@ -59,9 +59,13 @@ def get_current_user(
     token_username = payload.get("username") or (token_email.split("@")[0] if "@" in token_email else None)
     token_role = payload.get("role") or "user"
 
-    # Special-case: John has admin access
+    # Special-case: John has admin access and Pro plan
     if str(token_email).lower() == "john@fotonconsulting.com":
         token_role = "admin"
+        try:
+            setattr(user, "plan", PLAN_PRO)
+        except Exception:
+            pass
 
     # Production allowlist: only allow specific users (default: John).
     env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
@@ -83,5 +87,12 @@ def get_current_user(
         setattr(user, "role", token_role)
     except Exception:
         pass
+
+    # Ensure plan is set (from DB, John override, or default)
+    if not getattr(user, "plan", None) or str(getattr(user, "plan", "")).strip() == "":
+        try:
+            setattr(user, "plan", PLAN_LITE)
+        except Exception:
+            pass
 
     return user

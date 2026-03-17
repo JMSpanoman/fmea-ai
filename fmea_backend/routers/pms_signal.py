@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from crud import project as project_crud
 from crud import pms_signal as pms_signal_crud
@@ -22,7 +23,7 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
 
-router = APIRouter(prefix="/projects/{project_id}/pms", tags=["PMS Signals"])
+router = APIRouter(prefix="/projects/{project_id}/pms", tags=["PMS Signals"], dependencies=[Depends(require_pro)])
 
 # CRUD Endpoints
 @router.post("/signals", status_code=status.HTTP_201_CREATED)

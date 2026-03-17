@@ -17,6 +17,11 @@ class RiskItemVersion(Base):
     hazardous_situation = Column(Text, nullable=True)  # Circumstance in which people/property are exposed to hazards
     harm = Column(Text, nullable=True)  # Physical injury or damage to health/property
     failure_mode = Column(Text, nullable=True)  # FMEA-style failure mode (optional)
+    # Risk Knowledge Base library references (optional)
+    hazard_library_id = Column(String, nullable=True, index=True)  # FK to hazard_library.id
+    harm_library_id = Column(String, nullable=True, index=True)   # FK to harm_library.id
+    risk_control_library_id = Column(String, nullable=True, index=True)  # FK to risk_control_library.id
+    verification_library_id = Column(String, nullable=True, index=True)   # FK to verification_library.id
     sequence_of_events = Column(Text, nullable=True)  # Optional: how hazard leads to harm
     
     # Risk estimation (ISO 14971 compliant)

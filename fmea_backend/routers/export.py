@@ -3,13 +3,14 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from crud import project as project_crud
 from crud import fmea as fmea_crud
 import csv
 import io
 
-router = APIRouter(prefix="/projects/{project_id}/export", tags=["export"])
+router = APIRouter(prefix="/projects/{project_id}/export", tags=["export"], dependencies=[Depends(require_pro)])
 
 def _require_reportlab():
     """

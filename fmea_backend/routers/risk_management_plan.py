@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from schemas import risk_management_plan as rmp_schemas
 from crud import risk_management_plan as rmp_crud
@@ -12,7 +13,7 @@ from business_logic import rmp_generator
 from datetime import datetime
 import json
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["Risk Management Plan"])
+router = APIRouter(prefix="/projects/{project_id}", tags=["Risk Management Plan"], dependencies=[Depends(require_pro)])
 
 @router.post("/risk-management-plan/generate", response_model=rmp_schemas.RMPOut, status_code=status.HTTP_201_CREATED)
 def generate_rmp(

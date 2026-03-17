@@ -13,7 +13,7 @@ import {
   Tooltip,
   Box,
 } from '@mui/material';
-import { Edit, History, AutoAwesome } from '@mui/icons-material';
+import { Edit, History, AutoAwesome, Science } from '@mui/icons-material';
 import { FmeaRow } from '../../types';
 
 interface FmeaTableProps {
@@ -22,6 +22,7 @@ interface FmeaTableProps {
   onEdit?: (row: FmeaRow) => void;
   onViewHistory?: (row: FmeaRow) => void;
   onAiSuggest?: (row: FmeaRow) => void;
+  onGenerateVV?: (row: FmeaRow) => void;
 }
 
 const FmeaTable: React.FC<FmeaTableProps> = ({
@@ -30,6 +31,7 @@ const FmeaTable: React.FC<FmeaTableProps> = ({
   onEdit,
   onViewHistory,
   onAiSuggest,
+  onGenerateVV,
 }) => {
   const formatDisplayId = (idx: number) => `FMEA-${String(idx + 1).padStart(2, '0')}`;
 
@@ -98,6 +100,13 @@ const FmeaTable: React.FC<FmeaTableProps> = ({
                     <Tooltip title="AI Suggestions">
                       <IconButton size="small" onClick={() => onAiSuggest(row)}>
                         <AutoAwesome fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                  {onGenerateVV && (
+                    <Tooltip title="Generate V&V">
+                      <IconButton size="small" onClick={() => onGenerateVV(row)}>
+                        <Science fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   )}

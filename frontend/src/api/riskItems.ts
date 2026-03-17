@@ -41,6 +41,14 @@ export interface RiskItemVersion {
   harm?: string;
   failure_mode?: string;
   sequence_of_events?: string;
+  /** Risk Knowledge Base: link to hazard_library.id */
+  hazard_library_id?: string;
+  /** Risk Knowledge Base: link to harm_library.id */
+  harm_library_id?: string;
+  /** Risk Knowledge Base: link to risk_control_library.id */
+  risk_control_library_id?: string;
+  /** Risk Knowledge Base: link to verification_library.id */
+  verification_library_id?: string;
   severity?: number;
   probability_of_harm?: number;
   occurrence?: number;
@@ -107,6 +115,10 @@ export interface RiskItemCreate {
   hazardous_situation?: string;
   harm?: string;
   failure_mode?: string;
+  hazard_library_id?: string;
+  harm_library_id?: string;
+  risk_control_library_id?: string;
+  verification_library_id?: string;
   probability_of_harm?: number;
   occurrence?: number;
   detection?: number;
@@ -161,12 +173,20 @@ export interface RiskItemUpdate {
   risk_acceptability?: string;
   risk_rationale?: string;
   change_summary?: string;
+  hazard_library_id?: string;
+  harm_library_id?: string;
+  risk_control_library_id?: string;
+  verification_library_id?: string;
 }
 
 export interface RiskItemVersionCreate {
   hazard?: string;
   hazardous_situation?: string;
   harm?: string;
+  hazard_library_id?: string;
+  harm_library_id?: string;
+  risk_control_library_id?: string;
+  verification_library_id?: string;
   failure_mode?: string;
   sequence_of_events?: string;
   severity?: number;

@@ -2,13 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from schemas import change_control as cc_schemas
 from crud import change_control_phase3 as cc_crud
 from crud import project as project_crud
 from typing import List
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["Change Control Phase 3"])
+router = APIRouter(prefix="/projects/{project_id}", tags=["Change Control Phase 3"], dependencies=[Depends(require_pro)])
 
 @router.get("/changes", response_model=List[cc_schemas.ChangeControlOut])
 def get_change_controls(

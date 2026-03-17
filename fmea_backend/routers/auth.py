@@ -3,7 +3,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import List
 from database import get_db
-from models.user import User
+from models.user import User, PLAN_LITE, PLAN_PRO
 from schemas.user import UserCreate, UserLogin, UserOut, UserProfile, Token, UserUpdate, PasswordChange
 from crud import user as user_crud
 from auth.security import create_access_token, verify_token, get_password_hash, verify_password
@@ -143,9 +143,11 @@ def dev_login(payload: dict = Body(default=None)):
         if email.lower() not in allowed_set:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not allowed")
 
-    # Special-case: John has admin rights in dev
+    # Special-case: John has admin rights and Pro plan in dev
+    plan = PLAN_LITE
     if email.lower() == "john@fotonconsulting.com" and (not isinstance(payload, dict) or not payload.get("role")):
         role = "admin"
+        plan = PLAN_PRO
 
     # Use a stable dev-only subject derived from email.
     auth0_id = f"dev:{email.lower()}"
@@ -163,9 +165,17 @@ def dev_login(payload: dict = Body(default=None)):
         
         if dev_user:
             user_id = dev_user.id
-            # Create default project if none exist
+            # Pro plan: ensure plan is set in DB (for Stripe sync later)
+            if plan == PLAN_PRO:
+                try:
+                    dev_user.plan = PLAN_PRO
+                    db.add(dev_user)
+                    db.commit()
+                except Exception:
+                    db.rollback()
+            # Create default project only for Pro users (Lite does not include Projects)
             existing_projects = project_crud.get_projects_by_user(db, user_id)
-            if not existing_projects:
+            if plan == PLAN_PRO and not existing_projects:
                 default_project = project_schemas.ProjectCreate(
                     name="Default Project",
                     description="Your first project - get started by creating FMEA, CAPA, or other quality management documents.",
@@ -196,6 +206,7 @@ def dev_login(payload: dict = Body(default=None)):
             "id": user_id or auth0_id,
             "username": username or "dev-user",
             "email": email,
+            "plan": plan,
             "full_name": "Development User",
             "role": role or "admin",
             "company": "Development",
@@ -217,6 +228,7 @@ def get_current_user_profile(current_user: User = Depends(get_current_user)):
         id=current_user.id,
         username=getattr(current_user, "username", None) or (getattr(current_user, "email", "") or "user").split("@")[0],
         email=getattr(current_user, "email", "") or "",
+        plan=getattr(current_user, "plan", None) or PLAN_LITE,
         full_name=getattr(current_user, "full_name", None),
         role=getattr(current_user, "role", None) or "user",
         company=getattr(current_user, "company", None),

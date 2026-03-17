@@ -4,6 +4,8 @@ import ProjectDataViewer from '../components/ProjectDataViewer';
 import { exportFmeaData } from '../utils/exportUtils';
 import { getProjects, createProject, Project } from '../services/apiService';
 import api from '../axios';
+import { useAuth } from '../contexts/AuthContext';
+import { isProPlan } from '../config/features';
 
 interface FmeaRow {
   id: string;
@@ -36,6 +38,8 @@ const FMEA_TYPES = [
 
 const FmeaPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isPro = isProPlan(user?.plan);
   const [componentDescription, setComponentDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [fmeaType, setFmeaType] = useState('design');
@@ -216,11 +220,10 @@ const FmeaPage: React.FC = () => {
                   setShowTable(true);
                   setIsGenerating(false);
 
-                  // Automatically export first 10 FMEA rows to MasterControl
-                  if (aiFmeaData && aiFmeaData.length > 0) {
+                  // MasterControl export is Pro-only
+                  if (isPro && aiFmeaData && aiFmeaData.length > 0) {
                     exportFirstRowsToMasterControl(aiFmeaData, componentDescription);
                   }
-                  
                 } catch (error) {
                   console.error('All AI generation attempts failed:', error);
                   
@@ -236,8 +239,7 @@ const FmeaPage: React.FC = () => {
                   setShowTable(true);
                   setIsGenerating(false);
 
-                  // Automatically export first 10 FMEA rows to MasterControl
-                  if (enhancedFallbackData && enhancedFallbackData.length > 0) {
+                  if (isPro && enhancedFallbackData && enhancedFallbackData.length > 0) {
                     exportFirstRowsToMasterControl(enhancedFallbackData, componentDescription);
                   }
                 }
@@ -2714,12 +2716,14 @@ const FmeaPage: React.FC = () => {
                 )}
               </div>
               <div className="flex space-x-3">
+                {isPro && (
                 <button
                   onClick={handleOpenProjectModal}
                   className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
                 >
                   Save to Project
                 </button>
+                )}
                 <button
                   onClick={handleExport}
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
@@ -2929,8 +2933,8 @@ const FmeaPage: React.FC = () => {
         </div>
       )}
 
-      {/* Project Data Viewer */}
-      {showProjectDataViewer && selectedProjectForViewer && (
+      {/* Project Data Viewer (Pro only) */}
+      {isPro && showProjectDataViewer && selectedProjectForViewer && (
         <ProjectDataViewer
           project={selectedProjectForViewer}
           onClose={() => {

@@ -3,13 +3,14 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from crud import project as project_crud
 from crud import project_profile as profile_crud
 from schemas.project_profile import ProjectProfileOut, ProjectProfileUpsert
 
 
-router = APIRouter(prefix="/projects/{project_id}/profile", tags=["Project Profile"])
+router = APIRouter(prefix="/projects/{project_id}/profile", tags=["Project Profile"], dependencies=[Depends(require_pro)])
 
 
 @router.get("", response_model=ProjectProfileOut)

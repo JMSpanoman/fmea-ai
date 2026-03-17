@@ -136,7 +136,6 @@ export const documentTypes: DocumentTypeDef[] = [
     dependencies: ['rmf'],
     description: 'Formal review record of the RMF/RMR and conclusions.',
   }),
-
   // 2) Design Controls
   req({
     id: 'design_dev_plan',

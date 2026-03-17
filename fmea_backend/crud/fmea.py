@@ -39,6 +39,10 @@ def _serialize_for_diff(row: FMEARow) -> Dict[str, Any]:
         "residual_rpn": row.residual_rpn,
         "financial_impact": float(row.financial_impact) if row.financial_impact else None,
         "component_id": row.component_id,
+        "hazard_library_id": getattr(row, "hazard_library_id", None),
+        "harm_library_id": getattr(row, "harm_library_id", None),
+        "risk_control_library_id": getattr(row, "risk_control_library_id", None),
+        "verification_library_id": getattr(row, "verification_library_id", None),
     }
 
 def create_fmea_row(db: Session, fmea_row: FMEARowCreate) -> FMEARow:
@@ -59,6 +63,10 @@ def create_fmea_row(db: Session, fmea_row: FMEARowCreate) -> FMEARow:
         residual_detection=fmea_row.residual_detection,
         financial_impact=fmea_row.financial_impact,
         ai_metadata=fmea_row.ai_metadata,
+        hazard_library_id=getattr(fmea_row, "hazard_library_id", None),
+        harm_library_id=getattr(fmea_row, "harm_library_id", None),
+        risk_control_library_id=getattr(fmea_row, "risk_control_library_id", None),
+        verification_library_id=getattr(fmea_row, "verification_library_id", None),
         version=1
     )
     

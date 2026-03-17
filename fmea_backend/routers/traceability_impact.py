@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from crud import project as project_crud
 from crud import document as document_crud
@@ -12,7 +13,7 @@ from schemas.document import DocumentUpdate
 from services.traceability_builder import build_traceability
 
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["Traceability & Impact"])
+router = APIRouter(prefix="/projects/{project_id}", tags=["Traceability & Impact"], dependencies=[Depends(require_pro)])
 
 
 SNAPSHOT_START = "\n--- SYSTEM TRACEABILITY SNAPSHOT START ---\n"

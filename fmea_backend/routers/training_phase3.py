@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from schemas import training as training_schemas
 from crud import training as training_crud
 from typing import List
 
-router = APIRouter(prefix="/users/{user_id}", tags=["Training"])
+router = APIRouter(prefix="/users/{user_id}", tags=["Training"], dependencies=[Depends(require_pro)])
 
 @router.get("/training", response_model=List[training_schemas.TrainingRecordOut])
 def get_user_training(

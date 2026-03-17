@@ -80,6 +80,10 @@ class RiskItemUpdate(BaseModel):
     risk_acceptability: Optional[str] = None
     risk_rationale: Optional[str] = None
     change_summary: Optional[str] = None
+    hazard_library_id: Optional[str] = None
+    harm_library_id: Optional[str] = None
+    risk_control_library_id: Optional[str] = None
+    verification_library_id: Optional[str] = None
 
 class RiskItemOut(RiskItemBase):
     id: str  # UUID
@@ -108,6 +112,11 @@ class RiskItemVersionCreate(BaseModel):
     harm: Optional[str] = None
     failure_mode: Optional[str] = None
     sequence_of_events: Optional[str] = None
+    # Risk Knowledge Base library references
+    hazard_library_id: Optional[str] = None
+    harm_library_id: Optional[str] = None
+    risk_control_library_id: Optional[str] = None
+    verification_library_id: Optional[str] = None
     
     # Risk estimation (ISO 14971)
     severity: Optional[int] = None

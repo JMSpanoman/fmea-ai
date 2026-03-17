@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from schemas.document import DocumentDraftRequest, DocumentDraftResponse, DocumentSummarizeRequest, DocumentSummarizeResponse, DocumentExtractRequirementsRequest, DocumentExtractRequirementsResponse
 from schemas.audit import AuditPrepareRequest, AuditPrepareResponse
@@ -15,7 +16,7 @@ import os
 import json
 from pathlib import Path
 
-router = APIRouter(prefix="/ai", tags=["AI Phase 3"])
+router = APIRouter(prefix="/ai", tags=["AI Phase 3"], dependencies=[Depends(require_pro)])
 
 # Load AI prompts
 PROMPTS_DIR = Path(__file__).parent.parent.parent / "ai_prompts"

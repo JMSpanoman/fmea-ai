@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../axios';
 import { componentsApi, fmeaApi, projectInitializeApi, projectsApi } from '../services/apiPhase1';
+import { generateVVFromRisk } from '../services/vvFromRiskApi';
 import { FmeaRow } from '../types';
 import FmeaTable from '../components/FMEA/FmeaTable';
+import { GenerateVVModal } from '../components/VV/GenerateVVModal';
 
 type GeneratedRow = {
   id: string;
@@ -82,6 +84,13 @@ export default function ProjectFMEAPage() {
   const [savedView, setSavedView] = useState<'grid' | 'table'>('table');
   const [didAutoSeed, setDidAutoSeed] = useState(false);
 
+  // Generate V&V from risk modal
+  const [vvModalOpen, setVVModalOpen] = useState(false);
+  const [vvLoading, setVVLoading] = useState(false);
+  const [vvError, setVVError] = useState<string | null>(null);
+  const [vvData, setVVData] = useState<any>(null);
+  const [vvRow, setVVRow] = useState<FmeaRow | null>(null);
+
   const canSave = rows.length > 0 && !isGenerating && !isSaving && !!projectId;
 
   const sortedSavedRows = useMemo(() => {
@@ -132,6 +141,50 @@ export default function ProjectFMEAPage() {
     const metaName = row.ai_metadata && (row.ai_metadata as any).component_name;
     if (typeof metaName === 'string' && metaName.trim()) return metaName.trim();
     return id || '—';
+  };
+
+  const openGenerateVV = async (row: FmeaRow) => {
+    setVVRow(row);
+    setVVModalOpen(true);
+    setVVError(null);
+    setVVData(null);
+    setVVLoading(true);
+    const component = getComponentLabel(row);
+    const payload = {
+      component: component || '—',
+      failure_mode: row.failure_mode || '',
+      effect: row.effect || '',
+      cause: row.cause || '',
+      severity: typeof row.severity === 'number' ? row.severity : 1,
+      probability: typeof row.probability === 'number' ? row.probability : 1,
+      detection: typeof row.detection === 'number' ? row.detection : 1,
+      mitigation: row.mitigation || '',
+      residual_severity: row.residual_severity ?? undefined,
+      residual_occurrence: row.residual_probability ?? undefined,
+      residual_detection: row.residual_detection ?? undefined,
+      residual_rpn: row.residual_rpn ?? undefined,
+    };
+    try {
+      const data = await generateVVFromRisk(payload);
+      setVVData(data);
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail;
+      const msg = typeof detail === 'string' ? detail : e?.message || 'Failed to generate V&V';
+      setVVError(msg);
+    } finally {
+      setVVLoading(false);
+    }
+  };
+
+  const closeVVModal = () => {
+    setVVModalOpen(false);
+    setVVData(null);
+    setVVError(null);
+    setVVRow(null);
+  };
+
+  const retryGenerateVV = () => {
+    if (vvRow) openGenerateVV(vvRow);
   };
 
   const seedStarterRows = async () => {
@@ -439,7 +492,11 @@ export default function ProjectFMEAPage() {
         ) : null}
 
         {sortedSavedRows.length > 0 && savedView === 'table' ? (
-          <FmeaTable fmeaRows={sortedSavedRows} componentNameById={componentNameById} />
+          <FmeaTable
+            fmeaRows={sortedSavedRows}
+            componentNameById={componentNameById}
+            onGenerateVV={openGenerateVV}
+          />
         ) : null}
 
         {sortedSavedRows.length > 0 && savedView === 'grid' ? (
@@ -497,11 +554,31 @@ export default function ProjectFMEAPage() {
                     <div className="text-sm text-gray-900">{r.mitigation}</div>
                   </div>
                 ) : null}
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => openGenerateVV(r)}
+                    className="w-full px-3 py-2 text-sm font-medium text-primary border border-primary rounded-md hover:bg-primary/5"
+                  >
+                    Generate V&V
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         ) : null}
       </div>
+
+      <GenerateVVModal
+        open={vvModalOpen}
+        onClose={closeVVModal}
+        data={vvData}
+        loading={vvLoading}
+        error={vvError}
+        onRetry={retryGenerateVV}
+        projectId={projectId ?? null}
+        fmeaRowId={vvRow?.id ?? null}
+      />
 
       {rows.length ? (
         <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">

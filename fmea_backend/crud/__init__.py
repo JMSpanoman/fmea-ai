@@ -20,10 +20,12 @@ from . import complaint_phase3
 from . import equipment_phase3
 from . import quality_event_phase3
 from . import approval_phase3
+from . import risk_knowledge_base
 
 __all__ = [
     "project", "fmea", "component", "user",  # Phase 1
     "design_control", "vv", "capa_crud", "pms", "traceability",  # Phase 2
     "document", "training", "change_control_phase3", "audit_phase3", "supplier_phase3",  # Phase 3
-    "ncr_phase3", "complaint_phase3", "equipment_phase3", "quality_event_phase3", "approval_phase3"  # Phase 3 continued
+    "ncr_phase3", "complaint_phase3", "equipment_phase3", "quality_event_phase3", "approval_phase3",  # Phase 3 continued
+    "risk_knowledge_base",  # Risk Knowledge Base (Hazard, Harm, Risk Control, Verification libraries)
 ]

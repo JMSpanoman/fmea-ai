@@ -4,6 +4,7 @@ import { API_BASE_URL } from '../axios';
 interface User {
   id: string;
   email: string;
+  plan?: string;  // "lite" | "pro" — SaaS tier from backend
   username?: string;
   name?: string;
   role?: string;
@@ -42,6 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return {
       id: String(data?.id ?? data?.user?.id ?? ''),
       email: String(data?.email ?? data?.user?.email ?? ''),
+      plan: data?.plan ?? data?.user?.plan ?? 'lite',
       username: data?.username ?? data?.user?.username,
       name: data?.full_name ?? data?.name ?? data?.user?.full_name ?? data?.user?.name,
       role: data?.role ?? data?.user?.role,

@@ -31,6 +31,12 @@ class FMEARow(Base):
     financial_impact = Column(Numeric, nullable=True)
     ai_metadata = Column(JSON, nullable=True)
     
+    # Risk Knowledge Base library references (optional)
+    hazard_library_id = Column(String, nullable=True, index=True)  # FK to hazard_library.id
+    harm_library_id = Column(String, nullable=True, index=True)   # FK to harm_library.id
+    risk_control_library_id = Column(String, nullable=True, index=True)  # FK to risk_control_library.id
+    verification_library_id = Column(String, nullable=True, index=True)   # FK to verification_library.id
+    
     # Version control
     version = Column(Integer, default=1, nullable=False)
     

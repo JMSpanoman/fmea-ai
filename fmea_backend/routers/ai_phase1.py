@@ -30,9 +30,9 @@ def suggest_fmea(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Generate AI suggestions for FMEA row based on component, failure mode, effect, and cause"""
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    
+    """Generate AI suggestions for FMEA row based on component, failure mode, effect, and cause. Uses OPENAI_API_KEY or OPENAI_KEY (same as V&V generate-from-risk)."""
+    openai_api_key = (os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_KEY") or "").strip() or None
+
     if not openai_api_key:
         # Fallback: Use baseline calculation
         severity = 5  # Default

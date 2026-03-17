@@ -15,19 +15,19 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from pathlib import Path
 
-# Load environment variables only in non-production environments.
-# On Render, environment variables are injected by the platform and we do NOT
-# want a baked-in `.env` file (copied into the Docker image) to override or
-# mislead configuration.
+# Always load backend-local env files first (override=False so platform env wins).
+# This ensures OPENAI_API_KEY in ENV.local or .env is used when running this app locally.
+here = Path(__file__).resolve().parent
+try:
+    load_dotenv(dotenv_path=here / "ENV.local", override=False)
+except Exception:
+    pass
+try:
+    load_dotenv(dotenv_path=here / ".env", override=False)
+except Exception:
+    pass
+# In non-production, also load from current working directory.
 if os.getenv("ENVIRONMENT", "").lower() not in ("production", "prod"):
-    # Prefer a repo-local file that won't get accidentally committed.
-    # - `fmea_backend/ENV.local` (recommended)
-    # - fallback to standard `.env` behavior if present
-    try:
-        here = Path(__file__).resolve().parent
-        load_dotenv(dotenv_path=here / "ENV.local", override=False)
-    except Exception:
-        pass
     load_dotenv(override=False)
 
 from database import get_db
@@ -83,6 +83,7 @@ from routers import project_profile
 from routers import project_initialize
 from routers import document_guidance
 from routers import traceability_impact
+from routers import risk_knowledge_base
 
 
 
@@ -121,15 +122,16 @@ async def lifespan(app: FastAPI):
     # Create database tables if they don't exist
     from database import engine, Base
     # Import all models to ensure they're registered
-    from models import user, project, fmea, component, project_profile as _project_profile, risk_item, risk_item_version, risk_control, approval, trace_link, ai_event, audit_log_event, design_input, design_output, vv_test, risk_management_plan, pms_signal, generated_artifact
+    from models import user, project, fmea, component, project_profile as _project_profile, risk_item, risk_item_version, risk_control, approval, trace_link, ai_event, audit_log_event, design_input, design_output, vv_test, risk_management_plan, pms_signal, generated_artifact, hazard_library, harm_library, risk_control_library, verification_library
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables initialized")
 
     # SQLite runtime migrations (add missing columns on existing tables)
     try:
-        from db.runtime_migrations import ensure_component_columns, ensure_user_columns
+        from db.runtime_migrations import ensure_component_columns, ensure_user_columns, ensure_library_reference_columns
         ensure_user_columns(engine)
         ensure_component_columns(engine)
+        ensure_library_reference_columns(engine)
     except Exception as mig_err:
         logger.error(f"Runtime migrations failed: {mig_err}", exc_info=True)
 
@@ -227,6 +229,8 @@ app.include_router(reports_design_inputs.router, tags=["Reports - Design Inputs"
 app.include_router(pms_signal.router, tags=["PMS Signals"])
 # Reports - V&V Evidence router
 app.include_router(reports_vv_evidence.router, tags=["Reports - V&V Evidence"])
+# Risk Knowledge Base (Hazard, Harm, Risk Control, Verification libraries)
+app.include_router(risk_knowledge_base.router)
 
 # Legacy routers (for backward compatibility - can be removed later)
 app.include_router(ai.router, prefix="/fmea", tags=["AI (Legacy)"])

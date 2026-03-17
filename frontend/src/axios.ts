@@ -77,23 +77,32 @@ api.interceptors.request.use(
   }
 );
 
-// Add Response Interceptor to handle 401 errors
+// Add Response Interceptor to handle 401 and 403 (Pro upgrade) errors
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as any;
-    
+
+    // 403: Pro feature gate — emit event so UI can show upgrade message
+    if (error.response?.status === 403) {
+      const detail = (error.response?.data as any)?.detail;
+      const isProGate = typeof detail === 'string' && /pro|plan|upgrade/i.test(detail);
+      if (isProGate) {
+        window.dispatchEvent(new CustomEvent('api:403:pro', { detail: { message: detail } }));
+      }
+    }
+
     // If we get a 401 and haven't retried yet, try to refresh the token
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       try {
         // Clear old token
         localStorage.removeItem('token');
-        
+
         // Get a fresh token
         const token = await ensureValidToken();
-        
+
         if (token) {
           // Retry the original request with the new token
           originalRequest.headers['Authorization'] = `Bearer ${token}`;
@@ -103,11 +112,10 @@ api.interceptors.response.use(
         }
       } catch (refreshError) {
         console.error('[axios] Failed to refresh token:', refreshError);
-        // If refresh fails, reject the promise
         return Promise.reject(refreshError);
       }
     }
-    
+
     return Promise.reject(error);
   }
 );

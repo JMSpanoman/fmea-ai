@@ -2,13 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from schemas import pms as pms_schemas
 from crud import pms as pms_crud
 from crud import project as project_crud
 from typing import List
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["PMS"])
+router = APIRouter(prefix="/projects/{project_id}", tags=["PMS"], dependencies=[Depends(require_pro)])
 
 @router.get("/pms", response_model=List[pms_schemas.PMSSignalOut])
 def get_pms_signals(

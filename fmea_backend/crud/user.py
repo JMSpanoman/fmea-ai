@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from models.user import User
+from models.user import User, PLAN_LITE
 from typing import Optional
 import uuid
 
@@ -26,7 +26,8 @@ def create_user_from_auth0(db: Session, auth0_id: str, email: str) -> Optional[U
         db_user = User(
             id=str(uuid.uuid4()),
             auth0_id=auth0_id,
-            email=email
+            email=email,
+            plan=PLAN_LITE,
         )
         db.add(db_user)
         db.commit()

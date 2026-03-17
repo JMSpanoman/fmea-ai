@@ -2,13 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from schemas import component as component_schemas
 from crud import component as component_crud
 from crud import project as project_crud
 from typing import Union, List
 
-router = APIRouter(prefix="/projects/{project_id}/components", tags=["components"])
+router = APIRouter(prefix="/projects/{project_id}/components", tags=["components"], dependencies=[Depends(require_pro)])
 
 @router.get("", response_model=list[component_schemas.ComponentOut])
 def get_components(

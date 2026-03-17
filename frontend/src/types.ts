@@ -41,6 +41,14 @@ export interface FmeaRow {
   residual_rpn?: number; // Auto-calculated
   financial_impact?: number;
   ai_metadata?: Record<string, any>;
+  /** Risk Knowledge Base: link to hazard_library.id */
+  hazard_library_id?: string;
+  /** Risk Knowledge Base: link to harm_library.id */
+  harm_library_id?: string;
+  /** Risk Knowledge Base: link to risk_control_library.id */
+  risk_control_library_id?: string;
+  /** Risk Knowledge Base: link to verification_library.id */
+  verification_library_id?: string;
   version: number;
   created_at: string;
   updated_at?: string;
@@ -112,6 +120,65 @@ export interface VVTest {
   rationale?: string;
   ai_metadata?: Record<string, any>;
   created_at: string;
+}
+
+/** Request payload for generating V&V from an FMEA/risk row */
+export interface VVFromRiskGenerateRequest {
+  component: string;
+  failure_mode: string;
+  effect: string;
+  cause: string;
+  severity: number;
+  occurrence?: number;
+  probability?: number;
+  detection?: number;
+  mitigation?: string;
+  risk_control?: string;
+  residual_severity?: number | null;
+  residual_occurrence?: number | null;
+  residual_probability?: number | null;
+  residual_detection?: number | null;
+  residual_rpn?: number | null;
+}
+
+export interface VVFromRiskCalculationItem {
+  name: string;
+  formula: string;
+  description?: string | null;
+  inputs?: string[] | null;
+  unit_or_threshold?: string | null;
+}
+
+export interface VVFromRiskTraceability {
+  source_component: string;
+  source_failure_mode: string;
+  source_mitigation: string;
+  source_effect?: string | null;
+  source_cause?: string | null;
+  source_severity?: number | null;
+  source_occurrence?: number | null;
+  source_detection?: number | null;
+  source_rpn?: number | null;
+  source_residual_severity?: number | null;
+  source_residual_occurrence?: number | null;
+  source_residual_detection?: number | null;
+  source_residual_rpn?: number | null;
+}
+
+/** Response from POST /ai/vv/generate-from-risk */
+export interface VVFromRiskGenerateResponse {
+  verification_test_name: string;
+  verification_objective: string;
+  verification_method: string;
+  validation_test_name?: string | null;
+  validation_objective?: string | null;
+  validation_method_or_scenario?: string | null;
+  validation_scenario?: string | null;
+  acceptance_criteria: string[];
+  calculations: VVFromRiskCalculationItem[];
+  worst_case_conditions: string[];
+  sample_size_rationale?: string | null;
+  traceability: VVFromRiskTraceability;
 }
 
 export interface CAPA {

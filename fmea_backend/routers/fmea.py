@@ -2,12 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from schemas import fmea as fmea_schemas
 from crud import fmea as fmea_crud
 from crud import project as project_crud
 
-router = APIRouter(prefix="/projects/{project_id}/fmea", tags=["fmea"])
+router = APIRouter(prefix="/projects/{project_id}/fmea", tags=["fmea"], dependencies=[Depends(require_pro)])
 
 @router.get("", response_model=list[fmea_schemas.FMEARowOut])
 def get_fmea_rows(

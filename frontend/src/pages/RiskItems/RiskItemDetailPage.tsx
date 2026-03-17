@@ -45,6 +45,8 @@ import {
   RiskItemApprovalRequest,
   TraceLink,
 } from '../../api/riskItems';
+import { generateVVFromRisk } from '../../services/vvFromRiskApi';
+import { GenerateVVModal } from '../../components/VV/GenerateVVModal';
 
 type TabType = 'current' | 'controls' | 'traceability' | 'versions' | 'approval' | 'graph';
 
@@ -100,7 +102,11 @@ const RiskItemDetailPage: React.FC = () => {
     message: string;
     timestamp: Date;
   }>>([]);
-  
+  const [vvModalOpen, setVVModalOpen] = useState(false);
+  const [vvLoading, setVVLoading] = useState(false);
+  const [vvError, setVVError] = useState<string | null>(null);
+  const [vvData, setVVData] = useState<any>(null);
+
   const { addToast } = useToast();
   const finalProjectId = projectId || currentProject?.id || '';
 
@@ -491,6 +497,45 @@ const RiskItemDetailPage: React.FC = () => {
     }
   };
 
+  const openGenerateVV = async () => {
+    if (!riskItem) return;
+    const v = riskItem.current_version;
+    setVVModalOpen(true);
+    setVVError(null);
+    setVVData(null);
+    setVVLoading(true);
+    const payload = {
+      component: riskItem.title || 'Risk item',
+      failure_mode: v?.failure_mode || riskItem.description || '',
+      effect: v?.harm || v?.hazardous_situation || riskItem.description || '',
+      cause: v?.sequence_of_events || riskItem.description || '',
+      severity: v?.severity ?? riskItem.severity ?? 1,
+      probability: v?.probability ?? v?.occurrence ?? riskItem.probability ?? 1,
+      detection: v?.detection ?? 1,
+      mitigation: v?.control_measures_summary || v?.protective_measures || riskItem.mitigation_strategy || riskItem.control_measures || '',
+      residual_severity: v?.residual_severity ?? undefined,
+      residual_occurrence: v?.residual_probability_of_harm ?? v?.residual_occurrence ?? undefined,
+      residual_detection: v?.residual_detection ?? undefined,
+      residual_rpn: v?.residual_risk_score ?? undefined,
+    };
+    try {
+      const data = await generateVVFromRisk(payload);
+      setVVData(data);
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail;
+      const msg = typeof detail === 'string' ? detail : e?.message || 'Failed to generate V&V';
+      setVVError(msg);
+    } finally {
+      setVVLoading(false);
+    }
+  };
+
+  const closeVVModal = () => {
+    setVVModalOpen(false);
+    setVVData(null);
+    setVVError(null);
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -523,6 +568,13 @@ const RiskItemDetailPage: React.FC = () => {
         description={`Current Version: ${versionInfo}${approvedVersion ? ` | Approved: v${approvedVersion.version_number}` : ''}`}
         actions={
           <>
+            <Button
+              variant="ghost"
+              onClick={openGenerateVV}
+              title="Generate V&V test logic from this risk record"
+            >
+              🔬 Generate V&V
+            </Button>
             <Button
               variant="ghost"
               onClick={() => {
@@ -2027,6 +2079,17 @@ const RiskItemDetailPage: React.FC = () => {
           </p>
         </div>
       </Modal>
+
+      <GenerateVVModal
+        open={vvModalOpen}
+        onClose={closeVVModal}
+        data={vvData}
+        loading={vvLoading}
+        error={vvError}
+        onRetry={openGenerateVV}
+        projectId={finalProjectId || null}
+        riskItemId={riskItemId ?? null}
+      />
     </div>
   );
 };

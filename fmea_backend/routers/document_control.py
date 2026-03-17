@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from schemas import document as doc_schemas
 from crud import document as doc_crud
@@ -12,7 +13,7 @@ from datetime import datetime, timezone
 import io
 import csv
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["Document Control"])
+router = APIRouter(prefix="/projects/{project_id}", tags=["Document Control"], dependencies=[Depends(require_pro)])
 
 SYSTEM_COMPILED_START = "\n--- SYSTEM COMPILED SECTION START ---\n"
 SYSTEM_COMPILED_END = "\n--- SYSTEM COMPILED SECTION END ---\n"

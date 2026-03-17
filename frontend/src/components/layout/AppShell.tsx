@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useProject } from '../../contexts/ProjectContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { getFeatures, isProPlan } from '../../config/features';
 import { AiAssistantPanel } from '../ai/AiAssistantPanel';
 import GenerateDesignInputsModal from '../GenerateDesignInputsModal';
 import GenerateDesignOutputsModal from '../GenerateDesignOutputsModal';
@@ -19,6 +20,7 @@ interface NavItem {
   section: 'Project' | 'Documentation';
   kind: 'static' | 'doc_group';
   groupId?: string;
+  requiresPro?: boolean;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
@@ -37,6 +39,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const location = useLocation();
   const { currentProject } = useProject();
   const { user, logout } = useAuth();
+  const plan = user?.plan ?? 'lite';
+  const features = getFeatures(plan);
+  const isPro = isProPlan(plan);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showGenerateDesignInputsModal, setShowGenerateDesignInputsModal] = useState(false);
   const [showGenerateDesignOutputsModal, setShowGenerateDesignOutputsModal] = useState(false);
@@ -44,12 +49,12 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
   const navItems: NavItem[] = useMemo(() => {
     const projectItems: NavItem[] = [
-      { path: '/project-dashboard', label: 'Dashboard', icon: '📊', section: 'Project', kind: 'static' },
-      { path: '/projects', label: 'Projects', icon: '📁', section: 'Project', kind: 'static' },
-      { path: '/project-docs', label: 'Documents', icon: '📄', section: 'Project', kind: 'static' },
-      { path: '/traceability-matrix', label: 'Traceability', icon: '🔗', section: 'Project', kind: 'static' },
-      { path: '/export', label: 'Export', icon: '⬇️', section: 'Project', kind: 'static' },
-      { path: '/admin', label: 'History', icon: '🕒', section: 'Project', kind: 'static' }, // placeholder route
+      { path: '/project-dashboard', label: 'Dashboard', icon: '📊', section: 'Project', kind: 'static', requiresPro: true },
+      { path: '/projects', label: 'Projects', icon: '📁', section: 'Project', kind: 'static', requiresPro: true },
+      { path: '/project-docs', label: 'Documents', icon: '📄', section: 'Project', kind: 'static', requiresPro: true },
+      { path: '/traceability-matrix', label: 'Traceability', icon: '🔗', section: 'Project', kind: 'static', requiresPro: true },
+      { path: '/export', label: 'Export', icon: '⬇️', section: 'Project', kind: 'static', requiresPro: false }, // Lite has CSV export
+      { path: '/admin', label: 'History', icon: '🕒', section: 'Project', kind: 'static', requiresPro: true },
     ];
 
     const docItems: NavItem[] = docsGroups.map((g) => ({
@@ -59,10 +64,13 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       section: 'Documentation',
       kind: 'doc_group',
       groupId: g.id,
+      requiresPro: true,
     }));
 
-    return [...projectItems, ...docItems];
-  }, []);
+    const all = [...projectItems, ...docItems];
+    // Filter out Pro-only items for Lite users
+    return isPro ? all : all.filter((item) => !(item as { requiresPro?: boolean }).requiresPro);
+  }, [isPro]);
 
   const isActive = (path: string) => {
     if (path === '/') {
@@ -116,6 +124,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             <div className="flex items-center gap-2">
               <span className="text-2xl">✨</span>
               <span className="text-h3 font-bold text-gray-900">Smart Risk</span>
+              {!isPro && (
+                <span className="text-xs px-2 py-0.5 rounded bg-gray-200 text-gray-600 font-medium">Lite</span>
+              )}
             </div>
           )}
           <button
@@ -136,61 +147,60 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4">
-          {Object.entries(groupedNav).map(([section, items]) => (
-            <div key={section} className="mb-6">
-              {!sidebarCollapsed && (
-                <div className="px-4 mb-2">
-                  <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
-                    {section}
-                  </h3>
-                </div>
-              )}
-              {items.map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    const pid = currentProject?.id;
+          {Object.entries(groupedNav)
+            .filter(([, items]) => items.length > 0)
+            .map(([section, items]) => (
+              <div key={section} className="mb-6">
+                {!sidebarCollapsed && (
+                  <div className="px-4 mb-2">
+                    <h3 className="text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                      {section}
+                    </h3>
+                  </div>
+                )}
+                {items.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => {
+                      const pid = currentProject?.id;
 
-                    if (item.path === '/project-dashboard') {
-                      if (pid) navigate(`/projects/${pid}/dashboard`);
-                      else navigate('/');
-                      return;
-                    }
+                      if (item.path === '/project-dashboard') {
+                        if (pid) navigate(`/projects/${pid}/dashboard`);
+                        else navigate('/');
+                        return;
+                      }
 
-                    // Project section items
-                    if (item.path === '/project-docs') {
-                      if (pid) navigate(`/projects/${pid}/documents`);
-                      else navigate('/projects');
-                      return;
-                    }
+                      if (item.path === '/project-docs') {
+                        if (pid) navigate(`/projects/${pid}/documents`);
+                        else navigate('/projects');
+                        return;
+                      }
 
-                    // Documentation section group landing pages
-                    if (item.kind === 'doc_group') {
-                      if (pid && item.groupId) navigate(`/projects/${pid}/docs/${item.groupId}`);
-                      else navigate('/projects');
-                      return;
-                    }
+                      if (item.kind === 'doc_group') {
+                        if (pid && item.groupId) navigate(`/projects/${pid}/docs/${item.groupId}`);
+                        else navigate('/projects');
+                        return;
+                      }
 
-                    // Static pages
-                    navigate(item.path);
-                  }}
-                  className={`
-                    w-full flex items-center gap-3 px-4 py-2.5
-                    transition-smooth
-                    ${isActive(item.path)
-                      ? 'bg-primary/20 text-primary border-r-2 border-primary'
-                      : 'text-gray-900 hover:bg-gray-100 hover:text-gray-900'
-                    }
-                  `}
-                >
-                  <span className="text-lg">{item.icon}</span>
-                  {!sidebarCollapsed && (
-                    <span className="text-sm font-medium">{item.label}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          ))}
+                      navigate(item.path);
+                    }}
+                    className={`
+                      w-full flex items-center gap-3 px-4 py-2.5
+                      transition-smooth
+                      ${isActive(item.path)
+                        ? 'bg-primary/20 text-primary border-r-2 border-primary'
+                        : 'text-gray-900 hover:bg-gray-100 hover:text-gray-900'
+                      }
+                    `}
+                  >
+                    <span className="text-lg">{item.icon}</span>
+                    {!sidebarCollapsed && (
+                      <span className="text-sm font-medium">{item.label}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            ))}
         </nav>
       </aside>
 

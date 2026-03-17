@@ -31,6 +31,12 @@ from .audit_log_event import AuditLogEvent
 from .idempotency_request import IdempotencyRequest
 from .generated_artifact import GeneratedArtifact
 from .project_profile import ProjectProfile
+from .generated_vv import GeneratedVVRecord
+# Risk Knowledge Base libraries (reusable for FMEA, hazard analysis, risk controls)
+from .hazard_library import HazardLibrary
+from .harm_library import HarmLibrary
+from .risk_control_library import RiskControlLibrary
+from .verification_library import VerificationLibrary
 
 __all__ = [
     "Project", "FMEARow", "User", "Component", "FMEAVersion",  # Phase 1
@@ -38,5 +44,6 @@ __all__ = [
     "Document", "DocumentVersion", "TrainingRecord", "ChangeControl", "Audit",  # Phase 3
     "Supplier", "SupplierEvaluation", "NCR", "Complaint", "Equipment", "CalibrationRecord",
     "QualityEvent", "Approval", "RiskItem", "RiskItemVersion", "RiskControl", "RiskManagementPlan", "AIEvent",  # Phase 3 continued + Risk Items
-    "AuditLogEvent", "IdempotencyRequest", "GeneratedArtifact", "ProjectProfile"  # Handoff infrastructure + filesystem artifacts + Project setup wizard
+    "AuditLogEvent", "IdempotencyRequest", "GeneratedArtifact", "ProjectProfile", "GeneratedVVRecord",  # + generated V&V from risk
+    "HazardLibrary", "HarmLibrary", "RiskControlLibrary", "VerificationLibrary",  # Risk Knowledge Base
 ]

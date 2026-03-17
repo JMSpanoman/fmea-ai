@@ -563,6 +563,15 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 <span>Risk Management Report</span>
               </button>
               <button 
+                onClick={() => navigate('/libraries/hazards')}
+                className={`flex items-center w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                  location.pathname.startsWith('/libraries') ? 'bg-blue-600 text-white' : 'text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <i className="fa-solid fa-book w-4 h-4 mr-2"></i>
+                <span>Risk Knowledge Base (Libraries)</span>
+              </button>
+              <button 
                 onClick={() => navigate('/export')}
                 className={`flex items-center w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
                   isActiveRoute('/export') ? 'bg-blue-600 text-white' : 'text-gray-900 hover:bg-gray-100'

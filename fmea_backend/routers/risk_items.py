@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Header
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from schemas import risk_item as risk_item_schemas
 from crud import risk_item as risk_item_crud
@@ -27,7 +28,7 @@ from schemas.audit_log_event import AuditLogEventCreate
 from typing import List, Optional
 import uuid
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["Risk Items"])
+router = APIRouter(prefix="/projects/{project_id}", tags=["Risk Items"], dependencies=[Depends(require_pro)])
 
 @router.get("/risk-items", response_model=List[risk_item_schemas.RiskItemOut])
 def get_risk_items(

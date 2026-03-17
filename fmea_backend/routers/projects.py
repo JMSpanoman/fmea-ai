@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 import logging
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from schemas import project as project_schemas
 from crud import project as project_crud
@@ -14,7 +15,7 @@ router = APIRouter(prefix="/projects", tags=["projects"])
 @router.get("", response_model=list[project_schemas.ProjectOut])
 def get_projects(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_pro),
 ):
     """Get all projects for the current user"""
     projects = project_crud.get_projects_by_user(db, current_user.id)
@@ -24,7 +25,7 @@ def get_projects(
 def create_project(
     project: project_schemas.ProjectCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_pro),
 ):
     """Create a new project"""
     try:
@@ -58,7 +59,7 @@ def create_project(
 def get_project(
     project_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_pro),
 ):
     """Get a specific project"""
     project = project_crud.get_project(db, project_id, current_user.id)
@@ -71,7 +72,7 @@ def update_project(
     project_id: str,
     project: project_schemas.ProjectUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_pro),
 ):
     """Update a project (name/description). Enforces ownership by current_user."""
     updated = project_crud.update_project(db, project_id, project, current_user.id)
@@ -83,7 +84,7 @@ def update_project(
 def delete_project(
     project_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_pro),
 ):
     """Delete a project"""
     success = project_crud.delete_project(db, project_id, current_user.id)

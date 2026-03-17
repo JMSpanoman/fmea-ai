@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from crud import project as project_crud
 from business_logic import rmf_builder, rmf_renderer
@@ -10,7 +11,7 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 from datetime import datetime
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["Risk Management File"])
+router = APIRouter(prefix="/projects/{project_id}", tags=["Risk Management File"], dependencies=[Depends(require_pro)])
 
 class ComponentFilter(BaseModel):
     id: Optional[str] = None

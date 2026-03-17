@@ -2,13 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from schemas import ncr as ncr_schemas
 from crud import ncr_phase3 as ncr_crud
 from crud import project as project_crud
 from typing import List
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["NCR Phase 3"])
+router = APIRouter(prefix="/projects/{project_id}", tags=["NCR Phase 3"], dependencies=[Depends(require_pro)])
 
 @router.get("/ncrs", response_model=List[ncr_schemas.NCROut])
 def get_ncrs(

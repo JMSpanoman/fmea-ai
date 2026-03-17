@@ -126,6 +126,10 @@ export const fmeaApi = {
     residual_detection?: number;
     financial_impact?: number;
     ai_metadata?: Record<string, any>;
+    hazard_library_id?: string;
+    harm_library_id?: string;
+    risk_control_library_id?: string;
+    verification_library_id?: string;
   }): Promise<FmeaRow> =>
     apiRequest<FmeaRow>(`/projects/${projectId}/fmea`, {
       method: 'POST',

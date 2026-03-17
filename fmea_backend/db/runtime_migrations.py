@@ -50,3 +50,30 @@ def ensure_user_columns(engine: Engine) -> None:
 
         if not _has_column_sqlite(conn, "users", "created_at"):
             conn.execute(text("ALTER TABLE users ADD COLUMN created_at DATETIME"))
+
+        # SaaS plan tier: lite | pro (default lite for new users)
+        if not _has_column_sqlite(conn, "users", "plan"):
+            conn.execute(text("ALTER TABLE users ADD COLUMN plan VARCHAR DEFAULT 'lite'"))
+
+
+def ensure_library_reference_columns(engine: Engine) -> None:
+    """
+    Add Risk Knowledge Base library reference columns to fmea_rows and risk_item_versions
+    so FMEA and risk records can link to hazard, harm, risk_control, and verification libraries.
+    """
+    dialect = engine.dialect.name
+    if dialect != "sqlite":
+        return
+
+    lib_cols = [
+        "hazard_library_id",
+        "harm_library_id",
+        "risk_control_library_id",
+        "verification_library_id",
+    ]
+    with engine.begin() as conn:
+        for col in lib_cols:
+            if not _has_column_sqlite(conn, "fmea_rows", col):
+                conn.execute(text(f"ALTER TABLE fmea_rows ADD COLUMN {col} VARCHAR"))
+            if not _has_column_sqlite(conn, "risk_item_versions", col):
+                conn.execute(text(f"ALTER TABLE risk_item_versions ADD COLUMN {col} VARCHAR"))

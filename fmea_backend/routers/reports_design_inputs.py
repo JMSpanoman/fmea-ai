@@ -7,13 +7,14 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from database import get_db
 from models.user import User
 from crud import project as project_crud
 from business_logic import design_inputs_report_builder, design_inputs_report_renderer
 
 
-router = APIRouter(prefix="/projects/{project_id}/reports", tags=["Reports - Design Inputs"])
+router = APIRouter(prefix="/projects/{project_id}/reports", tags=["Reports - Design Inputs"], dependencies=[Depends(require_pro)])
 
 
 def _parse_components_param(components: Optional[str]) -> List[dict]:

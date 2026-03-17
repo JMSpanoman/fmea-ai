@@ -2,13 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from models.user import User
 from schemas import capa as capa_schemas
 from crud import capa as capa_crud
 from crud import project as project_crud
 from typing import List
 
-router = APIRouter(prefix="/projects/{project_id}", tags=["CAPA Phase 2"])
+router = APIRouter(prefix="/projects/{project_id}", tags=["CAPA Phase 2"], dependencies=[Depends(require_pro)])
 
 @router.get("/capas", response_model=List[capa_schemas.CAPAOut])
 def get_capas(
