@@ -45,7 +45,7 @@ const LoginNotifications: React.FC = () => {
       case 'admin':
         return 'bg-red-100 text-red-800';
       case 'manager':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-200 text-purple-800';
       case 'engineer':
         return 'bg-blue-100 text-blue-800';
       default:
@@ -100,8 +100,8 @@ const LoginNotifications: React.FC = () => {
             </div>
             <div className="text-sm text-green-800">Last 24 Hours</div>
           </div>
-          <div className="bg-purple-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-purple-600">
+          <div className="bg-purple-100 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-purple-700">
               {new Set(notifications.map(n => n.userEmail)).size}
             </div>
             <div className="text-sm text-purple-800">Unique Users</div>

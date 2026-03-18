@@ -282,7 +282,7 @@ const NonConformancePage: React.FC = () => {
                   onClick={() => setNonConformanceType(type.key)}
                   className={`py-2 px-1 border-b-2 font-medium text-sm ${
                     nonConformanceType === type.key
-                      ? 'border-purple-500 text-purple-600'
+                      ? 'border-purple-300 text-purple-700'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
@@ -302,7 +302,7 @@ const NonConformancePage: React.FC = () => {
             <textarea
               id="issueDescription"
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-300 focus:border-purple-300"
               placeholder="Describe the non-conformance issue in detail..."
               value={issueDescription}
               onChange={(e) => setIssueDescription(e.target.value)}
@@ -316,7 +316,7 @@ const NonConformancePage: React.FC = () => {
                 generateNonConformance();
               }}
               disabled={isGenerating}
-              className="bg-purple-600 text-white px-8 py-3 rounded-md font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              className="bg-purple-300 text-gray-900 px-8 py-3 rounded-md font-medium hover:bg-purple-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
               {isGenerating ? (
                 <>
@@ -341,7 +341,7 @@ const NonConformancePage: React.FC = () => {
                 <h3 className="text-lg font-medium text-gray-900">Non-Conformance Analysis Results</h3>
                 <div className="flex space-x-2">
                   <div className="relative group">
-                    <button className="bg-purple-600 text-white px-4 py-2 rounded-md font-medium hover:bg-purple-700 flex items-center">
+                    <button className="bg-purple-300 text-gray-900 px-4 py-2 rounded-md font-medium hover:bg-purple-400 flex items-center">
                       <i className="fa-solid fa-download mr-2"></i>
                       Export
                       <i className="fa-solid fa-chevron-down ml-2"></i>
@@ -373,7 +373,7 @@ const NonConformancePage: React.FC = () => {
                   </button>
                   <button
                     onClick={handleAddMoreRows}
-                    className="bg-purple-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-purple-700"
+                    className="bg-purple-300 text-gray-900 px-4 py-2 rounded-md text-sm font-medium hover:bg-purple-400"
                   >
                     Add More Rows
                   </button>
@@ -522,8 +522,8 @@ const NonConformancePage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                    <i className="fa-solid fa-exclamation-triangle text-purple-600"></i>
+                  <div className="w-8 h-8 bg-purple-200 rounded-full flex items-center justify-center">
+                    <i className="fa-solid fa-exclamation-triangle text-purple-700"></i>
                   </div>
                 </div>
                 <div className="ml-4">

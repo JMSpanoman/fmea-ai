@@ -96,7 +96,7 @@ const EmailManagement: React.FC = () => {
             >
               Save to PC
             </button>
-            <label className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors cursor-pointer">
+            <label className="bg-purple-300 text-gray-900 px-4 py-2 rounded-md hover:bg-purple-400 transition-colors cursor-pointer">
               Load from PC
               <input
                 type="file"

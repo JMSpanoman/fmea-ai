@@ -287,3 +287,5 @@ export const HazardGenerationRulesPage: React.FC = () => {
     </div>
   );
 };
+
+export default HazardGenerationRulesPage;

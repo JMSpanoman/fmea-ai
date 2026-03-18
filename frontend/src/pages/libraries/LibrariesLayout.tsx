@@ -20,7 +20,7 @@ export const LibrariesLayout: React.FC = () => {
             className={({ isActive }) =>
               `px-4 py-2 rounded-lg text-sm font-medium transition-smooth ${
                 isActive
-                  ? 'bg-primary text-white'
+                  ? 'bg-primary text-gray-900'
                   : 'text-text-secondary hover:bg-surface-secondary hover:text-text-primary'
               }`
             }

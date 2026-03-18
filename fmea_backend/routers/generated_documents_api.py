@@ -16,8 +16,9 @@ from models.generated_document import GeneratedDocument
 from models.device import Device
 from crud import project as project_crud
 
+# Prefix /generated-documents (Vite proxy strips /api)
 router = APIRouter(
-    prefix="/api/generated-documents",
+    prefix="/generated-documents",
     tags=["Generated Documents API"],
     dependencies=[Depends(require_pro)],
 )

@@ -83,6 +83,11 @@ import DeviceHazardAnalysisPage from './pages/DeviceRisk/DeviceHazardAnalysisPag
 import DeviceRiskTraceabilityPage from './pages/DeviceRisk/DeviceRiskTraceabilityPage';
 import DeviceResidualRiskPage from './pages/DeviceRisk/DeviceResidualRiskPage';
 import DeviceReportPage from './pages/DeviceRisk/DeviceReportPage';
+import DevicesListPage from './pages/Devices/DevicesListPage';
+import DeviceDetailPage from './pages/Devices/DeviceDetailPage';
+import DeviceComponentsPage from './pages/Devices/DeviceComponentsPage';
+import DeviceComponentDetailPage from './pages/Devices/DeviceComponentDetailPage';
+import DeviceRiskItemsPage from './pages/DeviceRisk/DeviceRiskItemsPage';
 
 function App() {
   return (
@@ -141,10 +146,14 @@ function App() {
                     <Route path=":projectId/components/:componentId" element={<ComponentDetailPage />} />
                     <Route path=":projectId/risk-outputs" element={<ProjectRiskOutputsPage />} />
                   </Route>
-                  {/* Device-scoped risk outputs */}
+                  {/* Devices: list, detail, components, risk outputs */}
                   <Route path="/devices" element={<ProRoute />}>
+                    <Route index element={<DevicesListPage />} />
                     <Route path=":id" element={<DeviceRiskLayout />}>
-                      <Route index element={<Navigate to="fmea" replace />} />
+                      <Route index element={<DeviceDetailPage />} />
+                      <Route path="components" element={<DeviceComponentsPage />} />
+                      <Route path="components/:componentId" element={<DeviceComponentDetailPage />} />
+                      <Route path="risk-items" element={<DeviceRiskItemsPage />} />
                       <Route path="fmea" element={<DeviceFmeaPage />} />
                       <Route path="hazard-analysis" element={<DeviceHazardAnalysisPage />} />
                       <Route path="risk-traceability" element={<DeviceRiskTraceabilityPage />} />

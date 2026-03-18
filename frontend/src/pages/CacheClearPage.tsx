@@ -136,7 +136,7 @@ const CacheClearPage: React.FC = () => {
               <button
                 onClick={() => handleClearCache({ localStorage: true }, 'Clear Local Storage')}
                 disabled={isClearing}
-                className="w-full px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 font-medium"
+                className="w-full px-4 py-3 bg-purple-300 text-gray-900 rounded-lg hover:bg-purple-400 disabled:opacity-50 font-medium"
               >
                 💾 Clear Local Storage
               </button>
@@ -144,7 +144,7 @@ const CacheClearPage: React.FC = () => {
               <button
                 onClick={() => handleClearCache({ sessionStorage: true }, 'Clear Session Storage')}
                 disabled={isClearing}
-                className="w-full px-4 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-50 font-medium"
+                className="w-full px-4 py-3 bg-purple-300 text-gray-900 rounded-lg hover:bg-purple-400 disabled:opacity-50 font-medium"
               >
                 🗂️ Clear Session Storage
               </button>

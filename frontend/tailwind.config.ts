@@ -17,8 +17,8 @@ export default {
           secondary: '#111827',
         },
         primary: {
-          DEFAULT: '#6366F1',
-          hover: '#818CF8',
+          DEFAULT: '#C4B5FD',   // light purple (readable with dark text)
+          hover: '#A78BFA',
         },
         success: '#22C55E',
         danger: '#EF4444',
@@ -47,7 +47,7 @@ export default {
       },
       boxShadow: {
         'elevated': '0 10px 30px rgba(15, 23, 42, 0.8)',
-        'glow': '0 0 20px rgba(99, 102, 241, 0.3)',
+        'glow': '0 0 20px rgba(196, 181, 253, 0.4)',
       },
       backdropBlur: {
         'glass': '10px',

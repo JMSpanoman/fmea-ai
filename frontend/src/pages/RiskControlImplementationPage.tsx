@@ -357,7 +357,7 @@ const RiskControlImplementationPage: React.FC = () => {
                 </button>
                 <button
                   onClick={handleExportData}
-                  className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700"
+                  className="bg-purple-300 text-gray-900 px-4 py-2 rounded-md hover:bg-purple-400"
                 >
                   <i className="fa-solid fa-download mr-2"></i>
                   Export Data

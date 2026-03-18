@@ -104,7 +104,7 @@ const CapaTable: React.FC<CapaTableProps> = ({ capas }) => {
                 <td className="p-3 border text-gray-600">{capa.dueDate}</td>
                 <td className="p-3 border">
                   {capa.fmeaLink ? (
-                    <span className="px-2 py-1 text-xs rounded bg-purple-100 text-purple-800">{capa.fmeaLink}</span>
+                    <span className="px-2 py-1 text-xs rounded bg-purple-200 text-purple-800">{capa.fmeaLink}</span>
                   ) : (
                     <span className="text-gray-400">-</span>
                   )}
@@ -180,7 +180,7 @@ const CapaTable: React.FC<CapaTableProps> = ({ capas }) => {
                     {capa.fmeaLink && (
                       <div>
                         <h5 className="font-medium text-gray-700 mb-1">FMEA Link</h5>
-                        <span className="px-2 py-1 text-xs rounded bg-purple-100 text-purple-800">{capa.fmeaLink}</span>
+                        <span className="px-2 py-1 text-xs rounded bg-purple-200 text-purple-800">{capa.fmeaLink}</span>
                       </div>
                     )}
                     {capa.riskControlsUpdate && (

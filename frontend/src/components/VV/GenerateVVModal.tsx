@@ -188,7 +188,7 @@ export function GenerateVVModal({
                 <button
                   type="button"
                   onClick={onRetry}
-                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+                  className="px-4 py-2 bg-primary text-gray-900 rounded-md hover:bg-primary/90"
                 >
                   Retry
                 </button>
@@ -290,7 +290,7 @@ export function GenerateVVModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 bg-primary text-white rounded-md text-sm hover:bg-primary/90"
+                className="px-4 py-2 bg-primary text-gray-900 rounded-md text-sm hover:bg-primary/90"
               >
                 Close
               </button>

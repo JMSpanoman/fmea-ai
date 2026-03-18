@@ -63,6 +63,18 @@ export const componentsApi = {
       method: 'POST',
       body: JSON.stringify(components),
     }),
+  generateRiskSuggestions: (
+    projectId: string,
+    componentId: string,
+    options?: { regenerate?: boolean; only_active_rules?: boolean }
+  ): Promise<{ created: number }> =>
+    apiRequest<{ created: number }>(
+      `/projects/${projectId}/components/${componentId}/generate-risk-suggestions`,
+      {
+        method: 'POST',
+        body: JSON.stringify(options ?? { regenerate: true, only_active_rules: true }),
+      }
+    ),
 };
 
 // Project Setup Wizard API

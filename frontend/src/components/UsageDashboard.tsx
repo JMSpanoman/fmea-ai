@@ -134,8 +134,8 @@ const UsageDashboard: React.FC = () => {
             </div>
             <div className="text-sm text-green-800">Admin Users</div>
           </div>
-          <div className="bg-purple-50 p-4 rounded-lg text-center">
-            <div className="text-2xl font-bold text-purple-600">
+          <div className="bg-purple-100 p-4 rounded-lg text-center">
+            <div className="text-2xl font-bold text-purple-700">
               {userSummaries.reduce((sum, u) => sum + u.todayGenerations, 0)}
             </div>
             <div className="text-sm text-purple-800">Today's Generations</div>

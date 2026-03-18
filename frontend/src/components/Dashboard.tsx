@@ -155,10 +155,10 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>
                 {/* AI Recommendations Widget */}
-                <div id="ai-widget" className="bg-white rounded-lg shadow p-4 border-l-4 border-indigo-500">
+                <div id="ai-widget" className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-300">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="text-sm font-semibold text-gray-500">AI RECOMMENDATIONS</h3>
-                    <span className="text-indigo-500 text-xs font-medium px-2 py-0.5 bg-indigo-50 rounded-full">7 new</span>
+                    <span className="text-purple-700 text-xs font-medium px-2 py-0.5 bg-purple-100 rounded-full">7 new</span>
                   </div>
                   <div className="flex items-end">
                     <span className="text-3xl font-bold">15</span>
@@ -318,14 +318,14 @@ const Dashboard: React.FC = () => {
                   </div>
                   
                   {/* AI Risk Insights */}
-                  <div className="mt-4 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                  <div className="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-4">
                     <div className="flex items-start">
-                      <div className="flex-shrink-0 bg-indigo-100 rounded-full p-2 mr-3">
-                        <i className="fa-solid fa-robot text-indigo-600 text-sm"></i>
+                      <div className="flex-shrink-0 bg-purple-200 rounded-full p-2 mr-3">
+                        <i className="fa-solid fa-robot text-purple-700 text-sm"></i>
                       </div>
                       <div>
-                        <h4 className="text-sm font-semibold text-indigo-900 mb-2">AI Risk Analysis Insights</h4>
-                        <div className="space-y-2 text-xs text-indigo-800">
+                        <h4 className="text-sm font-semibold text-purple-800 mb-2">AI Risk Analysis Insights</h4>
+                        <div className="space-y-2 text-xs text-purple-800">
                           <p><strong>Trend:</strong> Power management risks increased 23% this quarter, correlating with 3 new CAPA reports.</p>
                           <p><strong>Recommendation:</strong> Implement enhanced thermal monitoring for Power Management IC (FM-002).</p>
                           <p><strong>Prediction:</strong> Battery life sensor failures expected to decrease 15% after current mitigation implementation.</p>
@@ -419,7 +419,7 @@ const Dashboard: React.FC = () => {
             <section id="risk-matrix" className="px-6 mb-8">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center">
-                  <i className="fa-solid fa-table-cells text-2xl text-purple-600 mr-3"></i>
+                  <i className="fa-solid fa-table-cells text-2xl text-purple-700 mr-3"></i>
                   <h2 className="text-xl font-bold">5x5 Risk Matrix</h2>
                 </div>
                 <div className="flex space-x-3">

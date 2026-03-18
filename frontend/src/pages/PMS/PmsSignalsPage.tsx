@@ -414,7 +414,7 @@ const PmsSignalsPage: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleLinkToRisk(signal)}
-                          className="text-purple-600 hover:text-purple-800"
+                          className="text-purple-700 hover:text-purple-800"
                         >
                           Link Risk
                         </button>

@@ -408,7 +408,7 @@ const FaultTreeReportPage: React.FC = () => {
                 </button>
                 <button
                   onClick={handleExport}
-                  className="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
+                  className="px-6 py-3 bg-purple-300 text-gray-900 rounded-lg hover:bg-purple-400 transition-colors"
                 >
                   📊 Export Data
                 </button>

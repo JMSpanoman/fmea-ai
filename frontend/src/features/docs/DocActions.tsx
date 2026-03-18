@@ -52,7 +52,7 @@ export function DocActions({
         <button
           onClick={onGenerate}
           disabled={generating}
-          className={`px-3 py-2 rounded-md text-sm text-white ${
+          className={`px-3 py-2 rounded-md text-sm text-gray-900 ${
             generating ? 'bg-primary/50 cursor-not-allowed' : 'bg-primary hover:bg-primary/90'
           }`}
         >

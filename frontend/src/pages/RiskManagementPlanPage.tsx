@@ -109,7 +109,7 @@ const RiskManagementPlanPage: React.FC = () => {
           Couldn’t auto-open the Risk Management Plan. Use the Project Dashboard to open it.
         </p>
         <button
-          className="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+          className="mt-4 bg-purple-300 text-gray-900 px-4 py-2 rounded-md hover:bg-purple-400"
           onClick={() => navigate(`/projects/${currentProject.id}/dashboard`)}
         >
           Go to Project Dashboard

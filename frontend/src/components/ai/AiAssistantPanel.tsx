@@ -119,7 +119,7 @@ export const AiAssistantPanel: React.FC<AiAssistantPanelProps> = ({
                 className={`
                   max-w-[80%] px-4 py-2 rounded-lg
                   ${message.role === 'user'
-                    ? 'bg-primary text-white'
+                    ? 'bg-primary text-gray-900'
                     : 'bg-surface-secondary text-text-primary border border-border'
                   }
                 `}

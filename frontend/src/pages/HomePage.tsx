@@ -91,7 +91,7 @@ const HomePage: React.FC = () => {
       </div>
       
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-8 mb-8">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-100 rounded-lg p-8 mb-8">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             {isProjectSelected ? `Ready to work on ${currentProject?.name}` : 'Get Started Today'}
@@ -119,7 +119,7 @@ const HomePage: React.FC = () => {
               disabled={!isProjectSelected}
               className={`px-6 py-3 rounded-lg transition-colors ${
                 isProjectSelected
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                  ? 'bg-purple-300 text-gray-900 hover:bg-purple-400'
                   : 'bg-gray-400 text-gray-200 cursor-not-allowed'
               }`}
             >
@@ -196,8 +196,8 @@ const HomePage: React.FC = () => {
             isProjectSelected ? 'hover:shadow-lg' : 'opacity-75'
           }`}>
             <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
-                <i className="fa-solid fa-arrows-rotate text-purple-600 text-xl"></i>
+              <div className="w-12 h-12 bg-purple-200 rounded-lg flex items-center justify-center mr-4">
+                <i className="fa-solid fa-arrows-rotate text-purple-700 text-xl"></i>
               </div>
               <h3 className="text-lg font-semibold text-gray-900">Change Control</h3>
             </div>
@@ -209,7 +209,7 @@ const HomePage: React.FC = () => {
               disabled={!isProjectSelected}
               className={`font-medium ${
                 isProjectSelected
-                  ? 'text-purple-600 hover:text-purple-700'
+                  ? 'text-purple-700 hover:text-purple-800'
                   : 'text-gray-400 cursor-not-allowed'
               }`}
             >
@@ -232,7 +232,7 @@ const HomePage: React.FC = () => {
                 <div className="text-sm text-gray-600">CAPA Records</div>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">0</div>
+                <div className="text-2xl font-bold text-purple-700">0</div>
                 <div className="text-sm text-gray-600">Change Controls</div>
               </div>
             </div>

@@ -449,3 +449,5 @@ export const DeviceArchitecturePage: React.FC = () => {
     </div>
   );
 };
+
+export default DeviceArchitecturePage;

@@ -78,7 +78,7 @@ export function DocumentRow({
         <div className="mt-1 flex items-center gap-3 text-xs text-gray-600">
           <StatusPill status={status} />
           {tag ? (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-200 text-purple-800">
               {tag}
             </span>
           ) : null}

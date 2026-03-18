@@ -55,7 +55,7 @@ export function ProGate({ plan: planProp, children, redirectLiteTo, message }: P
         </p>
         <button
           onClick={() => navigate('/dfmea')}
-          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
+          className="px-4 py-2 bg-primary text-gray-900 rounded-lg hover:bg-primary/90 transition"
         >
           Back to FMEA
         </button>

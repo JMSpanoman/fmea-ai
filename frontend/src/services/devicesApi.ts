@@ -75,7 +75,52 @@ export interface GenerateReportResponse {
   created_at: string;
 }
 
+export interface DeviceRecord {
+  id: string;
+  project_id: string;
+  name: string;
+  description: string;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface DeviceComponentRecord {
+  id: string;
+  project_id: string;
+  component_name: string;
+  component_type: string;
+  critical_to_essential_performance: string;
+  risk_items_count?: number;
+  /** Detail only: attributes from tags (e.g. patient_contact, software_controlled) */
+  attributes?: Record<string, unknown>;
+  /** Detail only: list of function names or descriptors */
+  functions?: unknown[];
+  /** Detail only: list of interface names or descriptors */
+  interfaces?: unknown[];
+}
+
+export interface CreateDevicePayload {
+  project_id: string;
+  name?: string;
+  description?: string;
+}
+
 export const devicesApi = {
+  listDevices: () =>
+    api.get<DeviceRecord[]>('/devices').then((r) => r.data),
+
+  createDevice: (payload: CreateDevicePayload) =>
+    api.post<DeviceRecord>('/devices', payload).then((r) => r.data),
+
+  getDevice: (deviceId: string) =>
+    api.get<DeviceRecord>(`/devices/${deviceId}`).then((r) => r.data),
+
+  getDeviceComponents: (deviceId: string) =>
+    api.get<DeviceComponentRecord[]>(`/devices/${deviceId}/components`).then((r) => r.data),
+
+  getDeviceComponent: (deviceId: string, componentId: string) =>
+    api.get<DeviceComponentRecord>(`/devices/${deviceId}/components/${componentId}`).then((r) => r.data),
+
   getFmea: (deviceId: string) =>
     api.get<{ rows: FmeaRow[] }>(`/devices/${deviceId}/fmea`).then((r) => r.data.rows),
 

@@ -149,7 +149,7 @@ const PostMarket: React.FC = () => {
               </button>
               <button 
                 onClick={() => handleExport('word')}
-                className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="bg-purple-300 text-gray-900 px-4 py-2 rounded-md hover:bg-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-300"
               >
                 Export Word
               </button>

@@ -37,7 +37,7 @@ const WelcomePage: React.FC = () => {
       title: 'Change Control',
       description: 'Manage design and process changes with comprehensive approval workflows.',
       icon: 'fa-solid fa-arrows-rotate',
-      color: 'bg-purple-500',
+      color: 'bg-purple-300',
       action: 'Manage Changes →',
       path: '/change-control'
     },
@@ -61,7 +61,7 @@ const WelcomePage: React.FC = () => {
       title: 'Post-Market',
       description: 'Monitor and analyze post-market surveillance data and trends.',
       icon: 'fa-solid fa-chart-bar',
-      color: 'bg-indigo-500',
+      color: 'bg-purple-300',
       action: 'Market Data →',
       path: '/post-market'
     }
@@ -171,7 +171,7 @@ const WelcomePage: React.FC = () => {
               <div className="text-gray-600">Powered Analysis</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600 mb-2">FDA</div>
+              <div className="text-3xl font-bold text-purple-700 mb-2">FDA</div>
               <div className="text-gray-600">Compliant</div>
             </div>
             <div className="text-center">
@@ -200,7 +200,7 @@ const WelcomePage: React.FC = () => {
             </button>
             <button
               onClick={() => navigate('/change-control')}
-              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              className="bg-purple-300 text-gray-900 px-6 py-3 rounded-lg hover:bg-purple-400 transition-colors font-medium"
             >
               Manage Changes
             </button>

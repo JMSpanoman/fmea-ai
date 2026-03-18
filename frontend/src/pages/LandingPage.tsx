@@ -85,6 +85,13 @@ export default function LandingPage() {
     })();
   }, [clearCurrentProject, currentProject?.id, isPro, navigate, setCurrentProject]);
 
-  return null;
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-surface-primary">
+      <div className="flex flex-col items-center gap-3">
+        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+        <p className="text-text-secondary text-sm">Loading…</p>
+      </div>
+    </div>
+  );
 }
 

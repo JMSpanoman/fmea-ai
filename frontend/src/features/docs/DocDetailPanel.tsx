@@ -180,7 +180,7 @@ export function DocDetailPanel({
                   if (inst.backendDocId) navigate(`/projects/${state.projectId}/documents/${inst.backendDocId}`);
                   else navigate(`/projects/${state.projectId}/documents`);
                 }}
-                className="px-3 py-2 rounded-md text-sm bg-primary text-white hover:bg-primary/90"
+                className="px-3 py-2 rounded-md text-sm bg-primary text-gray-900 hover:bg-primary/90"
                 type="button"
               >
                 {inst.backendDocId ? 'Open in Project' : 'Create in Project'}
@@ -253,7 +253,7 @@ export function DocDetailPanel({
                     if (inst.backendDocId) navigate(`/projects/${state.projectId}/documents/${inst.backendDocId}`);
                     else navigate(`/projects/${state.projectId}/documents`);
                   }}
-                  className="px-4 py-2 rounded-md text-sm bg-primary text-white hover:bg-primary/90"
+                  className="px-4 py-2 rounded-md text-sm bg-primary text-gray-900 hover:bg-primary/90"
                   type="button"
                 >
                   {inst.backendDocId ? 'Open in Project' : 'Create in Project'}

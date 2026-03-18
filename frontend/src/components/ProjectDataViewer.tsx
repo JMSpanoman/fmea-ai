@@ -596,7 +596,7 @@ const ProjectDataViewer: React.FC<ProjectDataViewerProps> = ({ selectedProject, 
           )}
           {nonConformanceData.length > 0 && (
             <div className="relative group">
-              <button className="bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700 flex items-center">
+              <button className="bg-purple-300 text-gray-900 px-3 py-1 rounded text-sm hover:bg-purple-400 flex items-center">
                 <i className="fa-solid fa-download mr-1"></i>
                 Export NC
                 <i className="fa-solid fa-chevron-down ml-1"></i>
@@ -672,7 +672,7 @@ const ProjectDataViewer: React.FC<ProjectDataViewerProps> = ({ selectedProject, 
                 <div className="text-sm text-gray-600">CAPA Items</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{nonConformanceData.length}</div>
+                <div className="text-2xl font-bold text-purple-700">{nonConformanceData.length}</div>
                 <div className="text-sm text-gray-600">Non-Conformances</div>
               </div>
               <div className="text-center">

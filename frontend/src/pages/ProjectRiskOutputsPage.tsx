@@ -119,7 +119,7 @@ export default function ProjectRiskOutputsPage() {
             onClick={() => setActiveTab(id)}
             className={`px-4 py-2 rounded-lg text-sm font-medium ${
               activeTab === id
-                ? 'bg-primary text-white'
+                ? 'bg-primary text-gray-900'
                 : 'bg-surface-secondary text-text-secondary hover:bg-surface-secondary/80'
             }`}
           >

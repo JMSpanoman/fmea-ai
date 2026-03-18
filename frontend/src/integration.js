@@ -258,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p class="text-lg font-medium">No FMEA entries yet</p>
                         <p class="text-sm mb-4">This project is ready for your first FMEA analysis</p>
                         <div class="flex space-x-3">
-                            <button class="bg-primary-600 text-white hover:bg-primary-700 px-4 py-2 rounded text-sm flex items-center" onclick="addNewFMEARow()">
+                            <button class="bg-purple-300 text-gray-900 hover:bg-purple-400 px-4 py-2 rounded text-sm flex items-center" onclick="addNewFMEARow()">
                                 <i class="fa-solid fa-plus mr-2"></i>
                                 Add First Entry
                             </button>

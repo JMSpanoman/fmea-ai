@@ -238,7 +238,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               className={`
                 px-4 py-2 rounded-button text-sm font-medium transition-smooth
                 ${showAiPanel
-                  ? 'bg-primary text-white'
+                  ? 'bg-primary text-gray-900'
                   : 'bg-white text-gray-900 hover:bg-sky-100'
                 }
               `}
@@ -252,7 +252,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-smooth"
               >
-                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-sm font-medium">
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-gray-900 text-sm font-medium">
                   {user?.email?.substring(0, 2).toUpperCase() || 'U'}
                 </div>
                 {user?.email && (

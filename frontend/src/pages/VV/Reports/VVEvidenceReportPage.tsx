@@ -272,7 +272,7 @@ const VVEvidenceReportPage: React.FC = () => {
             {loading ? 'Generating…' : 'Generate Preview'}
           </button>
           <button
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
+            className="bg-purple-300 text-gray-900 px-4 py-2 rounded-md hover:bg-purple-400 disabled:bg-gray-400"
             onClick={exportHtml}
             disabled={!data || loading}
             title={!data ? 'Generate preview first' : 'Export HTML'}
