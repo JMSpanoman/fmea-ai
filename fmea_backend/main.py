@@ -85,7 +85,7 @@ from routers import document_guidance
 from routers import traceability_impact
 from routers import risk_knowledge_base
 from routers import device_architecture, hazard_generation_rules, project_risk_outputs
-from routers import devices_api, generated_documents_api
+from routers import devices_api, generated_documents_api, risk_acceptability_criteria_api
 
 
 
@@ -125,6 +125,8 @@ async def lifespan(app: FastAPI):
     from database import engine, Base
     # Import all models to ensure they're registered
     from models import user, project, fmea, component, project_profile as _project_profile, risk_item, risk_item_version, risk_control, approval, trace_link, ai_event, audit_log_event, design_input, design_output, vv_test, risk_management_plan, pms_signal, generated_artifact, hazard_library, harm_library, risk_control_library, verification_library, device_architecture as _device_architecture, hazard_generation_rule as _hazard_generation_rule, suggested_risk_analysis as _suggested_risk_analysis, device as _device, project_risk_item as _project_risk_item, project_risk_control as _project_risk_control, project_verification as _project_verification
+    from models.hazard_analysis_item import HazardAnalysisItem  # noqa: F401 - register table
+    from models.risk_acceptability_criteria import RiskAcceptabilityCriteria, OrganizationRiskCriteriaConfig, ProjectRiskCriteriaOverride  # noqa: F401 - register tables
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables initialized")
 
@@ -245,6 +247,8 @@ app.include_router(project_risk_outputs.router)
 # Device-scoped risk outputs and generated documents (API)
 app.include_router(devices_api.router)
 app.include_router(generated_documents_api.router)
+app.include_router(risk_acceptability_criteria_api.router)
+app.include_router(risk_acceptability_criteria_api.router_org)
 
 # Legacy routers (for backward compatibility - can be removed later)
 app.include_router(ai.router, prefix="/fmea", tags=["AI (Legacy)"])

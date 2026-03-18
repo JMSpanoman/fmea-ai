@@ -1,6 +1,7 @@
 """
 Business Logic for Residual Risk Evaluation Evidence Builder
-Builds residual risk evaluation data from SmartQS risk_item_versions
+Builds residual risk evaluation data from SmartQS risk_item_versions.
+Produces evidence for a complete, audit-ready Residual Risk Evaluation report (ISO 14971).
 """
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
@@ -9,8 +10,21 @@ from models.risk_item_version import RiskItemVersion
 from models.approval import Approval
 from models.component import Component
 from models.risk_management_plan import RiskManagementPlan
+from models.project_profile import ProjectProfile
 from sqlalchemy import or_
 import json
+
+
+def _initial_risk_level(score: Optional[int], thresholds: Dict[str, Any]) -> str:
+    """Classify initial risk score as High, Medium, or Low for summary distribution."""
+    if score is None:
+        return "Unknown"
+    for level in ["Critical", "High", "Medium", "Low"]:
+        t = thresholds.get(level, {})
+        lo, hi = t.get("min", 0), t.get("max", 100)
+        if lo <= score <= hi:
+            return level
+    return "Unknown"
 
 def get_acceptability_thresholds(
     db: Session,
@@ -216,42 +230,142 @@ def build_residual_risk_evidence(
                     "version_no": version.version_number
                 })
             
+            # Initial risk (pre-control)
+            initial_severity = version.severity
+            initial_probability = version.probability_of_harm
+            initial_risk_score = version.risk_score
+            if initial_risk_score is None and initial_severity is not None and initial_probability is not None:
+                initial_risk_score = initial_severity * initial_probability
+            initial_risk_level = _initial_risk_level(initial_risk_score, thresholds)
+            hazard_text = (version.hazard or "").strip() or (version.harm or "").strip() or "Hazard (see Hazard Analysis)"
+            controls_parts = []
+            if (version.inherent_safety or "").strip():
+                controls_parts.append(version.inherent_safety.strip())
+            if (version.protective_measures or "").strip():
+                controls_parts.append(version.protective_measures.strip())
+            if (version.information_for_safety or "").strip():
+                controls_parts.append(version.information_for_safety.strip())
+            controls_summary = " | ".join(controls_parts) if controls_parts else "See risk control documentation"
+            residual_risk_display = (
+                f"S{residual_severity or '—'} × P{residual_probability or '—'} = {residual_risk_score or '—'}"
+                if (residual_severity is not None or residual_probability is not None or residual_risk_score is not None)
+                else "—"
+            )
+
             # Determine residual acceptability
-            # Check if stored (we don't have a residual_risk_acceptability field, so we'll infer)
-            residual_acceptability_stored = None  # If you add this field later, check it here
+            residual_acceptability_stored = getattr(version, "risk_acceptability", None)
             acceptability_source = "inferred"
-            
             if residual_acceptability_stored:
                 residual_acceptability = residual_acceptability_stored
                 acceptability_source = "stored"
             else:
-                # Infer from thresholds
                 level, value = infer_residual_acceptability(residual_risk_score, thresholds)
                 residual_acceptability = value
                 acceptability_source = "inferred"
-            
+
             row = {
                 "risk_item_id": risk_item.id,
                 "risk_key": risk_item.risk_key or f"R-{risk_item.id[:8]}",
                 "version_id": version.id,
                 "version_no": version.version_number,
                 "component_name": component_name,
+                "hazard": hazard_text,
+                "initial_severity": initial_severity,
+                "initial_probability": initial_probability,
+                "initial_risk_score": initial_risk_score,
+                "initial_risk_level": initial_risk_level,
+                "controls_summary": controls_summary,
+                "inherent_safety": (version.inherent_safety or "").strip() or None,
+                "protective_measures": (version.protective_measures or "").strip() or None,
+                "information_for_safety": (version.information_for_safety or "").strip() or None,
                 "residual_severity": residual_severity,
                 "residual_probability_of_harm": residual_probability,
                 "residual_risk_score": residual_risk_score,
+                "residual_risk_display": residual_risk_display,
                 "residual_acceptability": residual_acceptability,
                 "acceptability_source": acceptability_source,
                 "approved": approval is not None,
                 "approved_at": approval.timestamp.isoformat() if approval and approval.timestamp else None,
                 "approved_by": approval.approver_id if approval else None,
-                "is_current": version.id == (current_version.id if current_version else None)
+                "is_current": version.id == (current_version.id if current_version else None),
             }
-            
             residual_risk_rows.append(row)
             versions_included += 1
-    
+
+    # Project profile for device context
+    profile = db.query(ProjectProfile).filter(ProjectProfile.project_id == project_id).first()
+    profile_data = {}
+    if profile:
+        profile_data = {
+            "device_description": (profile.device_description or "").strip() or None,
+            "intended_use": (profile.intended_use or "").strip() or None,
+            "user_population": (profile.user_population or "").strip() or None,
+            "use_environment": (profile.use_environment or "").strip() or None,
+        }
+
+    # Pre-control summary
+    hazard_count = len(residual_risk_rows)
+    initial_high = sum(1 for r in residual_risk_rows if r.get("initial_risk_level") in ("Critical", "High"))
+    initial_medium = sum(1 for r in residual_risk_rows if r.get("initial_risk_level") == "Medium")
+    initial_low = sum(1 for r in residual_risk_rows if r.get("initial_risk_level") == "Low")
+    initial_unknown = sum(1 for r in residual_risk_rows if r.get("initial_risk_level") not in ("Critical", "High", "Medium", "Low"))
+    sorted_by_initial = sorted(
+        [r for r in residual_risk_rows if r.get("initial_risk_score") is not None],
+        key=lambda x: (x.get("initial_risk_score") or 0),
+        reverse=True,
+    )
+    highest_risks = sorted_by_initial[:5]
+    pre_control_summary = {
+        "number_of_hazards": hazard_count,
+        "initial_risk_distribution": {
+            "high": initial_high,
+            "medium": initial_medium,
+            "low": initial_low,
+            "unknown": initial_unknown,
+        },
+        "highest_risks": [
+            {"risk_key": r.get("risk_key"), "hazard": (r.get("hazard") or "")[:80], "initial_score": r.get("initial_risk_score"), "initial_level": r.get("initial_risk_level")}
+            for r in highest_risks
+        ],
+        "methodology": "Risk estimation uses severity of harm (1–5 or 1–10) and probability of occurrence of harm. Risk score = severity × probability. Thresholds align with project Risk Acceptability Criteria (ISO 14971).",
+    }
+
+    # Risk control measures implemented (aggregated)
+    design_controls = []
+    protective_list = []
+    information_safety = []
+    for r in residual_risk_rows:
+        if r.get("inherent_safety"):
+            design_controls.append(r["inherent_safety"])
+        if r.get("protective_measures"):
+            protective_list.append(r["protective_measures"])
+        if r.get("information_for_safety"):
+            information_safety.append(r["information_for_safety"])
+    risk_control_measures = {
+        "design_controls": list(dict.fromkeys(design_controls)),
+        "protective_measures": list(dict.fromkeys(protective_list)),
+        "information_for_safety": list(dict.fromkeys(information_safety)),
+        "linked_to_risk_reduction": True,
+    }
+
+    # Post-control (residual) summary
+    res_high = sum(1 for r in residual_risk_rows if (r.get("residual_risk_score") or 0) >= 20)
+    res_medium = sum(1 for r in residual_risk_rows if 8 <= (r.get("residual_risk_score") or 0) < 20)
+    res_low = sum(1 for r in residual_risk_rows if (r.get("residual_risk_score") or 0) < 8 and r.get("residual_risk_score") is not None)
+    res_unknown = sum(1 for r in residual_risk_rows if r.get("residual_risk_score") is None)
+    remaining_significant = [r for r in residual_risk_rows if (r.get("residual_risk_score") or 0) >= 12]
+    post_control_summary = {
+        "residual_risk_distribution": {"high": res_high, "medium": res_medium, "low": res_low, "unknown": res_unknown},
+        "effectiveness_narrative": f"After application of risk controls, {len(residual_risk_rows) - len(remaining_significant)} of {len(residual_risk_rows)} risks were reduced to acceptable or ALARP levels." if residual_risk_rows else "No risk data to evaluate.",
+        "remaining_significant_risks": [
+            {"risk_key": r.get("risk_key"), "hazard": (r.get("hazard") or "")[:60], "residual_score": r.get("residual_risk_score"), "acceptability": r.get("residual_acceptability")}
+            for r in remaining_significant[:10]
+        ],
+    }
+
     return {
         "project_id": project_id,
+        "project_name": None,
         "components": component_filter or [],
         "version_scope": version_scope,
         "include_unapproved": include_unapproved,
@@ -260,7 +374,11 @@ def build_residual_risk_evidence(
         "missing_field_list": missing_field_list,
         "counts": {
             "versions_included": versions_included,
-            "missing_residual_fields": missing_residual_fields
-        }
+            "missing_residual_fields": missing_residual_fields,
+        },
+        "profile": profile_data,
+        "pre_control_summary": pre_control_summary,
+        "risk_control_measures": risk_control_measures,
+        "post_control_summary": post_control_summary,
     }
 

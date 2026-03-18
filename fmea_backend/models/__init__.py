@@ -44,6 +44,12 @@ from .project_risk_item import ProjectRiskItem
 from .project_risk_control import ProjectRiskControl
 from .project_verification import ProjectVerification
 from .hazard_generation_rule import HazardGenerationRule
+from .hazard_analysis_item import HazardAnalysisItem
+from .risk_acceptability_criteria import (
+    RiskAcceptabilityCriteria,
+    OrganizationRiskCriteriaConfig,
+    ProjectRiskCriteriaOverride,
+)
 from . import suggested_risk_analysis
 from .suggested_risk_analysis import (
     RiskAnalysisSuggestionSet,
@@ -66,6 +72,10 @@ __all__ = [
     "DeviceArchitecture", "DeviceArchitectureNode", "DeviceInterface",  # SmartRisk device architecture
     "Device", "GeneratedDocument", "ProjectRiskItem", "ProjectRiskControl", "ProjectVerification",  # Project risk items, controls, verifications
     "HazardGenerationRule",  # SmartRisk hazard generation rules (Phase 2)
+    "HazardAnalysisItem",  # ISO 14971 full hazard analysis items
+    "RiskAcceptabilityCriteria",
+    "OrganizationRiskCriteriaConfig",
+    "ProjectRiskCriteriaOverride",
     "RiskAnalysisSuggestionSet",
     "SuggestedFailureMode",
     "SuggestedHazardRow",

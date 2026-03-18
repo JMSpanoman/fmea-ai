@@ -154,7 +154,7 @@ export function DocDetailPanel({
         </div>
 
         {/* Registry explanation + "where it lives" link (for key doc types) */}
-        {['rmp', 'hazard_analysis', 'fmea', 'rmf', 'traceability_matrix'].includes(docType.id) ? (
+        {['rmp', 'risk_acceptability_criteria', 'hazard_analysis', 'fmea', 'rmf', 'traceability_matrix'].includes(docType.id) ? (
           <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
             <div className="text-sm font-semibold text-gray-900">What this is</div>
             <div className="text-sm text-gray-700 mt-1">
@@ -173,6 +173,15 @@ export function DocDetailPanel({
                   type="button"
                 >
                   Generate FMEA Rows (Project)
+                </button>
+              ) : null}
+              {docType.id === 'risk_acceptability_criteria' ? (
+                <button
+                  onClick={() => navigate(`/projects/${state.projectId}/risk-acceptability-criteria`)}
+                  className="px-3 py-2 rounded-md text-sm border border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100"
+                  type="button"
+                >
+                  Open Risk Acceptability Report
                 </button>
               ) : null}
               <button
@@ -217,7 +226,7 @@ export function DocDetailPanel({
 
       <div className="p-4 flex-1 overflow-y-auto">
         <div className="grid grid-cols-1 gap-4">
-          {['rmp', 'hazard_analysis', 'fmea', 'rmf', 'traceability_matrix'].includes(docType.id) ? (
+          {['rmp', 'risk_acceptability_criteria', 'hazard_analysis', 'fmea', 'rmf', 'traceability_matrix'].includes(docType.id) ? (
             <div className="rounded-lg border border-gray-200 bg-white p-4">
               <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider">What it includes</div>
               <div className="mt-2">

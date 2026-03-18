@@ -9,7 +9,9 @@ import {
   ComponentFilter,
   HazardAnalysisGenerateRequest,
   HazardAnalysisRow,
-  Project
+  Project,
+  syncHazardAnalysisFromFmea,
+  fillGapsHazardAnalysisItem
 } from '../services/apiService';
 import api from '../axios';
 
@@ -39,6 +41,12 @@ const HazardAnalysisPage: React.FC = () => {
   const [creatingNew, setCreatingNew] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string>('');
+  // Filters and expandable row
+  const [filterApproval, setFilterApproval] = useState<string>('');
+  const [filterHazardCategory, setFilterHazardCategory] = useState<string>('');
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+  const [syncingFmea, setSyncingFmea] = useState(false);
+  const [fillGapsId, setFillGapsId] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentProject?.id) {
@@ -413,46 +421,130 @@ const HazardAnalysisPage: React.FC = () => {
         </div>
       )}
 
+      {/* Sync from FMEA */}
+      <div className="bg-gray-200 rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Hazard Analysis Items</h2>
+        <p className="text-sm text-gray-600 mb-4">Sync from FMEA to prefill hazard analysis items, or generate preview from risk data.</p>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={async () => {
+              if (!currentProject?.id) return;
+              setSyncingFmea(true);
+              try {
+                const res = await syncHazardAnalysisFromFmea(currentProject.id);
+                setError(null);
+                alert(`Created ${res.created} hazard analysis item(s) from ${res.fmea_rows_processed} FMEA row(s).`);
+                handleGeneratePreview();
+              } catch (e: any) {
+                setError(e.response?.data?.detail || e.message || 'Sync failed');
+              } finally {
+                setSyncingFmea(false);
+              }
+            }}
+            disabled={syncingFmea || !currentProject?.id}
+            className="px-4 py-2 bg-purple-300 text-gray-900 rounded-md hover:bg-purple-400 disabled:opacity-50"
+          >
+            {syncingFmea ? 'Syncing...' : 'Sync from FMEA'}
+          </button>
+        </div>
+      </div>
+
       {/* Preview Table */}
       {previewData.length > 0 && (
         <div className="bg-gray-200 rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Preview Table</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase w-8"></th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Component</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Risk Key</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Version</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hazard</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hazardous Situation</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Harm</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Failure Mode</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Init S/P</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Residual</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                {previewData.map((row, index) => (
-                  <tr key={index}>
-                    <td className="px-4 py-3 text-sm text-gray-900">{row.risk_key}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{row.version_no}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{row.hazard || 'N/A'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{row.hazardous_situation || 'N/A'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-900">{row.harm || 'N/A'}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        row.approved 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {row.approved ? 'Approved' : 'Draft'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">AI</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {previewData.map((row, index) => {
+                  const rowId = (row as any).id || `row-${row.risk_key}-${row.version_no}-${index}`;
+                  const isExpanded = expandedRowId === rowId;
+                  return (
+                    <React.Fragment key={rowId}>
+                      <tr
+                        className={isExpanded ? 'bg-gray-50' : ''}
+                        onClick={() => setExpandedRowId(isExpanded ? null : rowId)}
+                      >
+                        <td className="px-2 py-2 text-gray-500">{isExpanded ? '▼' : '▶'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{row.component_name}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{row.risk_key}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{(row as any).hazard_category || '—'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 max-w-[200px] truncate" title={row.hazard || ''}>{row.hazard || '—'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 max-w-[160px] truncate" title={row.failure_mode || ''}>{row.failure_mode || '—'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{(row as any).initial_severity ?? '—'}/{(row as any).initial_probability ?? '—'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{(row as any).residual_risk_level || (row as any).residual_risk_acceptability || '—'}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            row.approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {(row as any).approval_status || (row.approved ? 'Approved' : 'Draft')}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {(row as any).ai_generated && (
+                            <span className="px-2 py-0.5 rounded bg-purple-100 text-purple-800 text-xs" title="AI-generated">
+                              AI {(row as any).ai_confidence || ''}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={10} className="px-4 py-4 bg-gray-50 border-b border-gray-200 text-sm">
+                            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-gray-700">
+                              <div><span className="font-medium">Sequence of events:</span> {(row as any).foreseeable_sequence_of_events || row.sequence_of_events || '—'}</div>
+                              <div><span className="font-medium">Hazardous situation:</span> {row.hazardous_situation || '—'}</div>
+                              <div><span className="font-medium">Harm:</span> {row.harm || '—'}</div>
+                              <div><span className="font-medium">Cause:</span> {(row as any).cause_of_failure || '—'}</div>
+                              <div><span className="font-medium">Risk controls:</span> {Array.isArray((row as any).risk_control_measures) ? (row as any).risk_control_measures.join('; ') : '—'}</div>
+                              <div><span className="font-medium">Traceability:</span> {[].concat((row as any).verification_reference || [], (row as any).validation_reference || []).join('; ') || '—'}</div>
+                            </div>
+                            {(row as any).id && !row.approved && (
+                              <div className="mt-3">
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (!currentProject?.id || !(row as any).id) return;
+                                    setFillGapsId((row as any).id);
+                                    try {
+                                      await fillGapsHazardAnalysisItem(currentProject.id, (row as any).id);
+                                      handleGeneratePreview();
+                                    } finally {
+                                      setFillGapsId(null);
+                                    }
+                                  }}
+                                  disabled={fillGapsId !== null}
+                                  className="px-3 py-1 rounded bg-purple-300 text-gray-900 text-xs hover:bg-purple-400 disabled:opacity-50"
+                                >
+                                  {fillGapsId === (row as any).id ? 'Filling...' : 'Fill gaps with AI'}
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
+      )}
 
       <div className="flex gap-4">
         <button

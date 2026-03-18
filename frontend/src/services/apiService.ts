@@ -447,20 +447,50 @@ export interface HazardAnalysisGenerateResponse {
 }
 
 export interface HazardAnalysisRow {
-  risk_item_id: string;
+  id?: string;
+  risk_item_id?: string;
+  risk_item_version_id?: string;
   risk_key: string;
-  version_id: string;
+  version_id?: string;
   version_no: number;
   component_name: string;
+  hazard_category?: string | null;
   hazard: string | null;
+  foreseeable_sequence_of_events?: string | null;
   hazardous_situation: string | null;
   harm: string | null;
-  sequence_of_events: string | null;
+  sequence_of_events?: string | null;
+  affected_user?: string | null;
   failure_mode: string | null;
+  cause_of_failure?: string | null;
+  clinical_effect?: string | null;
+  operating_mode?: string | null;
+  use_environment?: string | null;
+  initial_severity?: number | null;
+  initial_probability?: number | null;
+  initial_risk_level?: string | null;
+  risk_control_measures?: string[] | null;
+  risk_control_type?: string[] | null;
+  control_implementation_notes?: string | null;
+  residual_severity?: number | null;
+  residual_probability?: number | null;
+  residual_risk_level?: string | null;
+  residual_risk_acceptability?: string | null;
+  related_design_input?: string[] | null;
+  related_design_output?: string[] | null;
+  verification_reference?: string[] | null;
+  validation_reference?: string[] | null;
+  requirement_ids?: string[] | null;
+  approval_status?: string | null;
   approved: boolean;
   approved_at: string | null;
   approved_by: string | null;
-  is_current: boolean;
+  reviewer_comments?: string | null;
+  ai_generated?: boolean | null;
+  ai_confidence?: string | null;
+  source_context?: string | null;
+  assumptions?: string[] | null;
+  is_current?: boolean;
 }
 
 // Hazard Analysis API methods
@@ -510,13 +540,59 @@ export const getHazardAnalysisData = async (
     if (components) params.append('components', components);
     params.append('version_scope', versionScope);
     params.append('include_unapproved', includeUnapproved.toString());
-    
     const response = await api.get(`/projects/${projectId}/hazard-analysis/data?${params.toString()}`);
     return response.data;
   } catch (error: any) {
     console.error('Error getting Hazard Analysis data:', error);
     throw error;
   }
+};
+
+// Hazard Analysis Items (full ISO 14971 schema)
+export const listHazardAnalysisItems = async (
+  projectId: string,
+  params?: { component_id?: string; approval_status?: string; hazard_category?: string; include_draft?: boolean }
+): Promise<HazardAnalysisRow[]> => {
+  const q = new URLSearchParams();
+  if (params?.component_id) q.append('component_id', params.component_id);
+  if (params?.approval_status) q.append('approval_status', params.approval_status);
+  if (params?.hazard_category) q.append('hazard_category', params.hazard_category);
+  if (params?.include_draft === false) q.append('include_draft', 'false');
+  const response = await api.get(`/projects/${projectId}/hazard-analysis/items?${q.toString()}`);
+  return response.data;
+};
+
+export const createHazardAnalysisItem = async (
+  projectId: string,
+  payload: { project_id: string; component_id?: string; risk_key?: string; hazard?: string; failure_mode?: string; [key: string]: any }
+): Promise<{ id: string; project_id: string; risk_key: string }> => {
+  const response = await api.post(`/projects/${projectId}/hazard-analysis/items`, { ...payload, project_id: projectId });
+  return response.data;
+};
+
+export const fillGapsHazardAnalysisItem = async (
+  projectId: string,
+  itemId: string
+): Promise<{ id: string; ai_confidence: string }> => {
+  const response = await api.post(`/projects/${projectId}/hazard-analysis/items/${itemId}/fill-gaps`);
+  return response.data;
+};
+
+export const syncHazardAnalysisFromFmea = async (
+  projectId: string,
+  componentId?: string
+): Promise<{ project_id: string; created: number; fmea_rows_processed: number }> => {
+  const q = componentId ? `?component_id=${encodeURIComponent(componentId)}` : '';
+  const response = await api.post(`/projects/${projectId}/hazard-analysis/items/sync-from-fmea${q}`);
+  return response.data;
+};
+
+export const approveHazardAnalysisItem = async (
+  projectId: string,
+  itemId: string
+): Promise<{ id: string; approval_status: string }> => {
+  const response = await api.post(`/projects/${projectId}/hazard-analysis/items/${itemId}/approve`);
+  return response.data;
 };
 
 // Residual Risk Evaluation Types and API

@@ -131,20 +131,26 @@ def get_document_ai_prompt_registry() -> Dict[str, Dict[str, Any]]:
         },
         "benefit_risk_analysis": {
             "purpose": (
-                "Benefit-Risk Analysis (ISO 14971): document the structured rationale comparing expected clinical benefits "
-                "to residual risks, considering state-of-the-art alternatives and post-market information."
+                "Benefit–Risk Analysis Report (ISO 14971): structured evaluation of whether overall residual risks "
+                "are acceptable when weighed against anticipated clinical benefits."
             ),
             "required_sections": [
-                "Executive summary (draft)",
-                "Intended use & clinical context",
-                "Clinical benefits (magnitude / probability / duration) — evidence summary (placeholders)",
-                "Risk analysis & residual risks — evidence snapshot",
-                "State-of-the-art & alternatives — comparison (placeholders)",
-                "Post-market surveillance (PMS) summary (if available)",
-                "Usability / non-clinical evidence summary (if available)",
-                "Benefit-risk conclusion framework (no compliance claims; decision owner TBD)",
-                "Traceability (links to CER / Risk Management artifacts)",
-                "Open items / data needed",
+                "1. Document Information (project, device, RMF reference, version, date, author/reviewer/approver)",
+                "2. Purpose",
+                "3. Scope",
+                "4. Reference Documents",
+                "5. Device Overview (5.1 Device Description, 5.2 Intended Use, 5.3 Target Population)",
+                "6. Summary of Residual Risks (6.1 Summary, 6.2 Top Residual Risks table, 6.3 Risk Control Effectiveness, 6.4 Overall Residual Risk Statement)",
+                "7. Anticipated Clinical Benefits (7.1 Primary, 7.2 Secondary, 7.3 Quantification, 7.4 Time to Benefit)",
+                "8. Benefit–Risk Comparison (8.1 Qualitative table, 8.2 Quantitative if applicable, 8.3 Key Considerations)",
+                "9. State of the Art Comparison (9.1 Existing Alternatives, 9.2 Comparison table, 9.3 No-Treatment Scenario)",
+                "10. Target Population Considerations (10.1 High-Risk Subpopulations, 10.2 Use Limitations)",
+                "11. Uncertainty and Data Gaps",
+                "12. Post-Market Surveillance Plan (12.1 Monitoring, 12.2 PMCF, 12.3 Reassessment Triggers)",
+                "13. Overall Benefit–Risk Conclusion (13.1 Statement of Acceptability, 13.2 Conditions, 13.3 Determination Basis)",
+                "14. Traceability table",
+                "15. Approval table",
+                "16. Revision History table",
             ],
             "constraints": base_constraints
             + [
@@ -153,8 +159,8 @@ def get_document_ai_prompt_registry() -> Dict[str, Dict[str, Any]]:
                 "Keep conclusions conditional (e.g., 'If the CER confirms X, then…').",
             ],
             "style": [
-                "Use clear headings and short paragraphs.",
-                "Include small tables for: benefits, top residual risks, and alternatives comparison (placeholders allowed).",
+                "Use clear headings and short paragraphs matching the 16-section template.",
+                "Include tables: Top Residual Risks (Hazard, Sequence of Events, Harm, Severity, Probability, Risk Control Measures, Residual Risk); Qualitative Comparison; State of the Art; Traceability; Approval; Revision History.",
                 "Explicitly label any missing evidence as TBD / Not provided.",
             ],
         },

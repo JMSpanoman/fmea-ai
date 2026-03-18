@@ -745,7 +745,13 @@ def _update_hazard_analysis_document_if_empty(db: Session, *, project_id: str) -
         version_scope="current",
         include_unapproved=True,
     )
-    rendered_html = hazard_analysis_renderer.render_hazard_analysis_html(evidence, project_name)
+    from models.project_profile import ProjectProfile
+    profile = db.query(ProjectProfile).filter(ProjectProfile.project_id == project_id).first()
+    device_name = getattr(profile, "device_description", None) if profile else None
+    intended_use = getattr(profile, "intended_use", None) if profile else None
+    rendered_html = hazard_analysis_renderer.render_hazard_analysis_html(
+        evidence, project_name, device_name=device_name, intended_use=intended_use
+    )
 
     # Update document content (this creates a new version if content changes)
     from schemas.document import DocumentUpdate

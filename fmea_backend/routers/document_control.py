@@ -11,6 +11,7 @@ from typing import List, Optional
 from fastapi.responses import HTMLResponse, Response
 from datetime import datetime, timezone
 import io
+import json
 import csv
 
 router = APIRouter(prefix="/projects/{project_id}", tags=["Document Control"], dependencies=[Depends(require_pro)])
@@ -262,6 +263,7 @@ def generate_document_version(
         rendered_html, _ready = compile_rmf(db, project_id=project_id, project_name=project.name)
     elif doc_type == "hazard_analysis":
         from business_logic import hazard_analysis_builder, hazard_analysis_renderer
+        from models.project_profile import ProjectProfile
         evidence = hazard_analysis_builder.build_hazard_analysis(
             db=db,
             project_id=project_id,
@@ -269,7 +271,12 @@ def generate_document_version(
             version_scope=version_scope,
             include_unapproved=bool(options.get("include_unapproved", False)),
         )
-        rendered_html = hazard_analysis_renderer.render_hazard_analysis_html(evidence, project.name)
+        profile = db.query(ProjectProfile).filter(ProjectProfile.project_id == project_id).first()
+        device_name = getattr(profile, "device_description", None) if profile else None
+        intended_use = getattr(profile, "intended_use", None) if profile else None
+        rendered_html = hazard_analysis_renderer.render_hazard_analysis_html(
+            evidence, project.name, device_name=device_name, intended_use=intended_use
+        )
     elif doc_type == "residual_risk":
         from business_logic import residual_risk_builder, residual_risk_renderer
         evidence = residual_risk_builder.build_residual_risk_evidence(
@@ -476,6 +483,43 @@ def generate_document_version(
             component_filter=component_filter,
         )
         rendered_html = design_outputs_doc_renderer.render_design_outputs_doc_html(evidence)
+    elif doc_type == "risk_acceptability_criteria":
+        from services.risk_acceptability_criteria_service import build_report
+        from business_logic.risk_acceptability_criteria_renderer import render_risk_acceptability_criteria_html
+        from models.project_profile import ProjectProfile
+        from models.risk_acceptability_criteria import RiskAcceptabilityCriteria
+
+        profile = db.query(ProjectProfile).filter(ProjectProfile.project_id == project_id).first()
+        report = build_report(
+            db,
+            project_id=project_id,
+            project_name=project.name,
+            profile=profile,
+            generated_by=str(current_user.id) if current_user else None,
+            include_ai_narrative=bool(options.get("use_ai", False)),
+        )
+        rendered_html = render_risk_acceptability_criteria_html(report)
+        stored_content = rendered_html  # document content = HTML for viewing; full JSON in RiskAcceptabilityCriteria
+        # Persist to RiskAcceptabilityCriteria for versioning and API
+        latest = (
+            db.query(RiskAcceptabilityCriteria)
+            .filter(RiskAcceptabilityCriteria.project_id == project_id)
+            .order_by(RiskAcceptabilityCriteria.generated_at.desc())
+            .first()
+        )
+        next_version = (latest.version + 1) if latest else 1
+        rac = RiskAcceptabilityCriteria(
+            project_id=project_id,
+            version=next_version,
+            status="draft",
+            title=f"Risk Acceptability Criteria — {project.name}",
+            content_json=json.dumps(report, default=str),
+            content_html=rendered_html,
+            source_metadata=report.get("source_metadata"),
+            generated_by=str(current_user.id) if current_user else None,
+        )
+        db.add(rac)
+        db.commit()
     elif doc_type in {"essential_requirements_checklist", "submission_index", "audit_package"}:
         # Compile-only documents: links/status only, no compliance claims, do not overwrite user-authored content.
         from services.regulatory_audit_compiler import (

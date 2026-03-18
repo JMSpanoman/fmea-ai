@@ -161,18 +161,17 @@ def _default_ai_draft_fn(doc_type: str, context: str, meta: Dict[str, Any]) -> s
                 for rl in risk_lines:
                     kv = _parse_kv(rl)
                     hazard = kv.get("hazard", "") or "TBD"
+                    cause = kv.get("cause", "") or ""
                     fm = kv.get("failure_mode", "") or "TBD"
                     eff = kv.get("effect", "") or "TBD"
                     comp = kv.get("component", "") or "—"
-                    rrpn = kv.get("residual_rpn", "") or kv.get("residual rpn", "") or ""
-                    rpn = kv.get("rpn", "") or ""
-                    desc = f"{comp}: {fm}. {eff}"
-                    if rpn or rrpn:
-                        desc += f" (rpn={rpn or '—'} residual_rpn={rrpn or '—'})"
-                    md_rows.append(f"| {hazard} | {desc} | TBD | TBD |")
+                    seq = cause or f"{comp}: {fm}"
+                    mit = kv.get("mitigation", "") or "TBD"
+                    rrpn = kv.get("residual_rpn", "") or kv.get("residual rpn", "") or "TBD"
+                    md_rows.append(f"| {hazard} | {seq} | {eff} | TBD | TBD | {mit} | {rrpn} |")
                 residual_risk_rows_md = "\n".join(md_rows)
             else:
-                residual_risk_rows_md = "| TBD | TBD | TBD | TBD |"
+                residual_risk_rows_md = "| TBD | TBD | TBD | TBD | TBD | TBD | TBD |"
 
             mitigations: list[str] = []
             for rl in risk_lines:
@@ -185,82 +184,225 @@ def _default_ai_draft_fn(doc_type: str, context: str, meta: Dict[str, Any]) -> s
             mitigation_bullets = "\n".join([f"- {m}" for m in mitigations]) if mitigations else "- TBD (derive from FMEA mitigations and risk controls)"
 
             return f"""# Benefit–Risk Analysis Report
-## {project_name}
 
-## 1. Document Control
-| Item | Description |
-|---|---|
-| Device Name | {project_name} |
-| Device Classification | TBD |
-| Intended Use | {intended_use} |
-| Applicable Regulations | ISO 14971:2019; 21 CFR 820 (TBD add others as applicable) |
-| Report Type | Benefit–Risk Analysis |
-| Lifecycle Phase | TBD |
-| Date | (Sample) |
-| Prepared By | TBD |
-| Approved By | TBD |
+## 1. Document Information
 
-## 2. Purpose of the Benefit–Risk Analysis
-This draft provides a structured Benefit–Risk Analysis framework (ISO 14971 benefit–risk). It **does not** claim conclusions.
-Populate with objective evidence from Clinical Evaluation (CER), Risk Management outputs, and post-market information.
+- Project Name: {project_name}
+- Project ID: (TBD)
+- Device Name: {project_name}
+- Device Description: {device_description}
+- Intended Use / Indications: {intended_use}
+- Risk Management File Reference: (TBD)
+- Version: 0.1
+- Date: (TBD)
+- Author(s): (TBD)
+- Reviewer(s): (TBD)
+- Approver(s): (TBD)
 
-## 3. Device Description (Summary)
+---
+
+## 2. Purpose
+
+This document provides a structured evaluation of whether the **overall residual risks** associated with the device are acceptable when weighed against the **anticipated clinical benefits**, in accordance with ISO 14971. This draft **does not** claim conclusions; populate with objective evidence from CER, Risk Management outputs, and post-market information.
+
+---
+
+## 3. Scope
+
+This analysis applies to:
+- Final design configuration of the device
+- Approved risk management documentation
+- Intended use population
+
+---
+
+## 4. Reference Documents
+
+- Risk Management Plan
+- Hazard Analysis / FMEA
+- Risk Control Measures Documentation
+- Residual Risk Evaluation Report
+- Clinical Evaluation Report (CER) / Literature Review
+- Usability Engineering File (if applicable)
+- Post-Market Surveillance Plan
+
+---
+
+## 5. Device Overview
+
+### 5.1 Device Description
 {device_description}
 
-**Use environment:** {use_env}  
-**Target user/patient population:** {user_pop}
+### 5.2 Intended Use
+{intended_use}
 
-## 4. Clinical Condition and Unmet Medical Need
-### 4.1 Target Condition
-TBD
+### 5.3 Target Population
+{user_pop}
 
-### 4.2 Severity of Condition
-TBD
+**Use environment:** {use_env}
 
-### 4.3 Existing Treatment Options / Alternatives (State-of-the-Art)
-TBD
-
-## 5. Identified Benefits
-| Benefit | Description | Clinical Relevance |
-|---|---|---|
-| TBD | TBD | TBD |
+---
 
 ## 6. Summary of Residual Risks
-| Hazard | Residual Risk Description | Severity | Probability |
-|---|---|---|---|
+
+### 6.1 Residual Risk Evaluation Summary
+(TBD — summarize results of residual risk assessment)
+
+### 6.2 Top Residual Risks
+
+| Hazard | Sequence of Events | Harm | Severity | Probability | Risk Control Measures | Residual Risk |
+|--------|------------------|------|----------|------------|----------------------|---------------|
 {residual_risk_rows_md}
 
-## 7. Risk Control Measures Implemented
+### 6.3 Risk Control Effectiveness
 From available project evidence (best-effort, draft):
 {mitigation_bullets}
 
-Additional controls to summarize (TBD):
-- Inherent safety by design (TBD)
-- Protective measures (TBD)
-- Information for safety (labeling/IFU/training) (TBD)
+- Design controls: (TBD)
+- Protective measures: (TBD)
+- Information for safety: (TBD)
 
-## 8. Benefit–Risk Evaluation
-### 8.1 ISO 14971 Perspective
-TBD (state conditional rationale and identify missing evidence).
+### 6.4 Overall Residual Risk Statement
+(TBD — state whether individual residual risks are acceptable per criteria)
 
-### 8.2 FDA Benefit–Risk Factors
-| FDA Factor | Assessment |
-|---|---|
-| Severity of Condition | TBD |
-| Magnitude of Benefit | TBD |
-| Probability of Benefit | TBD |
-| Duration of Benefit | TBD |
-| Residual Risk Level | TBD |
-| Risk Mitigation | TBD |
+---
 
-## 9. Overall Benefit–Risk Conclusion
-TBD (conditional: if CER confirms benefits and residual risks remain acceptable, benefit–risk may be favorable; list open items).
+## 7. Anticipated Clinical Benefits
 
-## 10. References
-- ISO 14971:2019 — Medical devices — Application of risk management
-- FDA Guidance: *Factors to Consider When Making Benefit-Risk Determinations in Medical Device Premarket Approval and De Novo Classifications* (add version/date)
-- 21 CFR Part 820 — Quality System Regulation
-- Other standards (TBD if applicable)
+### 7.1 Primary Clinical Benefits
+(TBD — list key intended clinical outcomes)
+
+### 7.2 Secondary Benefits
+(TBD — quality of life, efficiency, etc.)
+
+### 7.3 Quantification of Benefits
+- Clinical outcomes: (TBD)
+- Performance metrics: (TBD)
+- Literature references: (TBD)
+
+### 7.4 Time to Benefit
+(TBD)
+
+---
+
+## 8. Benefit–Risk Comparison
+
+### 8.1 Qualitative Comparison
+
+| Category | Benefits | Risks |
+|----------|--------|------|
+| Severity | (TBD) | (TBD) |
+| Probability | (TBD) | (TBD) |
+| Duration | (TBD) | (TBD) |
+| Reversibility | (TBD) | (TBD) |
+
+### 8.2 Quantitative Comparison (if applicable)
+(TBD — optional scoring or modeling)
+
+### 8.3 Key Considerations
+- Severity of condition being treated: (TBD)
+- Availability of alternatives: (TBD)
+- Clinical necessity: (TBD)
+
+---
+
+## 9. State of the Art Comparison
+
+### 9.1 Existing Alternatives
+(TBD — list comparable devices or treatments)
+
+### 9.2 Comparison to Current Standard of Care
+
+| Aspect | Current Standard | This Device |
+|--------|----------------|------------|
+| Effectiveness | (TBD) | (TBD) |
+| Risk Profile | (TBD) | (TBD) |
+| Usability | (TBD) | (TBD) |
+
+### 9.3 No-Treatment Scenario
+(TBD)
+
+---
+
+## 10. Target Population Considerations
+
+### 10.1 High-Risk Subpopulations
+- Elderly: (TBD)
+- Pediatric: (TBD)
+- Patients with comorbidities: (TBD)
+
+### 10.2 Use Limitations
+(TBD — contraindications, warnings, precautions)
+
+---
+
+## 11. Uncertainty and Data Gaps
+
+- Known limitations of data: (TBD)
+- Assumptions made: (TBD)
+- Areas requiring further evidence: (TBD)
+
+---
+
+## 12. Post-Market Surveillance Plan
+
+### 12.1 Monitoring Activities
+- Complaint handling
+- Trending
+- Adverse event reporting
+
+### 12.2 PMCF Activities (if applicable)
+(TBD)
+
+### 12.3 Reassessment Triggers
+- New hazards identified
+- Increased complaint rates
+- Regulatory updates
+
+---
+
+## 13. Overall Benefit–Risk Conclusion
+
+### 13.1 Statement of Acceptability
+(TBD — explicit statement required. Example: "The overall residual risks are considered acceptable when weighed against the anticipated clinical benefits for the intended use population.")
+
+### 13.2 Conditions of Acceptability
+(TBD)
+
+### 13.3 Risk–Benefit Determination Basis
+- Clinical data: (TBD)
+- Risk analysis: (TBD)
+- State of the art: (TBD)
+
+---
+
+## 14. Traceability
+
+| Element | Source Document |
+|--------|----------------|
+| Hazards | Hazard Analysis |
+| Risk Controls | Risk Management File |
+| Residual Risks | Residual Risk Evaluation |
+| Clinical Benefits | Clinical Evaluation |
+| Conclusions | This Report |
+
+---
+
+## 15. Approval
+
+| Role | Name | Signature | Date |
+|------|------|----------|------|
+| Author | (TBD) | | |
+| Reviewer | (TBD) | | |
+| Approver | (TBD) | | |
+
+---
+
+## 16. Revision History
+
+| Version | Date | Description of Change | Author |
+|--------|------|----------------------|--------|
+| 0.1 | (TBD) | Initial draft | (TBD) |
 """
 
         # Generic fallback for other doc types

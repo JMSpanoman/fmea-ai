@@ -45,6 +45,15 @@ export const documentTypes: DocumentTypeDef[] = [
     groupId: 'risk_management_core',
     authority: 'manual',
     description: 'Defines acceptability thresholds and decision rules used for residual risk.',
+    includes: [
+      'Document header, purpose, scope, regulatory basis',
+      'Definitions (risk, severity, probability, ALARP, etc.)',
+      'Configurable severity and probability scales',
+      'Risk acceptability matrix (Acceptable / ALARP / Unacceptable)',
+      'Decision rules and residual risk evaluation rules',
+      'Benefit–risk trigger criteria and control effectiveness',
+      'Roles, review/approval, traceability, AI transparency',
+    ],
   }),
   req({
     id: 'hazard_analysis',
