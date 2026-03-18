@@ -30,15 +30,14 @@ router = APIRouter(prefix="/risk-knowledge-base", tags=["Risk Knowledge Base"])
 def list_hazards(
     skip: int = Query(0, ge=0),
     limit: int = Query(500, ge=1, le=1000),
-    is_active: Optional[bool] = None,
     category: Optional[str] = None,
     search: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List hazard library entries. Optional filters: is_active, category, search."""
+    """List hazard library entries. Optional filters: category, search."""
     return crud.get_hazard_libraries(
-        db, skip=skip, limit=limit, is_active=is_active, category=category, search=search
+        db, skip=skip, limit=limit, category=category, search=search
     )
 
 

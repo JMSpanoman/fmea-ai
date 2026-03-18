@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 from database import Base
 import uuid
 
+
 class Project(Base):
     __tablename__ = "projects"
 
@@ -35,3 +36,10 @@ class Project(Base):
     quality_events = relationship("QualityEvent", back_populates="project", cascade="all, delete-orphan")
     risk_items = relationship("RiskItem", back_populates="project", cascade="all, delete-orphan")
     risk_management_plans = relationship("RiskManagementPlan", back_populates="project", cascade="all, delete-orphan")
+    device_architectures = relationship(
+        "DeviceArchitecture", back_populates="project", cascade="all, delete-orphan"
+    )
+    risk_analysis_suggestion_sets = relationship(
+        "RiskAnalysisSuggestionSet", back_populates="project", cascade="all, delete-orphan"
+    )
+    devices = relationship("Device", back_populates="project", cascade="all, delete-orphan")

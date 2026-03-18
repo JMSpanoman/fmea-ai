@@ -9,12 +9,15 @@ from pydantic import BaseModel
 
 # ----- Hazard Library -----
 class HazardLibraryBase(BaseModel):
-    code: Optional[str] = None
-    name: str
-    description: Optional[str] = None
+    hazard_id: Optional[str] = None
     category: Optional[str] = None
-    source_standard: Optional[str] = None
-    is_active: bool = True
+    hazard_name: str
+    description: Optional[str] = None
+    typical_hazardous_situation: Optional[str] = None
+    typical_harms: Optional[str] = None
+    example_controls: Optional[str] = None
+    verification_examples: Optional[str] = None
+    lifecycle_phase: Optional[str] = None
 
 
 class HazardLibraryCreate(HazardLibraryBase):
@@ -22,12 +25,15 @@ class HazardLibraryCreate(HazardLibraryBase):
 
 
 class HazardLibraryUpdate(BaseModel):
-    code: Optional[str] = None
-    name: Optional[str] = None
-    description: Optional[str] = None
+    hazard_id: Optional[str] = None
     category: Optional[str] = None
-    source_standard: Optional[str] = None
-    is_active: Optional[bool] = None
+    hazard_name: Optional[str] = None
+    description: Optional[str] = None
+    typical_hazardous_situation: Optional[str] = None
+    typical_harms: Optional[str] = None
+    example_controls: Optional[str] = None
+    verification_examples: Optional[str] = None
+    lifecycle_phase: Optional[str] = None
 
 
 class HazardLibraryOut(HazardLibraryBase):

@@ -9,8 +9,10 @@ from dotenv import load_dotenv
 if os.getenv("ENVIRONMENT", "").lower() not in ("production", "prod"):
     load_dotenv()
 
-# Get database URL from environment variable
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:////app/db/fmea.db")
+# Get database URL from environment variable; default to local file in this package when not set
+_db_dir = os.path.dirname(os.path.abspath(__file__))
+_default_sqlite = f"sqlite:///{os.path.join(_db_dir, 'fmea.db')}"
+DATABASE_URL = os.getenv("DATABASE_URL", _default_sqlite)
 
 # Determine if we're using SQLite or PostgreSQL
 is_sqlite = DATABASE_URL.startswith("sqlite")

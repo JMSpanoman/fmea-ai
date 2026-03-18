@@ -20,12 +20,15 @@ export const HazardLibraryPage: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<HazardLibraryRecord | null>(null);
   const [form, setForm] = useState<HazardLibraryCreate & HazardLibraryUpdate>({
-    code: '',
-    name: '',
+    hazard_id: '',
+    hazard_name: '',
     description: '',
     category: '',
-    source_standard: '',
-    is_active: true,
+    typical_hazardous_situation: '',
+    typical_harms: '',
+    example_controls: '',
+    verification_examples: '',
+    lifecycle_phase: '',
   });
 
   const load = useCallback(async () => {
@@ -53,12 +56,15 @@ export const HazardLibraryPage: React.FC = () => {
   const openCreate = () => {
     setEditing(null);
     setForm({
-      code: '',
-      name: '',
+      hazard_id: '',
+      hazard_name: '',
       description: '',
       category: '',
-      source_standard: '',
-      is_active: true,
+      typical_hazardous_situation: '',
+      typical_harms: '',
+      example_controls: '',
+      verification_examples: '',
+      lifecycle_phase: '',
     });
     setShowModal(true);
   };
@@ -66,12 +72,15 @@ export const HazardLibraryPage: React.FC = () => {
   const openEdit = (row: HazardLibraryRecord) => {
     setEditing(row);
     setForm({
-      code: row.code ?? '',
-      name: row.name,
+      hazard_id: row.hazard_id ?? '',
+      hazard_name: row.hazard_name,
       description: row.description ?? '',
       category: row.category ?? '',
-      source_standard: row.source_standard ?? '',
-      is_active: row.is_active ?? true,
+      typical_hazardous_situation: row.typical_hazardous_situation ?? '',
+      typical_harms: row.typical_harms ?? '',
+      example_controls: row.example_controls ?? '',
+      verification_examples: row.verification_examples ?? '',
+      lifecycle_phase: row.lifecycle_phase ?? '',
     });
     setShowModal(true);
   };
@@ -82,29 +91,26 @@ export const HazardLibraryPage: React.FC = () => {
   };
 
   const save = async () => {
-    if (!form.name?.trim()) {
-      alert('Name is required');
+    if (!form.hazard_name?.trim()) {
+      alert('Hazard name is required');
       return;
     }
     try {
+      const payload = {
+        hazard_id: form.hazard_id || undefined,
+        hazard_name: form.hazard_name,
+        description: form.description || undefined,
+        category: form.category || undefined,
+        typical_hazardous_situation: form.typical_hazardous_situation || undefined,
+        typical_harms: form.typical_harms || undefined,
+        example_controls: form.example_controls || undefined,
+        verification_examples: form.verification_examples || undefined,
+        lifecycle_phase: form.lifecycle_phase || undefined,
+      };
       if (editing) {
-        await hazardLibraryApi.update(editing.id, {
-          code: form.code || undefined,
-          name: form.name,
-          description: form.description || undefined,
-          category: form.category || undefined,
-          source_standard: form.source_standard || undefined,
-          is_active: form.is_active,
-        });
+        await hazardLibraryApi.update(editing.id, payload);
       } else {
-        await hazardLibraryApi.create({
-          code: form.code || undefined,
-          name: form.name,
-          description: form.description || undefined,
-          category: form.category || undefined,
-          source_standard: form.source_standard || undefined,
-          is_active: form.is_active ?? true,
-        });
+        await hazardLibraryApi.create(payload);
       }
       closeModal();
       load();
@@ -115,7 +121,7 @@ export const HazardLibraryPage: React.FC = () => {
   };
 
   const remove = async (row: HazardLibraryRecord) => {
-    if (!window.confirm(`Delete "${row.name}"?`)) return;
+    if (!window.confirm(`Delete "${row.hazard_name}"?`)) return;
     try {
       await hazardLibraryApi.delete(row.id);
       load();
@@ -126,8 +132,8 @@ export const HazardLibraryPage: React.FC = () => {
   };
 
   const columns = [
-    { key: 'code', header: 'Code' },
-    { key: 'name', header: 'Name' },
+    { key: 'hazard_id', header: 'Hazard ID' },
+    { key: 'hazard_name', header: 'Hazard name' },
     {
       key: 'description',
       header: 'Description',
@@ -136,11 +142,7 @@ export const HazardLibraryPage: React.FC = () => {
       ),
     },
     { key: 'category', header: 'Category' },
-    {
-      key: 'is_active',
-      header: 'Active',
-      render: (r: HazardLibraryRecord) => (r.is_active ? 'Yes' : 'No'),
-    },
+    { key: 'lifecycle_phase', header: 'Lifecycle phase' },
     {
       key: 'actions',
       header: 'Actions',
@@ -168,7 +170,7 @@ export const HazardLibraryPage: React.FC = () => {
       <Card className="mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input
-            placeholder="Search by name, code, description..."
+            placeholder="Search by hazard name, ID, description..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -206,14 +208,14 @@ export const HazardLibraryPage: React.FC = () => {
       >
         <div className="space-y-4">
           <Input
-            label="Code (e.g. HZ-001)"
-            value={form.code}
-            onChange={(e) => setForm({ ...form, code: e.target.value })}
+            label="Hazard ID (e.g. HZ-001)"
+            value={form.hazard_id}
+            onChange={(e) => setForm({ ...form, hazard_id: e.target.value })}
           />
           <Input
-            label="Name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            label="Hazard name"
+            value={form.hazard_name}
+            onChange={(e) => setForm({ ...form, hazard_name: e.target.value })}
             required
           />
           <Textarea
@@ -227,20 +229,35 @@ export const HazardLibraryPage: React.FC = () => {
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value })}
           />
-          <Input
-            label="Source standard"
-            value={form.source_standard}
-            onChange={(e) => setForm({ ...form, source_standard: e.target.value })}
+          <Textarea
+            label="Typical hazardous situation"
+            value={form.typical_hazardous_situation}
+            onChange={(e) => setForm({ ...form, typical_hazardous_situation: e.target.value })}
+            rows={2}
           />
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={form.is_active}
-              onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-              className="rounded border-border"
-            />
-            <span className="text-sm text-text-primary">Active</span>
-          </label>
+          <Textarea
+            label="Typical harms"
+            value={form.typical_harms}
+            onChange={(e) => setForm({ ...form, typical_harms: e.target.value })}
+            rows={2}
+          />
+          <Textarea
+            label="Example controls"
+            value={form.example_controls}
+            onChange={(e) => setForm({ ...form, example_controls: e.target.value })}
+            rows={2}
+          />
+          <Textarea
+            label="Verification examples"
+            value={form.verification_examples}
+            onChange={(e) => setForm({ ...form, verification_examples: e.target.value })}
+            rows={2}
+          />
+          <Input
+            label="Lifecycle phase"
+            value={form.lifecycle_phase}
+            onChange={(e) => setForm({ ...form, lifecycle_phase: e.target.value })}
+          />
         </div>
       </Modal>
     </div>

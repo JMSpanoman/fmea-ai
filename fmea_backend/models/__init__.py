@@ -37,6 +37,23 @@ from .hazard_library import HazardLibrary
 from .harm_library import HarmLibrary
 from .risk_control_library import RiskControlLibrary
 from .verification_library import VerificationLibrary
+from .device_architecture import DeviceArchitecture, DeviceArchitectureNode, DeviceInterface
+from .device import Device
+from .generated_document import GeneratedDocument
+from .project_risk_item import ProjectRiskItem
+from .project_risk_control import ProjectRiskControl
+from .project_verification import ProjectVerification
+from .hazard_generation_rule import HazardGenerationRule
+from . import suggested_risk_analysis
+from .suggested_risk_analysis import (
+    RiskAnalysisSuggestionSet,
+    SuggestedFailureMode,
+    SuggestedHazard as SuggestedHazardRow,
+    SuggestedHazardousSituation,
+    SuggestedHarm,
+    SuggestedControl,
+    SuggestedVerificationMethod,
+)
 
 __all__ = [
     "Project", "FMEARow", "User", "Component", "FMEAVersion",  # Phase 1
@@ -46,4 +63,14 @@ __all__ = [
     "QualityEvent", "Approval", "RiskItem", "RiskItemVersion", "RiskControl", "RiskManagementPlan", "AIEvent",  # Phase 3 continued + Risk Items
     "AuditLogEvent", "IdempotencyRequest", "GeneratedArtifact", "ProjectProfile", "GeneratedVVRecord",  # + generated V&V from risk
     "HazardLibrary", "HarmLibrary", "RiskControlLibrary", "VerificationLibrary",  # Risk Knowledge Base
+    "DeviceArchitecture", "DeviceArchitectureNode", "DeviceInterface",  # SmartRisk device architecture
+    "Device", "GeneratedDocument", "ProjectRiskItem", "ProjectRiskControl", "ProjectVerification",  # Project risk items, controls, verifications
+    "HazardGenerationRule",  # SmartRisk hazard generation rules (Phase 2)
+    "RiskAnalysisSuggestionSet",
+    "SuggestedFailureMode",
+    "SuggestedHazardRow",
+    "SuggestedHazardousSituation",
+    "SuggestedHarm",
+    "SuggestedControl",
+    "SuggestedVerificationMethod",
 ]

@@ -457,6 +457,12 @@ export default function ProjectDashboardPage() {
           >
             Documentation
           </button>
+          <button
+            className="px-4 py-2 bg-sky-500 text-white rounded-md hover:bg-sky-600"
+            onClick={() => navigate(`/projects/${finalProjectId}/risk-outputs`)}
+          >
+            Risk outputs
+          </button>
         </div>
       </div>
 

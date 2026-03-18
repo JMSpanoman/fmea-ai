@@ -189,12 +189,10 @@ def seed_hazard_library():
             return
         for i, h in enumerate(HAZARDS):
             rec = HazardLibrary(
-                code=h["code"],
-                name=h["name"],
+                hazard_id=h["code"],
+                hazard_name=h["name"],
                 description=h["description"],
                 category=h["category"],
-                source_standard=h["source_standard"],
-                is_active=True,
             )
             db.add(rec)
         db.commit()
@@ -214,18 +212,16 @@ if __name__ == "__main__":
     if args.force:
         db = SessionLocal()
         try:
-            existing_codes = {r[0] for r in db.query(HazardLibrary.code).filter(HazardLibrary.code.isnot(None)).all()}
+            existing_ids = {r[0] for r in db.query(HazardLibrary.hazard_id).filter(HazardLibrary.hazard_id.isnot(None)).all()}
             added = 0
             for h in HAZARDS:
-                if h["code"] in existing_codes:
+                if h["code"] in existing_ids:
                     continue
                 rec = HazardLibrary(
-                    code=h["code"],
-                    name=h["name"],
+                    hazard_id=h["code"],
+                    hazard_name=h["name"],
                     description=h["description"],
                     category=h["category"],
-                    source_standard=h["source_standard"],
-                    is_active=True,
                 )
                 db.add(rec)
                 added += 1

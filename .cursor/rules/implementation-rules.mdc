@@ -1,0 +1,19 @@
+---
+description: Core implementation rules for Smart FMEA / risk (DB, traceability, rules, services)
+alwaysApply: true
+---
+
+# Implementation Rules
+
+When adding or changing code in this repo, follow the rules in **IMPLEMENTATION_RULES.md**. Summary:
+
+1. **Foreign keys & integrity** — Use FKs on all relations; maintain referential integrity; no orphan rows.
+2. **No hardcoded hazard text** — Hazard/harm/control/verification text must come from DB (risk items, libraries, stored fields). Never hardcode hazard strings in UI or backend report logic.
+3. **Admin-editable rules** — Store generation rules, thresholds, and mappings in the DB (e.g. hazard_generation_rules); make them editable via admin/API, not only in code.
+4. **Deterministic generation** — Same inputs (device, components, rules) → same outputs. Avoid randomness unless explicitly required.
+5. **Traceability** — Preserve stable IDs (project_risk_item, controls, verifications); reports and exports should reference these so every row traces back to accepted risk items and evidence.
+6. **Rule-based first, AI later** — Implement rule-based logic first; design data/APIs so AI enrichment can be added later without replacing core flows.
+7. **Reusable services** — Put logic in backend services and shared frontend components; keep routers/pages thin; avoid one-off duplicated logic.
+8. **Multi–device type** — Use generic device/component/hazard concepts; do not bake pacemaker or single device-type assumptions into core schema or services.
+
+See **IMPLEMENTATION_RULES.md** at repo root for full detail and examples.

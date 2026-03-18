@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Table,
   TableBody,
@@ -18,6 +19,7 @@ import { FmeaRow } from '../../types';
 
 interface FmeaTableProps {
   fmeaRows: FmeaRow[];
+  projectId?: string;
   componentNameById?: Record<string, string>;
   onEdit?: (row: FmeaRow) => void;
   onViewHistory?: (row: FmeaRow) => void;
@@ -27,6 +29,7 @@ interface FmeaTableProps {
 
 const FmeaTable: React.FC<FmeaTableProps> = ({
   fmeaRows,
+  projectId,
   componentNameById,
   onEdit,
   onViewHistory,
@@ -113,7 +116,18 @@ const FmeaTable: React.FC<FmeaTableProps> = ({
                 </Box>
               </TableCell>
               <TableCell>{formatDisplayId(idx)}</TableCell>
-              <TableCell>{getComponentLabel(row)}</TableCell>
+              <TableCell>
+                {projectId && row.component_id ? (
+                  <Link
+                    to={`/projects/${projectId}/components/${row.component_id}`}
+                    className="text-primary hover:underline"
+                  >
+                    {getComponentLabel(row)}
+                  </Link>
+                ) : (
+                  getComponentLabel(row)
+                )}
+              </TableCell>
               <TableCell>{row.failure_mode || '-'}</TableCell>
               <TableCell>{row.effect || '-'}</TableCell>
               <TableCell>{row.cause || '-'}</TableCell>

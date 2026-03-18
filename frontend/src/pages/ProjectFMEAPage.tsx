@@ -494,6 +494,7 @@ export default function ProjectFMEAPage() {
         {sortedSavedRows.length > 0 && savedView === 'table' ? (
           <FmeaTable
             fmeaRows={sortedSavedRows}
+            projectId={projectId ?? undefined}
             componentNameById={componentNameById}
             onGenerateVV={openGenerateVV}
           />

@@ -8,32 +8,41 @@ const BASE = '/risk-knowledge-base';
 // ----- Types -----
 export interface HazardLibraryRecord {
   id: string;
-  code?: string | null;
-  name: string;
-  description?: string | null;
+  hazard_id?: string | null;
   category?: string | null;
-  source_standard?: string | null;
-  is_active: boolean;
+  hazard_name: string;
+  description?: string | null;
+  typical_hazardous_situation?: string | null;
+  typical_harms?: string | null;
+  example_controls?: string | null;
+  verification_examples?: string | null;
+  lifecycle_phase?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 }
 
 export interface HazardLibraryCreate {
-  code?: string;
-  name: string;
-  description?: string;
+  hazard_id?: string;
   category?: string;
-  source_standard?: string;
-  is_active?: boolean;
+  hazard_name: string;
+  description?: string;
+  typical_hazardous_situation?: string;
+  typical_harms?: string;
+  example_controls?: string;
+  verification_examples?: string;
+  lifecycle_phase?: string;
 }
 
 export interface HazardLibraryUpdate {
-  code?: string;
-  name?: string;
-  description?: string;
+  hazard_id?: string;
   category?: string;
-  source_standard?: string;
-  is_active?: boolean;
+  hazard_name?: string;
+  description?: string;
+  typical_hazardous_situation?: string;
+  typical_harms?: string;
+  example_controls?: string;
+  verification_examples?: string;
+  lifecycle_phase?: string;
 }
 
 export interface HarmLibraryRecord {
@@ -128,7 +137,7 @@ export interface VerificationLibraryUpdate {
 
 // ----- Hazard Library -----
 export const hazardLibraryApi = {
-  list: (params?: { skip?: number; limit?: number; is_active?: boolean; category?: string; search?: string }) =>
+  list: (params?: { skip?: number; limit?: number; category?: string; search?: string }) =>
     api.get<HazardLibraryRecord[]>(`${BASE}/hazards`, { params: params || {} }).then((r) => r.data),
   get: (id: string) => api.get<HazardLibraryRecord>(`${BASE}/hazards/${id}`).then((r) => r.data),
   create: (body: HazardLibraryCreate) =>

@@ -77,3 +77,56 @@ def ensure_library_reference_columns(engine: Engine) -> None:
                 conn.execute(text(f"ALTER TABLE fmea_rows ADD COLUMN {col} VARCHAR"))
             if not _has_column_sqlite(conn, "risk_item_versions", col):
                 conn.execute(text(f"ALTER TABLE risk_item_versions ADD COLUMN {col} VARCHAR"))
+
+
+def ensure_hazard_generation_rule_columns(engine: Engine) -> None:
+    """Add optional library and template columns to hazard_generation_rules."""
+    dialect = engine.dialect.name
+    if dialect != "sqlite":
+        return
+    with engine.begin() as conn:
+        for col in [
+            "harm_library_id",
+            "risk_control_library_id",
+            "verification_library_id",
+            "failure_mode_template",
+            "hazardous_situation_template",
+        ]:
+            if not _has_column_sqlite(conn, "hazard_generation_rules", col):
+                typ = "VARCHAR" if col != "failure_mode_template" and col != "hazardous_situation_template" else "TEXT"
+                conn.execute(text(f"ALTER TABLE hazard_generation_rules ADD COLUMN {col} {typ}"))
+
+
+def ensure_suggestion_set_project_id(engine: Engine) -> None:
+    """Add project_id to risk_analysis_suggestion_sets for component-scoped suggestions."""
+    dialect = engine.dialect.name
+    if dialect != "sqlite":
+        return
+    with engine.begin() as conn:
+        if not _has_column_sqlite(conn, "risk_analysis_suggestion_sets", "project_id"):
+            conn.execute(text("ALTER TABLE risk_analysis_suggestion_sets ADD COLUMN project_id VARCHAR"))
+
+
+def ensure_hazard_library_columns(engine: Engine) -> None:
+    """
+    Align hazard_library with schema: hazard_id, hazard_name, typical_*, etc.
+    Renames code->hazard_id, name->hazard_name (SQLite 3.25+) and adds new columns if missing.
+    """
+    dialect = engine.dialect.name
+    if dialect != "sqlite":
+        return
+    with engine.begin() as conn:
+        table = "hazard_library"
+        if _has_column_sqlite(conn, table, "code") and not _has_column_sqlite(conn, table, "hazard_id"):
+            conn.execute(text("ALTER TABLE hazard_library RENAME COLUMN code TO hazard_id"))
+        if _has_column_sqlite(conn, table, "name") and not _has_column_sqlite(conn, table, "hazard_name"):
+            conn.execute(text("ALTER TABLE hazard_library RENAME COLUMN name TO hazard_name"))
+        for col, col_type in [
+            ("typical_hazardous_situation", "TEXT"),
+            ("typical_harms", "TEXT"),
+            ("example_controls", "TEXT"),
+            ("verification_examples", "TEXT"),
+            ("lifecycle_phase", "VARCHAR(128)"),
+        ]:
+            if not _has_column_sqlite(conn, table, col):
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))

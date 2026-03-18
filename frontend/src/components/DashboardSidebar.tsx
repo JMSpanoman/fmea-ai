@@ -370,6 +370,19 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 <i className="fa-solid fa-exclamation-triangle w-4 h-4 mr-2"></i>
                 <span>Hazard Analysis</span>
               </button>
+              <button
+                onClick={() => {
+                  const projectId = selectedProject?.id;
+                  if (projectId) navigate(`/projects/${projectId}/device-architecture`);
+                  else alert('Select a project first');
+                }}
+                className={`flex items-center w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                  location.pathname.includes('/device-architecture') ? 'bg-blue-600 text-white' : 'text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <i className="fa-solid fa-sitemap w-4 h-4 mr-2"></i>
+                <span>Device Architecture (SmartRisk)</span>
+              </button>
               <button 
                 onClick={() => navigate('/risk-management-plan')}
                 className={`flex items-center w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${

@@ -32,6 +32,7 @@ import HazardLibraryPage from './pages/libraries/HazardLibraryPage';
 import HarmLibraryPage from './pages/libraries/HarmLibraryPage';
 import RiskControlLibraryPage from './pages/libraries/RiskControlLibraryPage';
 import VerificationLibraryPage from './pages/libraries/VerificationLibraryPage';
+import HazardGenerationRulesPage from './pages/libraries/HazardGenerationRulesPage';
 import ResidualRiskReportPage from './pages/ResidualRiskReportPage';
 import RiskControlsDocumentationPage from './pages/RiskControlsDocumentationPage';
 import RiskControlMeasuresReportPage from './pages/Risk/Reports/RiskControlMeasuresReportPage';
@@ -63,6 +64,9 @@ import ProjectDashboardPage from './pages/ProjectDashboardPage';
 import ProjectDocumentPage from './pages/ProjectDocumentPage';
 import DocumentsPage from './features/docs/DocumentsPage';
 import RiskItemListPage from './pages/RiskItems/RiskItemListPage';
+import DeviceArchitecturePage from './pages/DeviceArchitecturePage';
+import ComponentDetailPage from './pages/ComponentDetailPage';
+import ProjectRiskOutputsPage from './pages/ProjectRiskOutputsPage';
 import RiskItemDetailPage from './pages/RiskItems/RiskItemDetailPage';
 import DesignInputDetailPage from './pages/DesignInputs/DesignInputDetailPage';
 import DesignOutputDetailPage from './pages/DesignOutputs/DesignOutputDetailPage';
@@ -73,6 +77,12 @@ import ProjectFMEAPage from './pages/ProjectFMEAPage';
 import ProjectSetupWizard from './pages/ProjectSetupWizard';
 import { Api403ProListener } from './components/Api403ProListener';
 import { ProRoute } from './components/ProRoute';
+import DeviceRiskLayout from './pages/DeviceRisk/DeviceRiskLayout';
+import DeviceFmeaPage from './pages/DeviceRisk/DeviceFmeaPage';
+import DeviceHazardAnalysisPage from './pages/DeviceRisk/DeviceHazardAnalysisPage';
+import DeviceRiskTraceabilityPage from './pages/DeviceRisk/DeviceRiskTraceabilityPage';
+import DeviceResidualRiskPage from './pages/DeviceRisk/DeviceResidualRiskPage';
+import DeviceReportPage from './pages/DeviceRisk/DeviceReportPage';
 
 function App() {
   return (
@@ -127,6 +137,20 @@ function App() {
                     <Route path=":projectId/reports/vv-evidence" element={<VVEvidenceReportPage />} />
                     <Route path=":projectId/pms/signals" element={<PmsSignalsPage />} />
                     <Route path=":projectId/pms/reports/signal-feedback" element={<PmsSignalReportPage />} />
+                    <Route path=":projectId/device-architecture" element={<DeviceArchitecturePage />} />
+                    <Route path=":projectId/components/:componentId" element={<ComponentDetailPage />} />
+                    <Route path=":projectId/risk-outputs" element={<ProjectRiskOutputsPage />} />
+                  </Route>
+                  {/* Device-scoped risk outputs */}
+                  <Route path="/devices" element={<ProRoute />}>
+                    <Route path=":id" element={<DeviceRiskLayout />}>
+                      <Route index element={<Navigate to="fmea" replace />} />
+                      <Route path="fmea" element={<DeviceFmeaPage />} />
+                      <Route path="hazard-analysis" element={<DeviceHazardAnalysisPage />} />
+                      <Route path="risk-traceability" element={<DeviceRiskTraceabilityPage />} />
+                      <Route path="residual-risk" element={<DeviceResidualRiskPage />} />
+                      <Route path="report" element={<DeviceReportPage />} />
+                    </Route>
                   </Route>
                   <Route path="/documents" element={<DocumentControlPage />} />
                   <Route path="/training" element={<TrainingPage />} />
@@ -150,6 +174,7 @@ function App() {
                     <Route path="harms" element={<HarmLibraryPage />} />
                     <Route path="risk-controls" element={<RiskControlLibraryPage />} />
                     <Route path="verifications" element={<VerificationLibraryPage />} />
+                    <Route path="hazard-rules" element={<HazardGenerationRulesPage />} />
                   </Route>
 
                   <Route path="/risk-management-plan" element={<RiskManagementPlanPage />} />

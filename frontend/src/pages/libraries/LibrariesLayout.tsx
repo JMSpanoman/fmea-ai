@@ -6,6 +6,7 @@ const LIBRARY_LINKS = [
   { to: '/libraries/harms', label: 'Harm Library' },
   { to: '/libraries/risk-controls', label: 'Risk Control Library' },
   { to: '/libraries/verifications', label: 'Verification Library' },
+  { to: '/libraries/hazard-rules', label: 'Hazard Generation Rules' },
 ];
 
 export const LibrariesLayout: React.FC = () => {

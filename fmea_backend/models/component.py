@@ -21,4 +21,9 @@ class Component(Base):
     parent = relationship("Component", remote_side=[id], back_populates="children", uselist=False)
     children = relationship("Component", back_populates="parent")
     fmea_rows = relationship("FMEARow", back_populates="component", cascade="all, delete-orphan")
+    project_risk_items = relationship(
+        "ProjectRiskItem",
+        back_populates="component",
+        cascade="all, delete-orphan",
+    )
 

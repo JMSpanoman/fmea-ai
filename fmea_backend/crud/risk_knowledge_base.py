@@ -50,25 +50,22 @@ def get_hazard_libraries(
     db: Session,
     skip: int = 0,
     limit: int = 500,
-    is_active: Optional[bool] = None,
     category: Optional[str] = None,
     search: Optional[str] = None,
 ) -> List[HazardLibrary]:
     q = db.query(HazardLibrary)
-    if is_active is not None:
-        q = q.filter(HazardLibrary.is_active == is_active)
     if category:
         q = q.filter(HazardLibrary.category == category)
     if search:
         term = f"%{search}%"
         q = q.filter(
             or_(
-                HazardLibrary.name.ilike(term),
-                HazardLibrary.code.ilike(term),
+                HazardLibrary.hazard_name.ilike(term),
+                HazardLibrary.hazard_id.ilike(term),
                 HazardLibrary.description.ilike(term),
             )
         )
-    return q.order_by(HazardLibrary.name).offset(skip).limit(limit).all()
+    return q.order_by(HazardLibrary.hazard_name).offset(skip).limit(limit).all()
 
 
 def update_hazard_library(
