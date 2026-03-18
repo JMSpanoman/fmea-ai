@@ -36,7 +36,7 @@ def generate_rmp(
             detail="Risk Management Plan already exists for this project. Use PUT to update."
         )
     
-    # Generate all required sections
+    # Generate all required sections (audit-ready, regulatory language)
     acceptability_criteria = rmp_generator.generate_acceptability_criteria(
         profile=rmp_request.acceptability_profile,
         custom=rmp_request.custom_acceptability_criteria
@@ -46,11 +46,10 @@ def generate_rmp(
     benefit_risk_criteria = rmp_generator.generate_benefit_risk_criteria()
     lifecycle_linkage = rmp_generator.generate_lifecycle_linkage()
     governance_rules = rmp_generator.generate_governance_rules()
-    
-    # Generate title if not provided
+    roles_table = rmp_generator.generate_roles_table()
+
     title = rmp_request.title or f"Risk Management Plan – {project.name}"
-    
-    # Generate HTML
+
     rendered_html = rmp_generator.generate_rmp_html(
         title=title,
         scope=rmp_request.scope,
@@ -64,13 +63,14 @@ def generate_rmp(
         lifecycle_linkage=lifecycle_linkage,
         governance_rules=governance_rules,
         version_no=1,
-        created_at=datetime.now().isoformat()
+        created_at=datetime.now().isoformat(),
+        roles_table=roles_table,
     )
     
     # Convert to JSON strings
     acceptability_criteria_json = json.dumps(acceptability_criteria)
     review_roles_json = json.dumps(rmp_request.review_roles)
-    risk_control_categories_json = json.dumps(risk_control_categories)
+    risk_control_categories_json = json.dumps([c if isinstance(c, dict) else {"category": c} for c in risk_control_categories])
     
     # Create RMP
     rmp = rmp_crud.create_rmp(
@@ -163,7 +163,7 @@ def update_rmp(
         except:
             risk_control_categories = []
         
-        # Regenerate HTML
+        # Regenerate HTML (audit-ready sections; roles_table for full table)
         rendered_html = rmp_generator.generate_rmp_html(
             title=rmp_update.title or existing_rmp.title,
             scope=rmp_update.scope or existing_rmp.scope,
@@ -172,12 +172,13 @@ def update_rmp(
             acceptability_criteria=acceptability_criteria,
             risk_methodology=existing_rmp.risk_methodology,
             review_roles=review_roles,
-            risk_control_categories=risk_control_categories,
+            risk_control_categories=risk_control_categories or rmp_generator.generate_risk_control_categories(),
             benefit_risk_criteria=existing_rmp.benefit_risk_criteria,
             lifecycle_linkage=existing_rmp.lifecycle_linkage,
             governance_rules=existing_rmp.governance_rules,
             version_no=existing_rmp.current_version_no + 1,
-            created_at=datetime.now().isoformat()
+            created_at=datetime.now().isoformat(),
+            roles_table=rmp_generator.generate_roles_table(),
         )
     
     # Update RMP

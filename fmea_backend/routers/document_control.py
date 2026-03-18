@@ -391,13 +391,17 @@ def generate_document_version(
 <tbody>{''.join(trs) if trs else ''}</tbody></table>
 </body></html>"""
     elif doc_type == "rmp":
-        # Deterministic Risk Management Plan generation (ISO 14971) using defaults + selected components.
+        # Audit-ready RMP (ISO 14971); structured scope from profile when available.
         from business_logic import rmp_generator
         from models.component import Component as ComponentModel
+        from models.project_profile import ProjectProfile
 
-        # Inputs (with safe defaults)
-        scope = str(options.get("scope") or "TBD (edit Scope in Generate New modal)")
-        intended_use = str(options.get("intended_use") or "TBD (edit Intended Use in Generate New modal)")
+        profile = db.query(ProjectProfile).filter(ProjectProfile.project_id == project_id).first()
+        scope = str(options.get("scope") or (getattr(profile, "device_description", None) or "To be defined (complete in project profile)."))
+        intended_use = str(options.get("intended_use") or (getattr(profile, "intended_use", None) or "To be defined (complete in project profile)."))
+        scope_device_description = getattr(profile, "device_description", None) or scope
+        scope_intended_user = getattr(profile, "user_population", None)
+        scope_use_environment = getattr(profile, "use_environment", None)
         acceptability_profile = str(options.get("acceptability_profile") or "default_med_device")
 
         review_roles = options.get("review_roles") or {
@@ -409,7 +413,6 @@ def generate_document_version(
         if not isinstance(review_roles, dict):
             review_roles = {"risk_manager": "required"}
 
-        # Components: if none provided, use all project components (or a single placeholder)
         comps_in: list[dict[str, str]] = []
         if component_filter:
             for c in component_filter:
@@ -438,6 +441,11 @@ def generate_document_version(
             lifecycle_linkage=rmp_generator.generate_lifecycle_linkage(),
             governance_rules=rmp_generator.generate_governance_rules(),
             version_no=document.version + 1,
+            scope_device_description=scope_device_description,
+            scope_intended_user=scope_intended_user,
+            scope_patient_population=None,
+            scope_use_environment=scope_use_environment,
+            roles_table=rmp_generator.generate_roles_table(),
         )
     elif doc_type == "traceability_matrix":
         from business_logic import traceability_matrix_builder, traceability_matrix_renderer
