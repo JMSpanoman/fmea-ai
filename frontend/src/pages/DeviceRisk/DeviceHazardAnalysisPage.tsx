@@ -8,11 +8,12 @@ import { devicesApi, HazardAnalysisRow } from '../../services/devicesApi';
 const COLUMNS: ExportColumn[] = [
   { key: 'row_number', header: '#' },
   { key: 'hazard', header: 'Hazard' },
+  { key: 'sequence_of_events', header: 'Sequence of Events' },
   { key: 'hazardous_situation', header: 'Hazardous Situation' },
   { key: 'harm', header: 'Harm' },
-  { key: 'sequence_of_events', header: 'Sequence of Events' },
   { key: 'severity', header: 'Severity' },
-  { key: 'probability', header: 'Probability' },
+  { key: 'probability', header: 'Probability/Occurrence' },
+  { key: 'risk_acceptability_decision', header: 'Acceptability Decision' },
 ];
 
 export default function DeviceHazardAnalysisPage() {

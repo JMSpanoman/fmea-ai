@@ -83,6 +83,8 @@ def approve_hazard_analysis_item(
     db: Session,
     item_id: str,
     approved_by: str,
+    approver_role: Optional[str] = None,
+    approval_meaning: Optional[str] = None,
 ) -> Optional[HazardAnalysisItem]:
     item = get_hazard_analysis_item(db, item_id)
     if not item:
@@ -91,6 +93,9 @@ def approve_hazard_analysis_item(
     item.approval_status = "approved"
     item.approved_by = approved_by
     item.approved_at = datetime.now(timezone.utc)
+    item.approver_role = approver_role
+    item.approval_meaning = approval_meaning or "Reviewed and approved for regulatory hazard analysis baseline."
+    item.version_lock = True
     db.commit()
     db.refresh(item)
     return item

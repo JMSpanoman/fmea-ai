@@ -24,8 +24,9 @@ const HazardAnalysisPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   // Options
-  const [versionScope, setVersionScope] = useState<'approved_only' | 'current' | 'all'>('approved_only');
+  const [versionScope, setVersionScope] = useState<'approved_only' | 'current' | 'all' | 'include_draft' | 'latest_versions'>('approved_only');
   const [includeUnapproved, setIncludeUnapproved] = useState(false);
+  const [reportMode, setReportMode] = useState<'regulatory' | 'working'>('regulatory');
   
   // Preview
   const [showPreview, setShowPreview] = useState(false);
@@ -123,6 +124,7 @@ const HazardAnalysisPage: React.FC = () => {
         components: componentFilter.length > 0 ? componentFilter : undefined,
         version_scope: versionScope,
         include_unapproved: includeUnapproved,
+        report_mode: reportMode,
         include_metadata: true,
         format: 'html'
       };
@@ -138,7 +140,8 @@ const HazardAnalysisPage: React.FC = () => {
         currentProject.id,
         componentsStr || undefined,
         versionScope,
-        includeUnapproved
+        includeUnapproved,
+        reportMode
       );
       setPreviewData(data);
     } catch (err: any) {
@@ -174,7 +177,8 @@ const HazardAnalysisPage: React.FC = () => {
         currentProject.id,
         componentsStr || undefined,
         versionScope,
-        includeUnapproved
+        includeUnapproved,
+        reportMode
       );
       
       const blob = new Blob([html], { type: 'text/html' });
@@ -346,6 +350,24 @@ const HazardAnalysisPage: React.FC = () => {
 
       <div className="bg-gray-200 rounded-lg shadow p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Version Scope</h2>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Report Mode</label>
+          <select
+            value={reportMode}
+            onChange={(e) => {
+              const next = e.target.value as 'regulatory' | 'working';
+              setReportMode(next);
+              if (next === 'regulatory') {
+                setVersionScope('approved_only');
+                setIncludeUnapproved(false);
+              }
+            }}
+            className="px-3 py-2 border border-gray-300 rounded-md bg-white"
+          >
+            <option value="regulatory">Regulatory Mode (approved only)</option>
+            <option value="working">Working Mode (include draft/in-review)</option>
+          </select>
+        </div>
         
         <div className="space-y-3">
           <label className="flex items-center space-x-2">
@@ -368,11 +390,26 @@ const HazardAnalysisPage: React.FC = () => {
               type="radio"
               name="version_scope"
               value="current"
-              checked={versionScope === 'current'}
-              onChange={(e) => setVersionScope('current')}
+              checked={versionScope === 'current' || versionScope === 'latest_versions'}
+              onChange={(e) => setVersionScope('latest_versions')}
               className="border-gray-300"
             />
-            <span className="text-sm text-gray-900">Current Versions</span>
+            <span className="text-sm text-gray-900">Latest Versions</span>
+          </label>
+
+          <label className="flex items-center space-x-2">
+            <input
+              type="radio"
+              name="version_scope"
+              value="include_draft"
+              checked={versionScope === 'include_draft'}
+              onChange={() => {
+                setVersionScope('include_draft');
+                setIncludeUnapproved(true);
+              }}
+              className="border-gray-300"
+            />
+            <span className="text-sm text-gray-900">Include Draft (approved + unapproved)</span>
           </label>
           
           <label className="flex items-center space-x-2">
@@ -486,7 +523,7 @@ const HazardAnalysisPage: React.FC = () => {
                         <td className="px-4 py-3 text-sm text-gray-900 max-w-[200px] truncate" title={row.hazard || ''}>{row.hazard || '—'}</td>
                         <td className="px-4 py-3 text-sm text-gray-900 max-w-[160px] truncate" title={row.failure_mode || ''}>{row.failure_mode || '—'}</td>
                         <td className="px-4 py-3 text-sm text-gray-900">{(row as any).initial_severity ?? '—'}/{(row as any).initial_probability ?? '—'}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{(row as any).residual_risk_level || (row as any).residual_risk_acceptability || '—'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{(row as any).residual_risk_level || (row as any).risk_acceptability_decision || (row as any).residual_risk_acceptability || '—'}</td>
                         <td className="px-4 py-3 text-sm">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
                             row.approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
@@ -511,7 +548,12 @@ const HazardAnalysisPage: React.FC = () => {
                               <div><span className="font-medium">Harm:</span> {row.harm || '—'}</div>
                               <div><span className="font-medium">Cause:</span> {(row as any).cause_of_failure || '—'}</div>
                               <div><span className="font-medium">Risk controls:</span> {Array.isArray((row as any).risk_control_measures) ? (row as any).risk_control_measures.join('; ') : '—'}</div>
-                              <div><span className="font-medium">Traceability:</span> {[].concat((row as any).verification_reference || [], (row as any).validation_reference || []).join('; ') || '—'}</div>
+                              <div><span className="font-medium">Structured controls:</span> {Array.isArray((row as any).risk_controls) && (row as any).risk_controls.length ? (row as any).risk_controls.map((c: any) => `${c.control_type}: ${c.control_description}`).join('; ') : '—'}</div>
+                              <div><span className="font-medium">Traceability:</span> {[].concat((row as any).related_design_input || [], (row as any).related_design_output || [], (row as any).verification_reference || [], (row as any).validation_reference || [], (row as any).capa_reference || []).join('; ') || '—'}</div>
+                              <div><span className="font-medium">Acceptability decision:</span> {(row as any).risk_acceptability_decision || (row as any).residual_risk_acceptability || '—'}</div>
+                              <div><span className="font-medium">Acceptability justification:</span> {(row as any).risk_acceptability_justification || '—'}</div>
+                              <div><span className="font-medium">Benefit-risk required:</span> {(row as any).benefit_risk_analysis_required ? 'Yes' : 'No'}</div>
+                              <div><span className="font-medium">Benefit-risk justification:</span> {(row as any).benefit_risk_justification || '—'}</div>
                             </div>
                             {(row as any).id && !row.approved && (
                               <div className="mt-3">

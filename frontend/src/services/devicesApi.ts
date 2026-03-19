@@ -29,6 +29,7 @@ export interface HazardAnalysisRow {
   sequence_of_events: string;
   severity: number | null;
   probability: number | null;
+  risk_acceptability_decision?: string | null;
 }
 
 export interface RiskControlTraceabilityRow {

@@ -37,8 +37,9 @@ class ComponentFilter(BaseModel):
 
 class HazardAnalysisGenerateRequest(BaseModel):
     components: Optional[List[ComponentFilter]] = None
-    version_scope: str = "approved_only"  # approved_only, current, all
+    version_scope: str = "approved_only"  # approved_only, current, all, include_draft, latest_versions
     include_unapproved: bool = False
+    report_mode: str = "regulatory"  # regulatory|working
     include_metadata: bool = True
     include_ai_assist_summary: bool = False
     format: str = "html"
@@ -47,6 +48,18 @@ class HazardAnalysisGenerateRequest(BaseModel):
 class HazardAnalysisEnrichRequest(BaseModel):
     max_items: int = 25
     only_if_missing: bool = True
+
+
+def _resolve_scope_aliases(version_scope: str, include_unapproved: bool) -> tuple[str, bool]:
+    scope = (version_scope or "approved_only").strip().lower()
+    include = bool(include_unapproved)
+    if scope == "latest_versions":
+        return ("current", include)
+    if scope == "include_draft":
+        return ("approved_only", True)
+    if scope not in {"approved_only", "current", "all"}:
+        return ("approved_only", include)
+    return (scope, include)
 
 @router.post("/hazard-analysis/enrich-ai", status_code=status.HTTP_200_OK)
 def enrich_hazard_analysis_ai(
@@ -95,13 +108,23 @@ def generate_hazard_analysis(
     if request.components:
         component_filter = [{"id": c.id, "name": c.name} for c in request.components]
     
+    mode = (request.report_mode or "regulatory").strip().lower()
+    version_scope, include_unapproved = _resolve_scope_aliases(request.version_scope, request.include_unapproved)
+    if mode == "regulatory":
+        version_scope = "approved_only"
+        include_unapproved = False
+    elif mode == "working":
+        if version_scope == "approved_only" and not include_unapproved:
+            include_unapproved = True
+
     evidence = hazard_analysis_builder.build_hazard_analysis(
         db=db,
         project_id=project_id,
         component_filter=component_filter,
-        version_scope=request.version_scope,
-        include_unapproved=request.include_unapproved,
+        version_scope=version_scope,
+        include_unapproved=include_unapproved,
     )
+    evidence["report_mode"] = mode
     device_name, intended_use = _project_profile_context(db, project_id)
     hazard_analysis_html = hazard_analysis_renderer.render_hazard_analysis_html(
         evidence, project.name, device_name=device_name, intended_use=intended_use
@@ -111,6 +134,7 @@ def generate_hazard_analysis(
         "components": component_filter or [],
         "generated_at": datetime.now().isoformat(),
         "version_scope": request.version_scope,
+        "report_mode": mode,
         "hazard_analysis_html": hazard_analysis_html,
         "counts": evidence.get("counts", {}),
     }
@@ -121,6 +145,7 @@ def export_hazard_analysis(
     components: Optional[str] = Query(None, description="Comma-separated component names"),
     version_scope: str = Query("approved_only", description="Version scope: approved_only, current, all"),
     include_unapproved: bool = Query(False, description="Include unapproved versions"),
+    report_mode: str = Query("regulatory", description="regulatory|working"),
     format: str = Query("html", description="Export format"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -137,13 +162,23 @@ def export_hazard_analysis(
         component_names = [name.strip() for name in components.split(",")]
         component_filter = [{"name": name} for name in component_names]
     
+    mode = (report_mode or "regulatory").strip().lower()
+    resolved_scope, resolved_include = _resolve_scope_aliases(version_scope, include_unapproved)
+    if mode == "regulatory":
+        resolved_scope = "approved_only"
+        resolved_include = False
+    elif mode == "working":
+        if resolved_scope == "approved_only" and not resolved_include:
+            resolved_include = True
+
     evidence = hazard_analysis_builder.build_hazard_analysis(
         db=db,
         project_id=project_id,
         component_filter=component_filter,
-        version_scope=version_scope,
-        include_unapproved=include_unapproved,
+        version_scope=resolved_scope,
+        include_unapproved=resolved_include,
     )
+    evidence["report_mode"] = mode
     device_name, intended_use = _project_profile_context(db, project_id)
     hazard_analysis_html = hazard_analysis_renderer.render_hazard_analysis_html(
         evidence, project.name, device_name=device_name, intended_use=intended_use
@@ -179,20 +214,31 @@ def list_hazard_analysis_items(
             "id": d.id, "project_id": d.project_id, "component_id": d.component_id,
             "risk_key": d.risk_key, "version_no": d.version_no, "hazard_category": d.hazard_category,
             "hazard": d.hazard, "foreseeable_sequence_of_events": d.foreseeable_sequence_of_events,
+            "sequence_of_events": d.sequence_of_events or d.foreseeable_sequence_of_events,
             "hazardous_situation": d.hazardous_situation, "harm": d.harm, "affected_user": d.affected_user,
             "failure_mode": d.failure_mode, "cause_of_failure": d.cause_of_failure, "clinical_effect": d.clinical_effect,
             "operating_mode": d.operating_mode, "use_environment": d.use_environment,
             "initial_severity": d.initial_severity, "initial_probability": d.initial_probability,
+            "initial_occurrence": d.initial_occurrence,
             "initial_risk_level": d.initial_risk_level,
             "risk_control_measures": d.risk_control_measures, "risk_control_type": d.risk_control_type,
             "control_implementation_notes": d.control_implementation_notes,
+            "risk_controls": d.risk_controls,
             "residual_severity": d.residual_severity, "residual_probability": d.residual_probability,
-            "residual_risk_level": d.residual_risk_level, "residual_risk_acceptability": d.residual_risk_acceptability,
+            "residual_occurrence": d.residual_occurrence, "residual_risk_level": d.residual_risk_level, "residual_risk_acceptability": d.residual_risk_acceptability,
+            "risk_acceptability_decision": d.risk_acceptability_decision or d.residual_risk_acceptability,
+            "risk_acceptability_justification": d.risk_acceptability_justification,
+            "benefit_risk_analysis_required": d.benefit_risk_analysis_required,
+            "benefit_risk_justification": d.benefit_risk_justification,
             "related_design_input": d.related_design_input, "related_design_output": d.related_design_output,
             "verification_reference": d.verification_reference, "validation_reference": d.validation_reference,
+            "capa_reference": d.capa_reference,
             "requirement_ids": d.requirement_ids,
             "approval_status": d.approval_status, "approved_by": d.approved_by,
             "approved_at": d.approved_at.isoformat() if d.approved_at else None,
+            "approver_role": d.approver_role, "approval_meaning": d.approval_meaning, "version_lock": d.version_lock,
+            "review_date": d.review_date.isoformat() if d.review_date else None, "review_frequency": d.review_frequency,
+            "last_reviewed_by": d.last_reviewed_by, "post_market_trigger": d.post_market_trigger,
             "reviewer_comments": d.reviewer_comments,
             "ai_generated": d.ai_generated, "ai_confidence": d.ai_confidence, "source_context": d.source_context,
             "assumptions": d.assumptions,
@@ -219,19 +265,30 @@ def get_hazard_analysis_item(
         "id": item.id, "project_id": item.project_id, "component_id": item.component_id,
         "risk_key": item.risk_key, "version_no": item.version_no, "hazard_category": item.hazard_category,
         "hazard": item.hazard, "foreseeable_sequence_of_events": item.foreseeable_sequence_of_events,
+        "sequence_of_events": item.sequence_of_events or item.foreseeable_sequence_of_events,
         "hazardous_situation": item.hazardous_situation, "harm": item.harm, "affected_user": item.affected_user,
         "failure_mode": item.failure_mode, "cause_of_failure": item.cause_of_failure, "clinical_effect": item.clinical_effect,
         "operating_mode": item.operating_mode, "use_environment": item.use_environment,
         "initial_severity": item.initial_severity, "initial_probability": item.initial_probability,
+        "initial_occurrence": item.initial_occurrence,
         "initial_risk_level": item.initial_risk_level,
         "risk_control_measures": item.risk_control_measures, "risk_control_type": item.risk_control_type,
         "control_implementation_notes": item.control_implementation_notes,
+        "risk_controls": item.risk_controls,
         "residual_severity": item.residual_severity, "residual_probability": item.residual_probability,
-        "residual_risk_level": item.residual_risk_level, "residual_risk_acceptability": item.residual_risk_acceptability,
+        "residual_occurrence": item.residual_occurrence, "residual_risk_level": item.residual_risk_level, "residual_risk_acceptability": item.residual_risk_acceptability,
+        "risk_acceptability_decision": item.risk_acceptability_decision or item.residual_risk_acceptability,
+        "risk_acceptability_justification": item.risk_acceptability_justification,
+        "benefit_risk_analysis_required": item.benefit_risk_analysis_required,
+        "benefit_risk_justification": item.benefit_risk_justification,
         "related_design_input": item.related_design_input, "related_design_output": item.related_design_output,
         "verification_reference": item.verification_reference, "validation_reference": item.validation_reference,
+        "capa_reference": item.capa_reference,
         "requirement_ids": item.requirement_ids,
         "approval_status": item.approval_status, "approved_by": item.approved_by, "approved_at": item.approved_at.isoformat() if item.approved_at else None,
+        "approver_role": item.approver_role, "approval_meaning": item.approval_meaning, "version_lock": item.version_lock,
+        "review_date": item.review_date.isoformat() if item.review_date else None, "review_frequency": item.review_frequency,
+        "last_reviewed_by": item.last_reviewed_by, "post_market_trigger": item.post_market_trigger,
         "reviewer_comments": item.reviewer_comments,
         "ai_generated": item.ai_generated, "ai_confidence": item.ai_confidence, "source_context": item.source_context,
         "assumptions": item.assumptions,
@@ -270,7 +327,7 @@ def update_hazard_analysis_item(
     item = ha_item_crud.get_hazard_analysis_item(db, item_id)
     if not item or item.project_id != project_id:
         raise HTTPException(status_code=404, detail="Hazard analysis item not found")
-    if (item.approval_status or "").lower() == "approved":
+    if (item.approval_status or "").lower() == "approved" or bool(item.version_lock):
         raise HTTPException(status_code=403, detail="Approved items are immutable; create a new version instead.")
     item = ha_item_crud.update_hazard_analysis_item(db, item_id, payload)
     return {"id": item.id, "approval_status": item.approval_status}
@@ -286,7 +343,40 @@ def approve_hazard_analysis_item(
     project = project_crud.get_project(db, project_id, current_user.id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    item = ha_item_crud.approve_hazard_analysis_item(db, item_id, approved_by=current_user.id)
+    item = ha_item_crud.get_hazard_analysis_item(db, item_id)
+    if not item or item.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Hazard analysis item not found")
+    from services.hazard_analysis_validation import validate_hazard_analysis_item
+    item_data = {
+        "hazard": item.hazard,
+        "foreseeable_sequence_of_events": item.foreseeable_sequence_of_events or item.sequence_of_events,
+        "sequence_of_events": item.sequence_of_events,
+        "hazardous_situation": item.hazardous_situation,
+        "harm": item.harm,
+        "failure_mode": item.failure_mode,
+        "initial_severity": item.initial_severity,
+        "initial_probability": item.initial_probability,
+        "initial_occurrence": item.initial_occurrence,
+        "risk_control_measures": item.risk_control_measures,
+        "risk_controls": item.risk_controls,
+        "residual_severity": item.residual_severity,
+        "residual_probability": item.residual_probability,
+        "residual_occurrence": item.residual_occurrence,
+        "residual_risk_acceptability": item.residual_risk_acceptability,
+        "risk_acceptability_decision": item.risk_acceptability_decision,
+        "risk_acceptability_justification": item.risk_acceptability_justification,
+        "benefit_risk_analysis_required": item.benefit_risk_analysis_required,
+        "benefit_risk_justification": item.benefit_risk_justification,
+    }
+    valid, errors = validate_hazard_analysis_item(item_data)
+    if not valid:
+        raise HTTPException(status_code=400, detail={"message": "Validation failed for approval", "errors": errors})
+    item = ha_item_crud.approve_hazard_analysis_item(
+        db,
+        item_id,
+        approved_by=current_user.id,
+        approver_role=getattr(current_user, "role", None),
+    )
     if not item:
         raise HTTPException(status_code=404, detail="Hazard analysis item not found")
     return {"id": item.id, "approval_status": "approved"}
@@ -399,6 +489,7 @@ def get_hazard_analysis_data(
     components: Optional[str] = Query(None, description="Comma-separated component names"),
     version_scope: str = Query("approved_only", description="Version scope: approved_only, current, all"),
     include_unapproved: bool = Query(False, description="Include unapproved versions"),
+    report_mode: str = Query("regulatory", description="regulatory|working"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -415,12 +506,21 @@ def get_hazard_analysis_data(
         component_filter = [{"name": name} for name in component_names]
     
     # Build evidence
+    mode = (report_mode or "regulatory").strip().lower()
+    resolved_scope, resolved_include = _resolve_scope_aliases(version_scope, include_unapproved)
+    if mode == "regulatory":
+        resolved_scope = "approved_only"
+        resolved_include = False
+    elif mode == "working":
+        if resolved_scope == "approved_only" and not resolved_include:
+            resolved_include = True
+
     evidence = hazard_analysis_builder.build_hazard_analysis(
         db=db,
         project_id=project_id,
         component_filter=component_filter,
-        version_scope=version_scope,
-        include_unapproved=include_unapproved
+        version_scope=resolved_scope,
+        include_unapproved=resolved_include
     )
     
     # Return rows as JSON

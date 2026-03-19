@@ -132,7 +132,7 @@ async def lifespan(app: FastAPI):
 
     # SQLite runtime migrations (add missing columns on existing tables)
     try:
-        from db.runtime_migrations import ensure_component_columns, ensure_user_columns, ensure_library_reference_columns, ensure_hazard_generation_rule_columns, ensure_suggestion_set_project_id, ensure_hazard_library_columns, ensure_risk_acceptability_columns
+        from db.runtime_migrations import ensure_component_columns, ensure_user_columns, ensure_library_reference_columns, ensure_hazard_generation_rule_columns, ensure_suggestion_set_project_id, ensure_hazard_library_columns, ensure_risk_acceptability_columns, ensure_hazard_analysis_item_columns
         ensure_user_columns(engine)
         ensure_component_columns(engine)
         ensure_library_reference_columns(engine)
@@ -140,6 +140,7 @@ async def lifespan(app: FastAPI):
         ensure_hazard_library_columns(engine)
         ensure_suggestion_set_project_id(engine)
         ensure_risk_acceptability_columns(engine)
+        ensure_hazard_analysis_item_columns(engine)
     except Exception as mig_err:
         logger.error(f"Runtime migrations failed: {mig_err}", exc_info=True)
 

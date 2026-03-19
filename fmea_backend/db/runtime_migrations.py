@@ -155,6 +155,37 @@ def ensure_risk_acceptability_columns(engine: Engine) -> None:
             if not _has_column_sqlite(conn, table, col):
                 conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
 
+
+def ensure_hazard_analysis_item_columns(engine: Engine) -> None:
+    """
+    SQLite-friendly runtime migration for hazard_analysis_items regulatory extensions.
+    """
+    dialect = engine.dialect.name
+    if dialect != "sqlite":
+        return
+    with engine.begin() as conn:
+        table = "hazard_analysis_items"
+        for col, col_type in [
+            ("sequence_of_events", "TEXT"),
+            ("initial_occurrence", "INTEGER"),
+            ("risk_controls", "TEXT"),
+            ("residual_occurrence", "INTEGER"),
+            ("risk_acceptability_decision", "VARCHAR(100)"),
+            ("risk_acceptability_justification", "TEXT"),
+            ("capa_reference", "TEXT"),
+            ("approver_role", "VARCHAR(255)"),
+            ("approval_meaning", "TEXT"),
+            ("version_lock", "BOOLEAN DEFAULT 0"),
+            ("review_date", "DATETIME"),
+            ("review_frequency", "VARCHAR(255)"),
+            ("last_reviewed_by", "VARCHAR"),
+            ("post_market_trigger", "BOOLEAN DEFAULT 0"),
+            ("benefit_risk_analysis_required", "BOOLEAN DEFAULT 0"),
+            ("benefit_risk_justification", "TEXT"),
+        ]:
+            if not _has_column_sqlite(conn, table, col):
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
+
         table = "organization_risk_criteria_configs"
         for col, col_type in [
             ("organization_id", "VARCHAR"),

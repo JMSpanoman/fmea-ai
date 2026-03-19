@@ -6,6 +6,14 @@ from typing import Optional, List, Any
 from datetime import datetime
 
 
+class HazardRiskControl(BaseModel):
+    control_type: str  # inherent_safety_by_design | protective_measures | information_for_safety
+    control_description: str
+    implementation_status: Optional[str] = None
+    verification_method: Optional[str] = None
+    verification_status: Optional[str] = None
+
+
 class HazardAnalysisItemBase(BaseModel):
     """Base fields for hazard analysis item."""
     component_id: Optional[str] = None
@@ -18,6 +26,7 @@ class HazardAnalysisItemBase(BaseModel):
     hazard_category: Optional[str] = None
     hazard: Optional[str] = None
     foreseeable_sequence_of_events: Optional[str] = None
+    sequence_of_events: Optional[str] = None
     hazardous_situation: Optional[str] = None
     harm: Optional[str] = None
     affected_user: Optional[str] = None
@@ -28,20 +37,35 @@ class HazardAnalysisItemBase(BaseModel):
     use_environment: Optional[str] = None
     initial_severity: Optional[int] = None
     initial_probability: Optional[int] = None
+    initial_occurrence: Optional[int] = None
     initial_risk_level: Optional[str] = None
     risk_control_measures: Optional[List[str]] = None
     risk_control_type: Optional[List[str]] = None
     control_implementation_notes: Optional[str] = None
+    risk_controls: Optional[List[HazardRiskControl]] = None
     residual_severity: Optional[int] = None
     residual_probability: Optional[int] = None
+    residual_occurrence: Optional[int] = None
     residual_risk_level: Optional[str] = None
     residual_risk_acceptability: Optional[str] = None
+    risk_acceptability_decision: Optional[str] = None
+    risk_acceptability_justification: Optional[str] = None
+    benefit_risk_analysis_required: Optional[bool] = False
+    benefit_risk_justification: Optional[str] = None
     related_design_input: Optional[List[str]] = None
     related_design_output: Optional[List[str]] = None
     verification_reference: Optional[List[str]] = None
     validation_reference: Optional[List[str]] = None
+    capa_reference: Optional[List[str]] = None
     requirement_ids: Optional[List[str]] = None
     approval_status: Optional[str] = "draft"
+    approver_role: Optional[str] = None
+    approval_meaning: Optional[str] = None
+    version_lock: Optional[bool] = False
+    review_date: Optional[datetime] = None
+    review_frequency: Optional[str] = None
+    last_reviewed_by: Optional[str] = None
+    post_market_trigger: Optional[bool] = False
     reviewer_comments: Optional[str] = None
     ai_generated: Optional[bool] = None
     ai_confidence: Optional[str] = None
@@ -63,6 +87,7 @@ class HazardAnalysisItemUpdate(BaseModel):
     hazard_category: Optional[str] = None
     hazard: Optional[str] = None
     foreseeable_sequence_of_events: Optional[str] = None
+    sequence_of_events: Optional[str] = None
     hazardous_situation: Optional[str] = None
     harm: Optional[str] = None
     affected_user: Optional[str] = None
@@ -73,20 +98,35 @@ class HazardAnalysisItemUpdate(BaseModel):
     use_environment: Optional[str] = None
     initial_severity: Optional[int] = None
     initial_probability: Optional[int] = None
+    initial_occurrence: Optional[int] = None
     initial_risk_level: Optional[str] = None
     risk_control_measures: Optional[List[str]] = None
     risk_control_type: Optional[List[str]] = None
     control_implementation_notes: Optional[str] = None
+    risk_controls: Optional[List[HazardRiskControl]] = None
     residual_severity: Optional[int] = None
     residual_probability: Optional[int] = None
+    residual_occurrence: Optional[int] = None
     residual_risk_level: Optional[str] = None
     residual_risk_acceptability: Optional[str] = None
+    risk_acceptability_decision: Optional[str] = None
+    risk_acceptability_justification: Optional[str] = None
+    benefit_risk_analysis_required: Optional[bool] = None
+    benefit_risk_justification: Optional[str] = None
     related_design_input: Optional[List[str]] = None
     related_design_output: Optional[List[str]] = None
     verification_reference: Optional[List[str]] = None
     validation_reference: Optional[List[str]] = None
+    capa_reference: Optional[List[str]] = None
     requirement_ids: Optional[List[str]] = None
     approval_status: Optional[str] = None
+    approver_role: Optional[str] = None
+    approval_meaning: Optional[str] = None
+    version_lock: Optional[bool] = None
+    review_date: Optional[datetime] = None
+    review_frequency: Optional[str] = None
+    last_reviewed_by: Optional[str] = None
+    post_market_trigger: Optional[bool] = None
     reviewer_comments: Optional[str] = None
     ai_generated: Optional[bool] = None
     ai_confidence: Optional[str] = None

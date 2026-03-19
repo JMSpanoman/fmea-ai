@@ -62,7 +62,19 @@ def generate_residual_risk(
         "generated_at": datetime.now().isoformat(),
         "version_scope": request.version_scope,
         "residual_risk_html": residual_risk_html,
-        "counts": evidence.get("counts", {})
+        "counts": evidence.get("counts", {}),
+        "finalDetermination": evidence.get("finalDetermination"),
+        "dataQualityStatus": evidence.get("dataQualityStatus"),
+        "reportStatus": evidence.get("reportStatus"),
+        "completenessScore": evidence.get("completenessScore"),
+        "totalRiskItems": evidence.get("totalRiskItems"),
+        "totalHazards": evidence.get("totalHazards"),
+        "missingFieldCounts": evidence.get("missingFieldCounts"),
+        "traceabilitySummary": evidence.get("traceabilitySummary"),
+        "riskReductionSummary": evidence.get("riskReductionSummary"),
+        "regulatoryObservations": evidence.get("regulatoryObservations"),
+        "benefitRiskRequiredCount": evidence.get("benefitRiskRequiredCount"),
+        "unacceptableResidualRiskCount": evidence.get("unacceptableResidualRiskCount"),
     }
 
 @router.get("/residual-risk/export", response_class=HTMLResponse)

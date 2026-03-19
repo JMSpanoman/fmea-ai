@@ -426,8 +426,9 @@ export const getRMFEvidence = async (
 // Hazard Analysis Types and API
 export interface HazardAnalysisGenerateRequest {
   components?: ComponentFilter[];
-  version_scope?: 'approved_only' | 'current' | 'all';
+  version_scope?: 'approved_only' | 'current' | 'all' | 'include_draft' | 'latest_versions';
   include_unapproved?: boolean;
+  report_mode?: 'regulatory' | 'working';
   include_metadata?: boolean;
   include_ai_assist_summary?: boolean;
   format?: string;
@@ -438,6 +439,7 @@ export interface HazardAnalysisGenerateResponse {
   components: ComponentFilter[];
   generated_at: string;
   version_scope: string;
+  report_mode?: string;
   hazard_analysis_html: string;
   counts: {
     risk_items: number;
@@ -457,6 +459,7 @@ export interface HazardAnalysisRow {
   hazard_category?: string | null;
   hazard: string | null;
   foreseeable_sequence_of_events?: string | null;
+  sequence_of_events?: string | null;
   hazardous_situation: string | null;
   harm: string | null;
   sequence_of_events?: string | null;
@@ -468,23 +471,44 @@ export interface HazardAnalysisRow {
   use_environment?: string | null;
   initial_severity?: number | null;
   initial_probability?: number | null;
+  initial_occurrence?: number | null;
   initial_risk_level?: string | null;
   risk_control_measures?: string[] | null;
   risk_control_type?: string[] | null;
   control_implementation_notes?: string | null;
+  risk_controls?: Array<{
+    control_type: string;
+    control_description: string;
+    implementation_status?: string | null;
+    verification_method?: string | null;
+    verification_status?: string | null;
+  }> | null;
   residual_severity?: number | null;
   residual_probability?: number | null;
+  residual_occurrence?: number | null;
   residual_risk_level?: string | null;
   residual_risk_acceptability?: string | null;
+  risk_acceptability_decision?: string | null;
+  risk_acceptability_justification?: string | null;
+  benefit_risk_analysis_required?: boolean | null;
+  benefit_risk_justification?: string | null;
   related_design_input?: string[] | null;
   related_design_output?: string[] | null;
   verification_reference?: string[] | null;
   validation_reference?: string[] | null;
+  capa_reference?: string[] | null;
   requirement_ids?: string[] | null;
   approval_status?: string | null;
   approved: boolean;
   approved_at: string | null;
   approved_by: string | null;
+  approver_role?: string | null;
+  approval_meaning?: string | null;
+  version_lock?: boolean;
+  review_date?: string | null;
+  review_frequency?: string | null;
+  last_reviewed_by?: string | null;
+  post_market_trigger?: boolean;
   reviewer_comments?: string | null;
   ai_generated?: boolean | null;
   ai_confidence?: string | null;
@@ -511,13 +535,15 @@ export const exportHazardAnalysis = async (
   projectId: string,
   components?: string,
   versionScope: string = 'approved_only',
-  includeUnapproved: boolean = false
+  includeUnapproved: boolean = false,
+  reportMode: 'regulatory' | 'working' = 'regulatory'
 ): Promise<string> => {
   try {
     const params = new URLSearchParams();
     if (components) params.append('components', components);
     params.append('version_scope', versionScope);
     params.append('include_unapproved', includeUnapproved.toString());
+    params.append('report_mode', reportMode);
     
     const response = await api.get(`/projects/${projectId}/hazard-analysis/export?${params.toString()}`, {
       responseType: 'text'
@@ -533,13 +559,15 @@ export const getHazardAnalysisData = async (
   projectId: string,
   components?: string,
   versionScope: string = 'approved_only',
-  includeUnapproved: boolean = false
+  includeUnapproved: boolean = false,
+  reportMode: 'regulatory' | 'working' = 'regulatory'
 ): Promise<HazardAnalysisRow[]> => {
   try {
     const params = new URLSearchParams();
     if (components) params.append('components', components);
     params.append('version_scope', versionScope);
     params.append('include_unapproved', includeUnapproved.toString());
+    params.append('report_mode', reportMode);
     const response = await api.get(`/projects/${projectId}/hazard-analysis/data?${params.toString()}`);
     return response.data;
   } catch (error: any) {
@@ -614,7 +642,20 @@ export interface ResidualRiskGenerateResponse {
   counts: {
     versions_included: number;
     missing_residual_fields: number;
+    excluded_versions?: number;
   };
+  finalDetermination?: string;
+  dataQualityStatus?: string;
+  reportStatus?: string;
+  completenessScore?: number;
+  totalRiskItems?: number;
+  totalHazards?: number;
+  missingFieldCounts?: Record<string, number>;
+  traceabilitySummary?: Record<string, number>;
+  riskReductionSummary?: Record<string, any>;
+  regulatoryObservations?: string[];
+  benefitRiskRequiredCount?: number;
+  unacceptableResidualRiskCount?: number;
 }
 
 export interface ResidualRiskRow {

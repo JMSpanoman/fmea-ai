@@ -93,24 +93,16 @@ def build_risk_controls_doc_evidence(
     
     # Build control documentation rows
     control_rows = []
-    total_controls = 0
-    missing_implementation = 0
-    missing_verification = 0
 
     # Track emitted control signatures to avoid duplicates when a control is represented multiple ways.
     emitted: set[str] = set()
 
     def _emit(row: Dict[str, Any]):
-        nonlocal control_rows, emitted, missing_implementation, missing_verification
+        nonlocal control_rows, emitted
         sig = f"{row.get('control_id') or ''}|{row.get('control_key') or ''}|{row.get('risk_item_id') or ''}|{row.get('control_name') or ''}|{row.get('component_id') or ''}"
         if sig in emitted:
             return
         emitted.add(sig)
-        # maintain counts for missing evidence
-        if row.get("flags", {}).get("missing_implementation"):
-            missing_implementation += 1
-        if row.get("flags", {}).get("missing_verification"):
-            missing_verification += 1
         control_rows.append(row)
     
     for risk_item in risk_items:
@@ -121,7 +113,6 @@ def build_risk_controls_doc_evidence(
             controls_query = controls_query.filter(RiskControl.status == "active")
         
         controls = controls_query.all()
-        total_controls += len(controls)
         
         # Get current risk version for context
         current_version = None
@@ -186,18 +177,24 @@ def build_risk_controls_doc_evidence(
             has_implementation = len(implementation_refs) > 0
             has_verification = len(verification_methods) > 0
             
-            if not has_implementation:
-                missing_implementation += 1
-            if not has_verification:
-                missing_verification += 1
-            
             # Build control row
+            cv = current_version
             row = {
                 "risk_item_id": risk_item.id,
                 "risk_key": risk_item.risk_key or f"R-{risk_item.id[:8]}",
                 "component_name": component_name,
-                "hazard": current_version.hazard if current_version and hasattr(current_version, 'hazard') else None,
-                "harm": current_version.harm if current_version and hasattr(current_version, 'harm') else None,
+                "hazard": cv.hazard if cv and getattr(cv, "hazard", None) else None,
+                "hazardous_situation": cv.hazardous_situation if cv and getattr(cv, "hazardous_situation", None) else None,
+                "harm": cv.harm if cv and getattr(cv, "harm", None) else None,
+                "residual_severity": cv.residual_severity if cv else None,
+                "residual_probability": (
+                    cv.residual_probability_of_harm if cv and cv.residual_probability_of_harm is not None
+                    else (cv.residual_occurrence if cv else None)
+                ),
+                "residual_risk_score": cv.residual_risk_score if cv else None,
+                "residual_risk_level": cv.residual_risk_level if cv else None,
+                "risk_acceptability": cv.risk_acceptability if cv else None,
+                "risk_rationale": cv.risk_rationale if cv else None,
                 "component_id": risk_item.component_id,
                 "control_id": control.id,
                 "control_key": control.control_key or f"RC-{control.id[:8]}",
@@ -229,17 +226,28 @@ def build_risk_controls_doc_evidence(
             for src, txt in text_sources:
                 if not (txt or "").strip():
                     continue
+                cv = current_version
                 pseudo = {
                     "risk_item_id": risk_item.id,
                     "risk_key": risk_item.risk_key or f"R-{risk_item.id[:8]}",
                     "component_name": component_name,
-                    "hazard": current_version.hazard if current_version and hasattr(current_version, 'hazard') else None,
-                    "harm": current_version.harm if current_version and hasattr(current_version, 'harm') else None,
+                    "hazard": cv.hazard if cv and getattr(cv, "hazard", None) else None,
+                    "hazardous_situation": cv.hazardous_situation if cv and getattr(cv, "hazardous_situation", None) else None,
+                    "harm": cv.harm if cv and getattr(cv, "harm", None) else None,
+                    "residual_severity": cv.residual_severity if cv else None,
+                    "residual_probability": (
+                        cv.residual_probability_of_harm if cv and cv.residual_probability_of_harm is not None
+                        else (cv.residual_occurrence if cv else None)
+                    ),
+                    "residual_risk_score": cv.residual_risk_score if cv else None,
+                    "residual_risk_level": cv.residual_risk_level if cv else None,
+                    "risk_acceptability": cv.risk_acceptability if cv else None,
+                    "risk_rationale": cv.risk_rationale if cv else None,
                     "component_id": risk_item.component_id,
                     "control_id": None,
                     "control_key": f"{src.upper()}-{risk_item.id[:8]}",
                     "control_name": f"{src.replace('_', ' ').title()} (from Risk Item)",
-                    "control_type": "TBD",
+                    "control_type": "Unclassified — complete formal control registration",
                     "control_status": "draft",
                     "control_description": txt.strip(),
                     "implementation_details": None,
@@ -249,7 +257,6 @@ def build_risk_controls_doc_evidence(
                     "verification_methods": [],
                     "flags": {"missing_implementation": True, "missing_verification": True},
                 }
-                total_controls += 1
                 _emit(pseudo)
 
     # Also derive controls from FMEA mitigation text (common in early projects before Risk Items / RiskControls exist).
@@ -274,17 +281,32 @@ def build_risk_controls_doc_evidence(
             hazard = meta0.get("hazard")
         except Exception:
             hazard = None
+        fm = (getattr(r, "failure_mode", None) or "").strip()
+        pe = (getattr(r, "potential_effects", None) or "").strip()
+        haz_line = hazard
+        if not haz_line and fm:
+            haz_line = f"Failure mode: {fm}"
+        hs_line = None
+        if fm and pe:
+            hs_line = f"During operation or service, {fm.lower()} can lead to {pe[:200]}"
         pseudo = {
             "risk_item_id": None,
             "risk_key": f"FMEA-{str(r.id)[:8]}",
             "component_name": cname,
-            "hazard": hazard,
-            "harm": None,
+            "hazard": haz_line,
+            "hazardous_situation": hs_line,
+            "harm": pe or None,
+            "residual_severity": None,
+            "residual_probability": None,
+            "residual_risk_score": None,
+            "residual_risk_level": None,
+            "risk_acceptability": None,
+            "risk_rationale": None,
             "component_id": cid or None,
             "control_id": None,
             "control_key": f"FMEA-MIT-{str(r.id)[:8]}",
             "control_name": "Mitigation (from FMEA row)",
-            "control_type": "TBD",
+            "control_type": "Unclassified — classify per ISO 14971 control hierarchy during risk item formalization",
             "control_status": "draft",
             "control_description": mit,
             "implementation_details": None,
@@ -294,8 +316,17 @@ def build_risk_controls_doc_evidence(
             "verification_methods": [],
             "flags": {"missing_implementation": True, "missing_verification": True},
         }
-        total_controls += 1
         _emit(pseudo)
+
+    # Reconcile counts from emitted rows (single source of truth; avoids double-counting)
+    n_rows = len(control_rows)
+    missing_implementation = sum(1 for r in control_rows if r.get("flags", {}).get("missing_implementation"))
+    missing_verification = sum(1 for r in control_rows if r.get("flags", {}).get("missing_verification"))
+    complete_trace = sum(
+        1 for r in control_rows
+        if not r.get("flags", {}).get("missing_implementation") and not r.get("flags", {}).get("missing_verification")
+    )
+    pct_complete = round(100.0 * complete_trace / n_rows, 1) if n_rows else 0.0
     
     return {
         "project_id": project_id,
@@ -304,9 +335,11 @@ def build_risk_controls_doc_evidence(
         "version_scope": version_scope,
         "rows": control_rows,
         "counts": {
-            "controls": total_controls,
+            "controls": n_rows,
             "missing_implementation": missing_implementation,
-            "missing_verification": missing_verification
+            "missing_verification": missing_verification,
+            "complete_implementation_and_verification": complete_trace,
+            "percent_complete_implementation_verification": pct_complete,
         }
     }
 

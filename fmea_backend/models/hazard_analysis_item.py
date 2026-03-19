@@ -30,6 +30,7 @@ class HazardAnalysisItem(Base):
     hazard_category = Column(String(255), nullable=True, index=True)
     hazard = Column(Text, nullable=True)
     foreseeable_sequence_of_events = Column(Text, nullable=True)
+    sequence_of_events = Column(Text, nullable=True)  # alias/backward-compatible copy
     hazardous_situation = Column(Text, nullable=True)
     harm = Column(Text, nullable=True)
     affected_user = Column(String(255), nullable=True)
@@ -42,18 +43,23 @@ class HazardAnalysisItem(Base):
     # --- Initial risk estimation ---
     initial_severity = Column(Integer, nullable=True)
     initial_probability = Column(Integer, nullable=True)
+    initial_occurrence = Column(Integer, nullable=True)  # alias for probability
     initial_risk_level = Column(String(50), nullable=True)
 
     # --- Risk controls ---
     risk_control_measures = Column(JSON, nullable=True)  # list of strings
     risk_control_type = Column(JSON, nullable=True)  # list: e.g. ["inherent_safety", "protective"]
     control_implementation_notes = Column(Text, nullable=True)
+    risk_controls = Column(JSON, nullable=True)  # [{control_type, control_description, implementation_status, verification_method, verification_status}]
 
     # --- Residual risk ---
     residual_severity = Column(Integer, nullable=True)
     residual_probability = Column(Integer, nullable=True)
+    residual_occurrence = Column(Integer, nullable=True)  # alias for probability
     residual_risk_level = Column(String(50), nullable=True)
     residual_risk_acceptability = Column(String(100), nullable=True)
+    risk_acceptability_decision = Column(String(100), nullable=True)
+    risk_acceptability_justification = Column(Text, nullable=True)
 
     # --- Traceability ---
     related_design_input = Column(JSON, nullable=True)  # list of ids or refs
@@ -61,12 +67,23 @@ class HazardAnalysisItem(Base):
     verification_reference = Column(JSON, nullable=True)  # list of refs
     validation_reference = Column(JSON, nullable=True)
     requirement_ids = Column(JSON, nullable=True)  # list of strings
+    capa_reference = Column(JSON, nullable=True)  # list of CAPA ids/refs
 
     # --- Review / workflow ---
     approval_status = Column(String(50), nullable=True, default="draft", index=True)  # draft, in_review, approved, rejected
     approved_by = Column(String, ForeignKey("users.id"), nullable=True, index=True)
     approved_at = Column(DateTime(timezone=True), nullable=True)
+    approver_role = Column(String(255), nullable=True)
+    approval_meaning = Column(Text, nullable=True)
+    version_lock = Column(Boolean, nullable=False, default=False)
     reviewer_comments = Column(Text, nullable=True)
+    review_date = Column(DateTime(timezone=True), nullable=True)
+    review_frequency = Column(String(255), nullable=True)  # e.g. monthly, quarterly
+    last_reviewed_by = Column(String, ForeignKey("users.id"), nullable=True, index=True)
+    post_market_trigger = Column(Boolean, nullable=False, default=False)
+
+    benefit_risk_analysis_required = Column(Boolean, nullable=False, default=False)
+    benefit_risk_justification = Column(Text, nullable=True)
 
     # --- Metadata ---
     ai_generated = Column(Boolean, nullable=True, default=False)
@@ -87,3 +104,4 @@ class HazardAnalysisItem(Base):
     fmea_row = relationship("FMEARow", backref="hazard_analysis_items", foreign_keys=[fmea_row_id])
     approver = relationship("User", foreign_keys=[approved_by])
     creator = relationship("User", foreign_keys=[created_by])
+    last_reviewer = relationship("User", foreign_keys=[last_reviewed_by])
