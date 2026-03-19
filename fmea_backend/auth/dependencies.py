@@ -59,6 +59,8 @@ def get_current_user(
     token_username = payload.get("username") or (token_email.split("@")[0] if "@" in token_email else None)
     token_role = payload.get("role") or "user"
 
+    env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
+
     # Special-case: John has admin access and Pro plan
     if str(token_email).lower() == "john@fotonconsulting.com":
         token_role = "admin"
@@ -66,9 +68,14 @@ def get_current_user(
             setattr(user, "plan", PLAN_PRO)
         except Exception:
             pass
+    # In local/dev, all dev identities get Pro for full SmartRisk UX.
+    if str(auth0_id).startswith("dev:") and env not in ("production", "prod", "staging"):
+        try:
+            setattr(user, "plan", PLAN_PRO)
+        except Exception:
+            pass
 
     # Production allowlist: only allow specific users (default: John).
-    env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
     if env in ("production", "prod", "staging"):
         allowed = str(os.getenv("DEV_LOGIN_ALLOWED_EMAILS") or "").strip() or "john@fotonconsulting.com"
         allowed_set = {e.strip().lower() for e in allowed.split(",") if e.strip()}

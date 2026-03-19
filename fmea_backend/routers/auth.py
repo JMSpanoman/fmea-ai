@@ -143,8 +143,9 @@ def dev_login(payload: dict = Body(default=None)):
         if email.lower() not in allowed_set:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not allowed")
 
-    # Special-case: John has admin rights and Pro plan in dev
-    plan = PLAN_LITE
+    # Resolve plan for dev login.
+    # In local/dev environments we default to Pro to unlock full SmartRisk.
+    plan = PLAN_PRO if not is_prod_like else PLAN_LITE
     if email.lower() == "john@fotonconsulting.com" and (not isinstance(payload, dict) or not payload.get("role")):
         role = "admin"
         plan = PLAN_PRO
@@ -165,14 +166,14 @@ def dev_login(payload: dict = Body(default=None)):
         
         if dev_user:
             user_id = dev_user.id
-            # Pro plan: ensure plan is set in DB (for Stripe sync later)
-            if plan == PLAN_PRO:
-                try:
-                    dev_user.plan = PLAN_PRO
-                    db.add(dev_user)
-                    db.commit()
-                except Exception:
-                    db.rollback()
+            # Keep DB plan in sync with resolved dev-login plan.
+            try:
+                dev_user.plan = plan
+                db.add(dev_user)
+                db.commit()
+            except Exception:
+                db.rollback()
+            plan = getattr(dev_user, "plan", None) or plan
             # Create default project only for Pro users (Lite does not include Projects)
             existing_projects = project_crud.get_projects_by_user(db, user_id)
             if plan == PLAN_PRO and not existing_projects:

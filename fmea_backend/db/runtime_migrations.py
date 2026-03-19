@@ -130,3 +130,59 @@ def ensure_hazard_library_columns(engine: Engine) -> None:
         ]:
             if not _has_column_sqlite(conn, table, col):
                 conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
+
+
+def ensure_risk_acceptability_columns(engine: Engine) -> None:
+    """
+    SQLite-friendly runtime migration for newly added RAC columns.
+    Prevents 500s when model evolves before manual SQL migrations are applied.
+    """
+    dialect = engine.dialect.name
+    if dialect != "sqlite":
+        return
+    with engine.begin() as conn:
+        table = "risk_acceptability_criteria"
+        for col, col_type in [
+            ("section_metadata", "TEXT"),
+            ("readiness_metrics", "TEXT"),
+            ("review_comments", "TEXT"),
+            ("approval_notes", "TEXT"),
+            ("rejection_reason", "TEXT"),
+            ("supersedes_id", "VARCHAR"),
+            ("sections_json", "TEXT"),
+            ("section_document_version", "INTEGER DEFAULT 1"),
+        ]:
+            if not _has_column_sqlite(conn, table, col):
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
+
+        table = "organization_risk_criteria_configs"
+        for col, col_type in [
+            ("organization_id", "VARCHAR"),
+            ("template_name", "VARCHAR"),
+            ("severity_rationale", "TEXT"),
+            ("probability_rationale", "TEXT"),
+            ("matrix_rationale", "TEXT"),
+            ("decision_rules_rationale", "TEXT"),
+            ("overall_residual_risk_methods", "TEXT"),
+            ("approval_policy", "TEXT"),
+            ("is_approved", "BOOLEAN DEFAULT 0"),
+            ("approved_by", "VARCHAR"),
+            ("approved_at", "DATETIME"),
+        ]:
+            if not _has_column_sqlite(conn, table, col):
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
+
+        table = "project_risk_criteria_overrides"
+        for col, col_type in [
+            ("terminology_overrides", "TEXT"),
+            ("severity_rationale", "TEXT"),
+            ("probability_rationale", "TEXT"),
+            ("matrix_rationale", "TEXT"),
+            ("decision_rules_rationale", "TEXT"),
+            ("overall_residual_risk_methods", "TEXT"),
+            ("workflow_state", "VARCHAR DEFAULT 'draft'"),
+            ("approval_notes", "TEXT"),
+            ("rejection_reason", "TEXT"),
+        ]:
+            if not _has_column_sqlite(conn, table, col):
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
