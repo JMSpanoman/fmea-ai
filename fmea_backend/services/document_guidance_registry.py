@@ -317,7 +317,6 @@ def get_document_guidance_registry() -> Dict[str, Dict[str, Any]]:
             "ai_available": True,
             "ai_button_text": "Refresh compiled RMF index",
         },
-        # Design Controls docs: conservative deterministic drafting; do not encourage AI for these by default.
         "design_dev_plan": {
             "purpose_text": (
                 "Plans design and development activities, responsibilities, reviews, and lifecycle deliverables."
@@ -326,8 +325,8 @@ def get_document_guidance_registry() -> Dict[str, Dict[str, Any]]:
                 "SmartQS drafts a conservative plan skeleton from Project Setup and references related documents. "
                 "You tailor timelines, roles, and deliverables and record approvals separately."
             ),
-            "ai_available": False,
-            "ai_button_text": "",
+            "ai_available": True,
+            "ai_button_text": "Generate AI sample",
         },
         "design_reviews": {
             "purpose_text": (

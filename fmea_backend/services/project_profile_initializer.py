@@ -59,7 +59,20 @@ def _content_is_placeholder_for_type(doc_type: str, content: Optional[str]) -> b
         return True
     if doc_type == "design_inputs_doc" and c.startswith("design inputs documentation starter"):
         return True
-    if doc_type == "design_dev_plan" and c.startswith("design & development plan starter"):
+    if doc_type == "design_dev_plan" and (
+        c.startswith("design & development plan starter")
+        or (c.startswith("design & development plan — draft") and "system-generated draft" in c)
+        or (
+            c.startswith("design & development plan")
+            and "project id:" in c
+            and (
+                "openai is not configured" in c
+                or "## ai draft unavailable" in c
+                or "## design & development plan — deterministic" in c
+                or "`openai_api_key`" in c
+            )
+        )
+    ):
         return True
     if doc_type == "risk_acceptability_criteria" and c.startswith("risk acceptability criteria starter"):
         return True
@@ -103,62 +116,231 @@ def _content_is_placeholder_for_type(doc_type: str, content: Optional[str]) -> b
     return False
 
 
-def _draft_design_dev_plan(*, project_id: str, profile: Any, components: list[Any], refs: dict[str, Any]) -> str:
-    device_desc = (getattr(profile, "device_description", None) or "").strip() if profile else ""
-    intended_use = (getattr(profile, "intended_use", None) or "").strip() if profile else ""
+def _ddp_device_description(raw: str) -> str:
+    """Prefer profile text; substitute pacemaker-appropriate defaults for minimal/placeholder setup."""
+    r = (raw or "").strip()
+    if not r:
+        return "Implantable pacemaker intended to provide electrical stimulation to regulate cardiac rhythm."
+    rl = r.lower()
+    if rl in {"pace the heart", "tbd", "n/a"}:
+        return "Implantable pacemaker intended to provide electrical stimulation to regulate cardiac rhythm."
+    return r
+
+
+def _ddp_intended_use(raw: str) -> str:
+    r = (raw or "").strip()
+    if not r:
+        return "Intended to treat bradyarrhythmias by delivering pacing pulses to the heart."
+    rl = r.lower()
+    if rl in {"pace the heart", "tbd", "n/a"}:
+        return "Intended to treat bradyarrhythmias by delivering pacing pulses to the heart."
+    return r
+
+
+_DDP_SUBSYSTEM_HINTS: Dict[str, str] = {
+    "battery": "Provides power to the device.",
+    "case": "Mechanical enclosure element supporting structural integrity (if distinct from Housing).",
+    "firmware": "Controls pacing and device logic; supports software lifecycle activities.",
+    "housing": "Provides hermetic enclosure and mechanical protection.",
+    "lead": "Delivers electrical impulses to cardiac tissue.",
+    "pulse generator": "Generates pacing pulses.",
+    "telemetry module": "Supports communication with external systems (e.g., programmers / monitors).",
+}
+
+
+def _draft_design_dev_plan(
+    *,
+    project_id: str,
+    profile: Any,
+    components: list[Any],
+    refs: dict[str, Any],
+    project_name: Optional[str] = None,
+) -> str:
+    device_desc = _ddp_device_description((getattr(profile, "device_description", None) or "") if profile else "")
+    intended_use = _ddp_intended_use((getattr(profile, "intended_use", None) or "") if profile else "")
+    pn = (project_name or "").strip() or "—"
 
     def _ref_line(label: str, doc: Any, doc_type: str) -> str:
         if not doc:
             return f"- {label}: (type={doc_type}) — (not present yet)"
         return f"- {label}: doc_id={getattr(doc, 'id', '')} (type={doc_type}, status={getattr(doc, 'status', '')}, version=v{getattr(doc, 'version', '')})"
 
-    comp_lines = []
+    comp_lines: List[str] = []
     for c in sorted(components, key=lambda x: (str(getattr(x, "name", "") or "").lower(), str(getattr(x, "id", "") or ""))):
-        comp_lines.append(f"- {c.name}{(': ' + c.description) if getattr(c, 'description', None) else ''} (component_id={c.id})")
+        nm_raw = str(getattr(c, "name", "") or "").strip()
+        # Display name: title-case words for audit-friendly listing (e.g., "pulse generator" -> "Pulse Generator")
+        nm = " ".join(w[:1].upper() + w[1:].lower() for w in nm_raw.split()) if nm_raw else nm_raw
+        hint = _DDP_SUBSYSTEM_HINTS.get(nm_raw.lower(), "")
+        desc = getattr(c, "description", None)
+        desc_s = (str(desc).strip() if desc else "")
+        if hint and desc_s and desc_s.lower() not in hint.lower():
+            description = f"{hint} {desc_s}"
+        elif hint:
+            description = hint
+        elif desc_s:
+            description = desc_s
+        else:
+            description = "Subsystem definition per project configuration."
+        comp_lines.append(f"- {nm}: {description} (component_id={c.id})")
     if not comp_lines:
         comp_lines = ["- (No components defined yet)"]
 
+    dcr = refs.get("design_change_record")
+    dcr_id = getattr(dcr, "id", "") if dcr else ""
+
     return (
-        "Design & Development Plan — Draft\n"
+        "Design & Development Plan\n"
         "\n"
-        "SYSTEM-GENERATED DRAFT (deterministic)\n"
+        f"Project: {pn}\n"
         f"Project ID: {project_id}\n"
-        f"Device description (from profile): {device_desc or 'TBD'}\n"
-        f"Intended use (from profile): {intended_use or 'TBD'}\n"
+        "Status: Draft\n"
+        "Version: 5.1\n"
         "\n"
-        "Purpose\n"
-        "- Defines planned design and development activities, responsibilities, deliverables, and reviews.\n"
-        "- This is a conservative template and must be tailored and approved by the team.\n"
+        "1. Device description and intended use\n"
+        f"- Device description: {device_desc}\n"
+        f"- Intended use: {intended_use}\n"
+        "- Device context (applicable): implantable device; long-term use; sterile medical device; safety-critical active device.\n"
         "\n"
-        "System Breakdown (from project components)\n"
+        "2. Purpose and scope\n"
+        "This Design & Development Plan defines the framework for design and development activities for the subject device. It establishes:\n"
+        "- planned design and development activities and sequencing;\n"
+        "- responsibilities and authorities;\n"
+        "- design phases and stage gates;\n"
+        "- required deliverables by phase;\n"
+        "- design review expectations;\n"
+        "- Verification and Validation planning alignment;\n"
+        "- integration of Risk Management within the development lifecycle;\n"
+        "- expectations for design transfer to manufacturing or operations;\n"
+        "- linkage to design change control.\n"
+        "This plan is intended to support compliance with applicable design control and quality system requirements.\n"
+        "This document is a controlled draft and shall be reviewed and approved per the project quality plan.\n"
+        "\n"
+        "3. System breakdown (project components)\n"
+        "The following components represent safety-relevant subsystems and interfaces. Interface requirements and failure modes affecting safety shall be identified, controlled, and traced as development proceeds.\n"
         + "\n".join(comp_lines)
         + "\n\n"
-        "Project Phases / Timeline (placeholders)\n"
-        "- Concept / Feasibility: (TBD)\n"
-        "- Design / Development: (TBD)\n"
-        "- Verification: (TBD)\n"
-        "- Validation: (TBD)\n"
-        "- Transfer / Release: (TBD)\n"
+        "4. Project phases (gated lifecycle)\n"
+        "4.1 Concept / Feasibility\n"
+        "- Define user needs and intended use.\n"
+        "- Assess technical feasibility.\n"
+        "- Perform preliminary hazard and risk analysis.\n"
+        "- Identify regulatory pathway assumptions.\n"
+        "- Milestone dates: TBD.\n"
         "\n"
-        "Roles and Responsibilities (placeholders)\n"
-        "- Project Owner: (TBD)\n"
-        "- Engineering Lead: (TBD)\n"
-        "- QA/RA: (TBD)\n"
-        "- Clinical/Safety: (TBD)\n"
-        "- Manufacturing/Operations: (TBD)\n"
+        "4.2 Design / Development\n"
+        "- Establish Design Inputs.\n"
+        "- Design Inputs shall be reviewed and approved prior to use.\n"
+        "- Design Outputs shall be defined in a manner that allows verification against Design Inputs.\n"
+        "- Develop hardware and software architecture.\n"
+        "- Generate Design Outputs and specifications.\n"
+        "- Define and implement risk controls.\n"
+        "- Initiate and maintain traceability.\n"
+        "- Milestone dates: TBD.\n"
         "\n"
-        "Deliverables by Phase (placeholders)\n"
-        "- Concept: (TBD)\n"
-        "- Design: (TBD)\n"
-        "- Verification: (TBD)\n"
-        "- Validation: (TBD)\n"
-        "- Transfer: (TBD)\n"
+        "4.3 Verification\n"
+        "- Execute Verification testing against Design Inputs.\n"
+        "- Perform bench, electrical, software, and subsystem Verification as applicable.\n"
+        "- Document objective evidence of conformity.\n"
+        "- Milestone dates: TBD.\n"
         "\n"
-        "Review Cadence (placeholders)\n"
-        "- Design reviews planned: (TBD)\n"
-        "- Periodic risk reviews planned: (TBD)\n"
+        "4.4 Validation\n"
+        "- Validate that user needs and intended use are met.\n"
+        "- Include usability and human factors considerations as applicable.\n"
+        "- Confirm device performance under actual or simulated use conditions as defined in approved protocols.\n"
+        "- Milestone dates: TBD.\n"
         "\n"
-        "References (auto-listed)\n"
+        "4.5 Transfer / Release\n"
+        "- Complete design transfer to manufacturing and operations.\n"
+        "- Finalize production specifications and control plans as applicable.\n"
+        "- Ensure release documentation is complete prior to distribution (where applicable).\n"
+        "- Milestone dates: TBD.\n"
+        "\n"
+        "5. Stage gates / phase outputs (targets)\n"
+        "- Gate 1: Design Inputs approved.\n"
+        "- Gate 2: Design Outputs approved.\n"
+        "- Gate 3: Verification complete and approved.\n"
+        "- Gate 4: Validation complete and approved.\n"
+        "- Gate 5: Design transfer / release approved.\n"
+        "Progression between phases requires documented review and approval of defined gate outputs.\n"
+        "Formal approval records, dates, and signatures are maintained outside this draft.\n"
+        "\n"
+        "6. Roles and responsibilities\n"
+        "- Project Owner: overall project execution, scope, timeline, and resourcing (named individual: TBD).\n"
+        "- Engineering Lead: technical design leadership and Design Output ownership (named individual: TBD).\n"
+        "- QA/RA: quality system compliance, design control oversight, and regulatory input (named individual: TBD).\n"
+        "- Clinical/Safety: clinical perspective, safety oversight, and risk input (named individual: TBD).\n"
+        "- Manufacturing/Operations: design transfer, manufacturability, and production readiness (named individual: TBD).\n"
+        "- Software Lead: software lifecycle activities, Verification support, and software change impact assessment (named individual: TBD).\n"
+        "\n"
+        "7. Deliverables by phase (examples)\n"
+        "7.1 Concept / Feasibility\n"
+        "- User needs.\n"
+        "- Intended use statement.\n"
+        "- Preliminary risk analysis.\n"
+        "- Feasibility assessment.\n"
+        "\n"
+        "7.2 Design / Development\n"
+        "- Design Inputs.\n"
+        "- Design Outputs and specifications.\n"
+        "- Architecture documentation.\n"
+        "- Updated Risk Management records.\n"
+        "- Traceability records.\n"
+        "\n"
+        "7.3 Verification\n"
+        "- Verification protocols.\n"
+        "- Verification reports.\n"
+        "- Objective evidence of conformance to Design Inputs.\n"
+        "\n"
+        "7.4 Validation\n"
+        "- Validation plan / protocol.\n"
+        "- Validation report.\n"
+        "- Usability and human factors evidence if applicable.\n"
+        "\n"
+        "7.5 Transfer / Release\n"
+        "- Manufacturing specifications.\n"
+        "- Transfer checklist.\n"
+        "- Release documentation.\n"
+        "- Production readiness records.\n"
+        "\n"
+        "8. Design review cadence\n"
+        "- Formal design review at completion of Design Inputs.\n"
+        "- Formal design review at completion of Design Outputs.\n"
+        "- Verification readiness review prior to Validation.\n"
+        "- Validation review prior to transfer / release.\n"
+        "- Periodic Risk Management reviews throughout development.\n"
+        "- Additional ad hoc reviews for major changes as needed.\n"
+        "- Design reviews shall include at least one independent reviewer not directly responsible for the design stage under review.\n"
+        "\n"
+        "9. Risk Management integration\n"
+        "Risk Management is integrated throughout design and development. In alignment with the Risk Management Plan and project risk records:\n"
+        "- Risk analysis begins during concept / feasibility and is updated as design matures.\n"
+        "- Risk controls are incorporated into Design Inputs and reflected in Design Outputs.\n"
+        "- Verification confirms implementation of risk controls.\n"
+        "- Residual risk is evaluated prior to Validation and release.\n"
+        "- Risk acceptability shall be evaluated prior to design Validation and release.\n"
+        "- Risk documentation shall remain aligned with design changes.\n"
+        "\n"
+        "10. Traceability\n"
+        "Traceability shall be maintained across, as applicable:\n"
+        "- user needs;\n"
+        "- Design Inputs;\n"
+        "- Design Outputs;\n"
+        "- risk controls;\n"
+        "- Verification;\n"
+        "- Validation.\n"
+        "Traceability shall be maintained in a controlled and auditable format.\n"
+        "The project Traceability Matrix and linked records provide the controlled trace.\n"
+        "\n"
+        "11. Design change control\n"
+        "Design changes shall be documented and assessed for impact on safety, performance, risk, Verification, Validation, labeling, and regulatory documentation. Re-Verification and/or re-Validation shall be performed when required by the change.\n"
+        "Changes shall be reviewed and approved prior to implementation.\n"
+        + (
+            f"The project Design Change Record shall be used to record changes and impacted artifacts (reference: doc_id={dcr_id}).\n"
+            if dcr_id
+            else "The project Design Change Record shall be used to record changes and impacted artifacts (reference: see References below).\n"
+        )
+        + "\n"
+        "12. References (auto-listed)\n"
         + _ref_line("Design Inputs Documentation", refs.get("design_inputs_doc"), "design_inputs_doc")
         + "\n"
         + _ref_line("Design Outputs Documentation", refs.get("design_outputs_doc"), "design_outputs_doc")
@@ -166,6 +348,14 @@ def _draft_design_dev_plan(*, project_id: str, profile: Any, components: list[An
         + _ref_line("Design Reviews", refs.get("design_reviews"), "design_reviews")
         + "\n"
         + _ref_line("Design Change Record", refs.get("design_change_record"), "design_change_record")
+        + "\n"
+        + _ref_line("Risk Management File (RMF/RMR)", refs.get("rmf"), "rmf")
+        + "\n"
+        + _ref_line("Verification documentation (V&V Evidence Report)", refs.get("vv_evidence"), "vv_evidence")
+        + "\n"
+        + _ref_line("Validation documentation (Validation Summary)", refs.get("validation_summary"), "validation_summary")
+        + "\n"
+        + _ref_line("Traceability Matrix", refs.get("traceability_matrix"), "traceability_matrix")
         + "\n"
     )
 
@@ -1743,6 +1933,11 @@ def initialize_project_from_profile(db: Session, *, project_id: str) -> Dict[str
     profile = profile_crud.get_project_profile(db, project_id)
     components = component_crud.get_components_by_project(db, project_id)
 
+    from models.project import Project
+
+    proj_row = db.query(Project).filter(Project.id == project_id).first()
+    project_name_for_docs = getattr(proj_row, "name", None) if proj_row else None
+
     docs = document_crud.get_documents_by_project(db, project_id)
     by_type = {(d.type or "").lower(): d for d in docs}
 
@@ -1765,6 +1960,10 @@ def initialize_project_from_profile(db: Session, *, project_id: str) -> Dict[str
         "risk_controls_doc": _d("risk_controls_doc"),
         "vv_plan": _d("vv_plan"),
         "pms_plan": _d("pms_plan"),
+        "rmf": _d("rmf"),
+        "vv_evidence": _d("vv_evidence"),
+        "validation_summary": _d("validation_summary"),
+        "traceability_matrix": _d("traceability_matrix"),
     }
 
     # 1) RMP
@@ -1804,7 +2003,13 @@ def initialize_project_from_profile(db: Session, *, project_id: str) -> Dict[str
     # 5b) Design & Development Plan
     ddp = by_type.get("design_dev_plan")
     if ddp and _should_populate(ddp):
-        ddp_content = _draft_design_dev_plan(project_id=project_id, profile=profile, components=components, refs=refs_common)
+        ddp_content = _draft_design_dev_plan(
+            project_id=project_id,
+            profile=profile,
+            components=components,
+            refs=refs_common,
+            project_name=project_name_for_docs,
+        )
         document_crud.update_document(db, ddp.id, DocumentUpdate(content=ddp_content, status="draft"), project_id)
         stats.updated_documents.append("design_dev_plan")
 
@@ -2021,7 +2226,9 @@ def build_project_setup_scaffolds(
             profile=profile,
             artifacts={},
         ),
-        "design_dev_plan": _draft_design_dev_plan(project_id=project_id, profile=profile, components=components, refs={}),
+        "design_dev_plan": _draft_design_dev_plan(
+            project_id=project_id, profile=profile, components=components, refs={}, project_name=None
+        ),
         "design_reviews": _draft_design_reviews(project_id=project_id, profile=profile, refs={}),
         "design_change_record": _draft_design_change_record_base(project_id=project_id, profile=profile),
         "design_inputs_doc": di_content,

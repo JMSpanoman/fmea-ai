@@ -405,6 +405,49 @@ From available project evidence (best-effort, draft):
 | 0.1 | (TBD) | Initial draft | (TBD) |
 """
 
+        if dt == "design_dev_plan":
+            # Full deterministic DDP (same generator as Project Initialize from profile), not a one-line stub.
+            pid = str(meta.get("project_id") or "").strip()
+            if pid:
+                try:
+                    from database import SessionLocal
+                    from crud import component as component_crud
+                    from crud import document as document_crud
+                    from crud import project_profile as profile_crud
+                    from models.project import Project
+                    from services.project_profile_initializer import _draft_design_dev_plan
+
+                    db = SessionLocal()
+                    try:
+                        profile = profile_crud.get_project_profile(db, pid)
+                        components = component_crud.get_components_by_project(db, pid)
+                        docs = document_crud.get_documents_by_project(db, pid)
+                        by_type = {(d.type or "").lower(): d for d in docs}
+                        refs = {
+                            "design_inputs_doc": by_type.get("design_inputs_doc"),
+                            "design_outputs_doc": by_type.get("design_outputs_doc"),
+                            "design_reviews": by_type.get("design_reviews"),
+                            "design_change_record": by_type.get("design_change_record"),
+                            "rmf": by_type.get("rmf"),
+                            "vv_evidence": by_type.get("vv_evidence"),
+                            "validation_summary": by_type.get("validation_summary"),
+                            "traceability_matrix": by_type.get("traceability_matrix"),
+                        }
+                        proj = db.query(Project).filter(Project.id == pid).first()
+                        pn = getattr(proj, "name", None) if proj else project_name
+                        body = _draft_design_dev_plan(
+                            project_id=pid,
+                            profile=profile,
+                            components=components or [],
+                            refs=refs,
+                            project_name=pn,
+                        )
+                    finally:
+                        db.close()
+                    return body
+                except Exception:
+                    pass
+
         # Generic fallback for other doc types
         return f"""## AI Draft Unavailable (OpenAI not configured)
 

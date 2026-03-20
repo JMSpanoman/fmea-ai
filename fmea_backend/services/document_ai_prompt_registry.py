@@ -112,6 +112,27 @@ def get_document_ai_prompt_registry() -> Dict[str, Dict[str, Any]]:
             "constraints": base_constraints,
             "style": ["Use a simple mapping table: Input → Output (placeholder)."],
         },
+        "design_dev_plan": {
+            "purpose": (
+                "Design & Development Plan (ISO 13485 design control): planned activities, phases/gates, roles, deliverables, "
+                "reviews, V&V alignment, risk management integration, and traceability — draft only."
+            ),
+            "required_sections": [
+                "Purpose and scope (draft)",
+                "Design phases (concept through transfer) with TBD placeholders for dates",
+                "Roles and responsibilities (titles only; no invented person names)",
+                "Design reviews and deliverables (examples; no approval claims)",
+                "Risk management and traceability expectations (high level)",
+                "Open items / TBD",
+            ],
+            "constraints": base_constraints
+            + [
+                "Do NOT fabricate signatures, approval dates, meeting minutes, or completed design reviews.",
+                "Do NOT claim the design is complete, validated, or ready for release.",
+                "Use only components and profile context provided; do not invent device-specific risks or requirements.",
+            ],
+            "style": ["Formal controlled-document tone.", "Bullets and numbered subsections.", "Explicit TBD where data is missing."],
+        },
         "vv_plan": {
             "purpose": "Verification & Validation Plan: structured, high-level plan; activities remain 'Planned'.",
             "required_sections": ["Definitions (Verification vs Validation)", "Strategy overview", "Planned activities (placeholders)", "Traceability expectations"],
