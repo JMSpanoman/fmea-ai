@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../axios';
 import { componentsApi, fmeaApi, projectInitializeApi, projectsApi } from '../services/apiPhase1';
+import { riskRuleEngineApi } from '../services/riskRuleEngineApi';
 import { generateVVFromRisk } from '../services/vvFromRiskApi';
 import { FmeaRow } from '../types';
 import FmeaTable from '../components/FMEA/FmeaTable';
@@ -90,8 +91,44 @@ export default function ProjectFMEAPage() {
   const [vvError, setVVError] = useState<string | null>(null);
   const [vvData, setVVData] = useState<any>(null);
   const [vvRow, setVVRow] = useState<FmeaRow | null>(null);
+  const [reevalRowId, setReevalRowId] = useState<string | null>(null);
+  const [ruleEngineMessage, setRuleEngineMessage] = useState<string | null>(null);
 
   const canSave = rows.length > 0 && !isGenerating && !isSaving && !!projectId;
+
+  const handleReevaluateRow = async (row: FmeaRow) => {
+    if (!projectId) return;
+    setReevalRowId(row.id);
+    setRuleEngineMessage(null);
+    try {
+      await riskRuleEngineApi.reEvaluate(projectId, row.id);
+      await loadSaved();
+      setRuleEngineMessage('Rule engine updated this row (initial + residual).');
+    } catch (e: any) {
+      const d = e?.response?.data?.detail;
+      setRuleEngineMessage(
+        typeof d === 'string' ? d : d?.validation_errors?.join?.('; ') || e?.message || 'Rule engine failed'
+      );
+    } finally {
+      setReevalRowId(null);
+    }
+  };
+
+  const handleEvaluateAllRisks = async () => {
+    if (!projectId) return;
+    setRuleEngineMessage(null);
+    try {
+      const res = await riskRuleEngineApi.evaluateAll(projectId);
+      await loadSaved();
+      setRuleEngineMessage(
+        `Batch evaluation: ${res.updated_rows} rows updated. ${res.errors?.length ? res.errors.length + ' row(s) had validation issues — see console.' : ''}`
+      );
+      if (res.errors?.length) console.warn('evaluate-all errors', res.errors);
+    } catch (e: any) {
+      const d = e?.response?.data?.detail;
+      setRuleEngineMessage(typeof d === 'string' ? d : e?.message || 'Batch evaluation failed');
+    }
+  };
 
   const sortedSavedRows = useMemo(() => {
     const next = [...savedRows];
@@ -372,6 +409,13 @@ export default function ProjectFMEAPage() {
           >
             Open Project Documents
           </button>
+          <button
+            type="button"
+            onClick={() => navigate(`/projects/${projectId}/risk-rule-criteria`)}
+            className="px-3 py-2 rounded-md text-sm border border-gray-300 bg-white hover:bg-gray-50"
+          >
+            Risk rule criteria
+          </button>
         </div>
       </div>
 
@@ -380,6 +424,9 @@ export default function ProjectFMEAPage() {
       ) : null}
       {info ? (
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">{info}</div>
+      ) : null}
+      {ruleEngineMessage ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">{ruleEngineMessage}</div>
       ) : null}
 
       <div className="rounded-lg border border-gray-200 bg-white p-6 space-y-4">
@@ -477,6 +524,15 @@ export default function ProjectFMEAPage() {
             >
               Seed starter rows
             </button>
+            <button
+              type="button"
+              onClick={handleEvaluateAllRisks}
+              disabled={loadingSaved || !sortedSavedRows.length}
+              className="px-3 py-2 rounded-md text-sm border border-gray-800 bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50"
+              title="Requires project risk criteria (seed from Risk rule criteria page)"
+            >
+              Evaluate all rows
+            </button>
           </div>
         </div>
 
@@ -497,6 +553,8 @@ export default function ProjectFMEAPage() {
             projectId={projectId ?? undefined}
             componentNameById={componentNameById}
             onGenerateVV={openGenerateVV}
+            onReevaluateRow={handleReevaluateRow}
+            reevaluateRowId={reevalRowId}
           />
         ) : null}
 

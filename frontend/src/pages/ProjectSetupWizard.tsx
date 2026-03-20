@@ -50,6 +50,8 @@ export default function ProjectSetupWizard() {
     device_description: '',
     user_population: '',
     use_environment: '',
+    overall_device_benefit_risk_profile_acceptable: false,
+    rmr_overall_residual_risk_conclusion_documented: false,
   });
   const [components, setComponents] = useState<ComponentDraft[]>([{ name: '', description: '' }]);
   const [bulkText, setBulkText] = useState('');
@@ -95,6 +97,10 @@ export default function ProjectSetupWizard() {
               user_population: p.user_population || '',
               use_environment: p.use_environment || '',
               key_safety_characteristics: p.key_safety_characteristics || [],
+              overall_device_benefit_risk_profile_acceptable:
+                p.overall_device_benefit_risk_profile_acceptable === true,
+              rmr_overall_residual_risk_conclusion_documented:
+                p.rmr_overall_residual_risk_conclusion_documented === true,
             });
           }
         } catch (e: any) {
@@ -195,6 +201,10 @@ export default function ProjectSetupWizard() {
               .map((x) => String(x).trim())
               .filter(Boolean)
           : [],
+        overall_device_benefit_risk_profile_acceptable:
+          profile.overall_device_benefit_risk_profile_acceptable === true,
+        rmr_overall_residual_risk_conclusion_documented:
+          profile.rmr_overall_residual_risk_conclusion_documented === true,
       };
 
       const trimmedComponents = components
@@ -379,6 +389,42 @@ export default function ProjectSetupWizard() {
                       placeholder="e.g., hospital, home, lab, field"
                     />
                   </div>
+                </div>
+
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-4 space-y-3">
+                  <div className="text-sm font-semibold text-gray-900">Risk management attestations (optional)</div>
+                  <p className="text-xs text-gray-600">
+                    For overall residual risk acceptability (ISO 14971), record governance decisions when applicable. Only checked
+                    boxes are stored as formal attestations.
+                  </p>
+                  <label className="flex items-start gap-2 text-sm text-gray-800">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300"
+                      checked={profile.overall_device_benefit_risk_profile_acceptable === true}
+                      onChange={(e) =>
+                        setProfile((p) => ({ ...p, overall_device_benefit_risk_profile_acceptable: e.target.checked }))
+                      }
+                    />
+                    <span>
+                      Overall benefit-risk profile of the device is determined <strong>acceptable</strong> (per Risk Management
+                      File).
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 text-sm text-gray-800">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300"
+                      checked={profile.rmr_overall_residual_risk_conclusion_documented === true}
+                      onChange={(e) =>
+                        setProfile((p) => ({ ...p, rmr_overall_residual_risk_conclusion_documented: e.target.checked }))
+                      }
+                    />
+                    <span>
+                      The conclusion that <strong>overall residual risk is acceptable</strong> is documented in the Risk
+                      Management Report.
+                    </span>
+                  </label>
                 </div>
 
                 <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">

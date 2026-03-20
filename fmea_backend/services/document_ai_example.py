@@ -180,6 +180,15 @@ def generate_ai_example_for_document(
     if not doc:
         raise HTTPException(status_code=404, detail=f"Document of type '{doc_type}' not found for project")
 
+    if doc_type == "rmf":
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "AI-generated example append is not supported for the Risk Management File (compiled HTML). "
+                "Use 'Compile Risk Management File' or 'Refresh compiled RMF index'."
+            ),
+        )
+
     profile = profile_crud.get_project_profile(db, project_id)
     components = component_crud.get_components_by_project(db, project_id)
     if profile is None or not components:

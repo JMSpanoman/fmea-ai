@@ -32,7 +32,8 @@ def get_document_ai_prompt_registry() -> Dict[str, Dict[str, Any]]:
     """
     base_constraints = _base_constraints()
 
-    compile_only = {"rmf", "essential_requirements_checklist", "submission_index", "audit_package"}
+    # RMF has a dedicated entry below (reference-only narrative if LLM is used elsewhere).
+    compile_only = {"essential_requirements_checklist", "submission_index", "audit_package"}
 
     reg: Dict[str, Dict[str, Any]] = {
         "_default": {
@@ -128,6 +129,25 @@ def get_document_ai_prompt_registry() -> Dict[str, Dict[str, Any]]:
             "required_sections": ["NOT COMPLETE banner", "Intended use summary", "Validation approach (placeholder)", "Evidence summary (placeholder)", "Conclusions (must state not complete)"],
             "constraints": base_constraints,
             "style": ["Avoid conclusions; keep as structure and placeholders."],
+        },
+        "rmf": {
+            "purpose": (
+                "Risk Management File / Report: ISO 14971-oriented index pointing to authoritative SmartQS documents only "
+                "(RMP, Hazard Analysis, FMEA, risk controls, residual evaluation, management review)."
+            ),
+            "required_sections": [
+                "Draft banner / reference-only statement",
+                "Purpose of the RMF as an index (not a duplicate hazard register)",
+                "Traceability statement (by document identity and version)",
+                "Section placeholders pointing to each authoritative record",
+            ],
+            "constraints": base_constraints
+            + [
+                "Do NOT invent hazards, failure modes, harms, severity/probability scores, or verification results.",
+                "Do NOT claim approvals, completeness, or compliance.",
+                "If project context does not include specific risks, use only generic ISO 14971 structure language.",
+            ],
+            "style": ["Short, audit-friendly sentences.", "Prefer bullets and explicit 'see linked document' wording."],
         },
         "benefit_risk_analysis": {
             "purpose": (

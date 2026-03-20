@@ -1,0 +1,276 @@
+{
+  "evaluation_method": "matrix",
+  "severity_scale": [
+    {
+      "level": 1,
+      "code": "S1",
+      "label": "No injury or negligible harm"
+    },
+    {
+      "level": 2,
+      "code": "S2",
+      "label": "Reversible injury or temporary impairment"
+    },
+    {
+      "level": 3,
+      "code": "S3",
+      "label": "Serious injury or permanent impairment"
+    },
+    {
+      "level": 4,
+      "code": "S4",
+      "label": "Death or catastrophic harm"
+    }
+  ],
+  "probability_scale": [
+    {
+      "level": 1,
+      "code": "P1",
+      "label": "Remote"
+    },
+    {
+      "level": 2,
+      "code": "P2",
+      "label": "Low"
+    },
+    {
+      "level": 3,
+      "code": "P3",
+      "label": "Medium"
+    },
+    {
+      "level": 4,
+      "code": "P4",
+      "label": "High"
+    }
+  ],
+  "detection_scale": [
+    {
+      "level": 1,
+      "code": "D1",
+      "label": "Detection level 1"
+    },
+    {
+      "level": 2,
+      "code": "D2",
+      "label": "Detection level 2"
+    },
+    {
+      "level": 3,
+      "code": "D3",
+      "label": "Detection level 3"
+    },
+    {
+      "level": 4,
+      "code": "D4",
+      "label": "Detection level 4"
+    },
+    {
+      "level": 5,
+      "code": "D5",
+      "label": "Detection level 5"
+    },
+    {
+      "level": 6,
+      "code": "D6",
+      "label": "Detection level 6"
+    },
+    {
+      "level": 7,
+      "code": "D7",
+      "label": "Detection level 7"
+    },
+    {
+      "level": 8,
+      "code": "D8",
+      "label": "Detection level 8"
+    },
+    {
+      "level": 9,
+      "code": "D9",
+      "label": "Detection level 9"
+    },
+    {
+      "level": 10,
+      "code": "D10",
+      "label": "Detection level 10"
+    }
+  ],
+  "risk_matrix": {
+    "1": {
+      "1": "Acceptable",
+      "2": "Acceptable",
+      "3": "ALARP",
+      "4": "ALARP"
+    },
+    "2": {
+      "1": "Acceptable",
+      "2": "ALARP",
+      "3": "ALARP",
+      "4": "Unacceptable"
+    },
+    "3": {
+      "1": "ALARP",
+      "2": "ALARP",
+      "3": "Unacceptable",
+      "4": "Unacceptable"
+    },
+    "4": {
+      "1": "ALARP",
+      "2": "Unacceptable",
+      "3": "Unacceptable",
+      "4": "Unacceptable"
+    }
+  },
+  "score_thresholds": {
+    "acceptable_max_rpn": 24,
+    "alarp_max_rpn": 120,
+    "fmea_severity_to_matrix_index": {
+      "1": 1,
+      "2": 1,
+      "3": 1,
+      "4": 2,
+      "5": 2,
+      "6": 2,
+      "7": 3,
+      "8": 3,
+      "9": 3,
+      "10": 4
+    },
+    "fmea_occurrence_to_matrix_index": {
+      "1": 1,
+      "2": 1,
+      "3": 1,
+      "4": 2,
+      "5": 2,
+      "6": 2,
+      "7": 3,
+      "8": 3,
+      "9": 3,
+      "10": 4
+    }
+  },
+  "special_rules": {
+    "critical_function_keywords": [
+      "loss of pacing",
+      "incorrect pacing",
+      "failure to pace",
+      "battery depletion",
+      "lead fracture",
+      "lead failure",
+      "sensing failure",
+      "therapy delivery failure",
+      "failure to sense",
+      "oversensing",
+      "undersensing"
+    ],
+    "essential_function_keywords": [
+      "loss of essential function",
+      "loss of therapy",
+      "no output",
+      "device reset"
+    ],
+    "critical_hazard_category_keywords": [
+      "loss of pacing",
+      "incorrect pacing",
+      "failure to deliver therapy",
+      "therapy delivery failure",
+      "failure to pace",
+      "battery depletion",
+      "lead failure",
+      "lead dislodgement",
+      "dislodgement",
+      "sensing failure"
+    ],
+    "critical_hazard_policies": {
+      "enabled": true,
+      "keyword_list_ref": "critical_hazard_category_keywords",
+      "minimum_severity_matrix_index_floor": 4,
+      "require_system_level_verification": true,
+      "require_justification_when_not_eliminated": true
+    },
+    "device_context": {
+      "implantable_pacemaker_profile": true,
+      "life_sustaining": true
+    },
+    "mandatory_policies": {
+      "enabled": true,
+      "death_minimum_fmea_severity": 5,
+      "residual_review_minimum_fmea_severity": 4,
+      "release_review_disciplines": [
+        "Engineering",
+        "Clinical",
+        "Quality"
+      ]
+    },
+    "residual_acceptability_policies": {
+      "enabled": true,
+      "acceptable_requires_documented_rationale": true,
+      "alarp_requires_documented_justification": true,
+      "alarp_requires_feasibility_attestations": true,
+      "alarp_requires_formal_release_approval": true
+    },
+    "benefit_risk_workflow_policy": {
+      "enabled": true,
+      "apply_when": "formal_bra_required",
+      "use_multi_party_approval": true
+    },
+    "global_residual_acceptability_policy": {
+      "enabled": true,
+      "require_residual_classified": true,
+      "require_unacceptable_escape_attestation": true,
+      "require_no_row_release_blockers": true,
+      "require_overall_benefit_risk_profile_attested": true,
+      "require_rmr_overall_conclusion_attested": true
+    },
+    "rules": [
+      {
+        "id": "s4_benefit_risk",
+        "type": "benefit_risk_required",
+        "condition": {
+          "severity_matrix_gte": 4
+        }
+      },
+      {
+        "id": "serious_residual_justification",
+        "type": "reviewer_justification_required",
+        "condition": {
+          "residual_severity_matrix_gte": 3
+        }
+      },
+      {
+        "id": "critical_function_escalation",
+        "type": "min_classification",
+        "condition": {
+          "text_matches_any": "critical_function_keywords"
+        },
+        "value": "ALARP"
+      },
+      {
+        "id": "critical_function_flag",
+        "type": "set_critical_function_flag",
+        "condition": {
+          "text_matches_any": "critical_function_keywords"
+        },
+        "value": true
+      },
+      {
+        "id": "life_sustaining_essential_escalation",
+        "type": "min_classification",
+        "condition": {
+          "all": [
+            {
+              "device_context_equals": {
+                "life_sustaining": true
+              }
+            },
+            {
+              "text_matches_any": "essential_function_keywords"
+            }
+          ]
+        },
+        "value": "ALARP"
+      }
+    ]
+  }
+}

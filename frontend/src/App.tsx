@@ -68,6 +68,7 @@ import DeviceArchitecturePage from './pages/DeviceArchitecturePage';
 import ComponentDetailPage from './pages/ComponentDetailPage';
 import ProjectRiskOutputsPage from './pages/ProjectRiskOutputsPage';
 import RiskAcceptabilityCriteriaPage from './pages/RiskAcceptabilityCriteriaPage';
+import ProjectRiskRuleCriteriaPage from './pages/ProjectRiskRuleCriteriaPage';
 import RiskItemDetailPage from './pages/RiskItems/RiskItemDetailPage';
 import DesignInputDetailPage from './pages/DesignInputs/DesignInputDetailPage';
 import DesignOutputDetailPage from './pages/DesignOutputs/DesignOutputDetailPage';
@@ -136,6 +137,7 @@ function App() {
                     <Route path=":projectId/rmf" element={<RmfExportPage />} />
                     <Route path=":projectId/hazard-analysis" element={<HazardAnalysisPage />} />
                     <Route path=":projectId/risk-acceptability-criteria" element={<RiskAcceptabilityCriteriaPage />} />
+                    <Route path=":projectId/risk-rule-criteria" element={<ProjectRiskRuleCriteriaPage />} />
                     <Route path=":projectId/residual-risk" element={<ResidualRiskReportPage />} />
                     <Route path=":projectId/risk-evaluation" element={<ResidualRiskReportPage />} />
                     <Route path=":projectId/risk-controls-documentation" element={<RiskControlsDocumentationPage />} />

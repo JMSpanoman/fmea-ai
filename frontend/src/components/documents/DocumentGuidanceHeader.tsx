@@ -68,6 +68,10 @@ export default function DocumentGuidanceHeader({
 
   const showGenerateWithAi = typeof onGenerateWithAi === 'function';
   const generating = Boolean(isGeneratingAi);
+  const dt = (documentType || '').toLowerCase();
+  // RMF: "Generate with AI" runs deterministic compile (no LLM); hide AI sample (would corrupt compiled HTML).
+  const showAiSampleButton = typeof onGenerateAiSample === 'function' && dt !== 'rmf';
+  const generateWithAiLabel = dt === 'rmf' ? 'Refresh compiled RMF index' : 'Generate with AI';
 
   return (
     <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
@@ -116,9 +120,9 @@ export default function DocumentGuidanceHeader({
                 disabled={generating}
                 className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-gray-900 hover:bg-primary/90 disabled:opacity-60"
               >
-                {generating ? 'Generating…' : 'Generate with AI'}
+                {generating ? 'Working…' : generateWithAiLabel}
               </button>
-              {typeof onGenerateAiSample === 'function' && !hasAiSample ? (
+              {showAiSampleButton && !hasAiSample ? (
                 <button
                   onClick={onGenerateAiSample}
                   disabled={generating}

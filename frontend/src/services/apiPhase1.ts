@@ -86,6 +86,10 @@ export type ProjectProfile = {
   user_population?: string | null;
   use_environment?: string | null;
   key_safety_characteristics?: string[] | null;
+  /** Strict attestation: overall device benefit-risk determined acceptable (ISO 14971 / RMF). */
+  overall_device_benefit_risk_profile_acceptable?: boolean | null;
+  /** Strict attestation: RMR documents the conclusion that overall residual risk is acceptable. */
+  rmr_overall_residual_risk_conclusion_documented?: boolean | null;
   created_at?: string;
   updated_at?: string | null;
 };

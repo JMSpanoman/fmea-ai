@@ -85,6 +85,9 @@ export const documentsApi = {
   },
   getVersions: (projectId: string, documentId: string): Promise<DocumentVersion[]> =>
     apiRequest<DocumentVersion[]>(`/projects/${projectId}/documents/${documentId}/versions`),
+  /** Full version payload including `content` (use for diff / offline review when list omits large HTML). */
+  getVersion: (projectId: string, documentId: string, versionNo: number): Promise<DocumentVersion> =>
+    apiRequest<DocumentVersion>(`/projects/${projectId}/documents/${documentId}/versions/${versionNo}`),
 };
 
 // Training API

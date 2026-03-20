@@ -313,8 +313,9 @@ def get_document_guidance_registry() -> Dict[str, Dict[str, Any]]:
                 "SmartQS compiles the RMF by linking to RMP, Hazard Analysis, FMEA, Risk Controls, Residual Risk, and reviews. "
                 "This document is read-only intent and should not be manually edited."
             ),
-            "ai_available": False,  # must not invent content
-            "ai_button_text": "",
+            # "Generate with AI" re-runs the deterministic compiler (no LLM) so users are not blocked; see document_ai_populate.
+            "ai_available": True,
+            "ai_button_text": "Refresh compiled RMF index",
         },
         # Design Controls docs: conservative deterministic drafting; do not encourage AI for these by default.
         "design_dev_plan": {
@@ -358,14 +359,9 @@ def get_document_guidance_registry() -> Dict[str, Dict[str, Any]]:
         # ensure required keys exist
         entry["purpose_text"] = str(entry.get("purpose_text") or "")
         entry["population_text"] = str(entry.get("population_text") or "")
-        # User request: enable AI for all document types.
-        # Keep RMF compiled-only (it must not invent content).
-        if (t or "").strip().lower() == "rmf":
-            entry["ai_available"] = False
-            entry["ai_button_text"] = ""
-        else:
-            entry["ai_available"] = True
-            entry["ai_button_text"] = str(entry.get("ai_button_text") or "Generate AI sample") or "Generate AI sample"
+        # Default: AI sample / populate enabled unless overridden above (e.g. compile-only checklists).
+        entry["ai_available"] = bool(entry.get("ai_available", True))
+        entry["ai_button_text"] = str(entry.get("ai_button_text") or "Generate AI sample") or "Generate AI sample"
         reg[t] = entry
 
     return reg

@@ -132,6 +132,50 @@ def generate_ai_populated_draft_for_document(
     if not doc:
         raise HTTPException(status_code=404, detail=f"Document of type '{doc_type}' not found for project")
 
+    # RMF is compiled HTML from linked authoritative documents — do not run LLM populate (would corrupt HTML).
+    # "Generate with AI" for RMF re-runs the deterministic compiler (same as Compile RMF).
+    if doc_type == "rmf":
+        from services.rmf_compiler import compile_rmf
+
+        meta0 = _safe_meta(getattr(doc, "ai_metadata", None))
+        meta1 = _enforce_rate_limit(meta=meta0, user_id=str(user_id), doc_type=f"{doc_type}:populate", seconds=20)
+        rendered_html, _ready = compile_rmf(db, project_id=project_id, project_name=project.name)
+        now = datetime.now(timezone.utc).isoformat()
+        new_meta = {
+            **meta1,
+            "ai_populate_generated": True,
+            "ai_populate_last_generated_at": now,
+            "ai_populate_last_generated_by": str(user_id),
+            "ai_populate_mode": "rmf_deterministic_compile",
+            "rmf_deterministic_compile": True,
+            "generated_with_ai": False,
+            "ai_populate_source": "rmf_compiler_via_generate_with_ai",
+        }
+        updated = document_crud.update_document(
+            db,
+            getattr(doc, "id"),
+            DocumentUpdate(content=rendered_html, status="draft", ai_metadata=new_meta),
+            project_id,
+        )
+        if not updated:
+            raise HTTPException(status_code=500, detail="Failed to update document")
+        try:
+            vno = int(getattr(updated, "version", 0) or 0)
+            v = document_crud.get_document_version_by_no(db, getattr(updated, "id"), vno)
+            if v is not None:
+                ch = v.changes if isinstance(v.changes, dict) else {}
+                v.changes = {
+                    **ch,
+                    "source": "Generate with AI (RMF deterministic compile)",
+                    "generated_at": now,
+                    "document_type": doc_type,
+                    "mode": "rmf_deterministic_compile",
+                }
+                db.commit()
+        except Exception:
+            pass
+        return updated
+
     profile = profile_crud.get_project_profile(db, project_id)
     components = component_crud.get_components_by_project(db, project_id)
     if profile is None or not components:

@@ -9,6 +9,8 @@ class ProjectProfileBase(BaseModel):
     user_population: Optional[str] = None
     use_environment: Optional[str] = None
     key_safety_characteristics: Optional[List[str]] = None
+    overall_device_benefit_risk_profile_acceptable: Optional[bool] = None
+    rmr_overall_residual_risk_conclusion_documented: Optional[bool] = None
 
 
 class ProjectProfileUpsert(ProjectProfileBase):

@@ -27,20 +27,61 @@ export interface FmeaRow {
   id: string; // UUID
   project_id: string; // UUID
   component_id?: string; // UUID
+  device_function?: string;
   failure_mode?: string;
   effect?: string;
   cause?: string;
+  hazard?: string;
+  harm?: string;
   severity?: number;
   probability?: number;
   detection?: number;
   rpn?: number; // Auto-calculated
   mitigation?: string;
+  action_taken?: string;
   residual_severity?: number;
   residual_probability?: number;
   residual_detection?: number;
   residual_rpn?: number; // Auto-calculated
   financial_impact?: number;
   ai_metadata?: Record<string, any>;
+  /** Deterministic rule engine */
+  initial_risk_classification?: string | null;
+  residual_risk_classification?: string | null;
+  benefit_risk_required?: boolean;
+  reviewer_justification?: string | null;
+  reviewer_name?: string | null;
+  reviewer_date?: string | null;
+  critical_function_flag?: boolean;
+  approval_blocked?: boolean;
+  /** Derived when rule engine runs (AND across stored initial/residual phases). */
+  acceptable_for_release?: boolean;
+  benefit_risk_formal_approval_recorded?: boolean;
+  /** Structured benefit–risk analysis (documentation + multi-party acceptance) */
+  bra_clinical_benefit_documented?: boolean;
+  bra_benefit_vs_residual_risk_documented?: boolean;
+  bra_state_of_the_art_documented?: boolean;
+  bra_supporting_evidence_addressed?: boolean;
+  bra_approval_clinical_medical_recorded?: boolean;
+  bra_approval_quality_regulatory_recorded?: boolean;
+  bra_approval_design_authority_recorded?: boolean;
+  cross_functional_review_completed?: boolean;
+  formal_release_approval_recorded?: boolean;
+  additional_controls_reduced_risk?: boolean;
+  benefit_risk_analysis_approved?: boolean;
+  critical_hazard_severity_floor_waived?: boolean;
+  /** Attestation: hazard/risk eliminated at source (critical-hazard justification rule). */
+  risk_eliminated?: boolean;
+  system_level_verification_recorded?: boolean;
+  /** Aggregates from rule engine results */
+  critical_hazard_category_flag?: boolean;
+  system_level_verification_required?: boolean;
+  /** Residual ALARP workflow attestations */
+  residual_all_feasible_controls_implemented?: boolean;
+  residual_further_reduction_not_practicable?: boolean;
+  rule_engine_result_json?: Record<string, any> | null;
+  ai_suggested_values_json?: Record<string, any> | null;
+  risk_criteria_version_applied?: number | null;
   /** Risk Knowledge Base: link to hazard_library.id */
   hazard_library_id?: string;
   /** Risk Knowledge Base: link to harm_library.id */

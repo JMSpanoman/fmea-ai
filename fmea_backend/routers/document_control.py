@@ -528,6 +528,41 @@ def generate_document_version(
         )
         db.add(rac)
         db.commit()
+    elif doc_type == "benefit_risk_analysis":
+        from services.benefit_risk_analysis_service import (
+            BenefitRiskApprovedModeBlocked,
+            generate_benefit_risk_analysis_draft,
+        )
+
+        try:
+            generated = generate_benefit_risk_analysis_draft(
+                db=db,
+                project_id=project_id,
+                project_name=project.name,
+                version_scope=version_scope,
+                use_ai=bool(options.get("use_ai", False)),
+                approved_mode=bool(options.get("approved_mode", False)),
+                decision_text=options.get("overall_decision"),
+                rationale_text=options.get("decision_rationale"),
+                approval_metadata=options.get("approval_metadata"),
+            )
+        except BenefitRiskApprovedModeBlocked as e:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "message": str(e),
+                    "blockers": e.blockers,
+                },
+            )
+        stored_content = generated.get("draft_markdown", "")
+        rendered_html = _render_text_as_html(
+            title=document.name,
+            project_name=project.name,
+            doc_type=doc_type,
+            status="draft",
+            version=(document.version or 0) + 1,
+            text=stored_content,
+        )
     elif doc_type in {"essential_requirements_checklist", "submission_index", "audit_package"}:
         # Compile-only documents: links/status only, no compliance claims, do not overwrite user-authored content.
         from services.regulatory_audit_compiler import (
@@ -612,7 +647,16 @@ def generate_ai_sample(
     if not doc_type:
         raise HTTPException(status_code=400, detail="document_type is required")
 
-    # Some document types (e.g., RMF) must not invent content.
+    if doc_type == "rmf":
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "AI sample append is not supported for the Risk Management File (compiled HTML). "
+                "Use 'Compile Risk Management File' or 'Refresh compiled RMF index' (Generate with AI) to update the index."
+            ),
+        )
+
+    # Some document types must not use AI sample (compile-only indices, etc.).
     from services.document_guidance_registry import get_document_guidance_registry
 
     reg = get_document_guidance_registry()

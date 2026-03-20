@@ -217,3 +217,68 @@ def ensure_hazard_analysis_item_columns(engine: Engine) -> None:
         ]:
             if not _has_column_sqlite(conn, table, col):
                 conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
+
+
+def ensure_fmea_rule_engine_columns(engine: Engine) -> None:
+    """
+    FMEA row extensions for deterministic risk acceptability rule engine + audit support.
+    """
+    dialect = engine.dialect.name
+    if dialect != "sqlite":
+        return
+    with engine.begin() as conn:
+        table = "fmea_rows"
+        for col, col_type in [
+            ("device_function", "TEXT"),
+            ("hazard", "TEXT"),
+            ("harm", "TEXT"),
+            ("action_taken", "TEXT"),
+            ("initial_risk_classification", "VARCHAR(32)"),
+            ("residual_risk_classification", "VARCHAR(32)"),
+            ("benefit_risk_required", "BOOLEAN DEFAULT 0"),
+            ("reviewer_justification", "TEXT"),
+            ("reviewer_name", "VARCHAR(255)"),
+            ("reviewer_date", "DATETIME"),
+            ("critical_function_flag", "BOOLEAN DEFAULT 0"),
+            ("approval_blocked", "BOOLEAN DEFAULT 0"),
+            ("rule_engine_result_json", "TEXT"),
+            ("ai_suggested_values_json", "TEXT"),
+            ("risk_criteria_version_applied", "INTEGER"),
+            ("acceptable_for_release", "BOOLEAN DEFAULT 1"),
+            ("benefit_risk_formal_approval_recorded", "BOOLEAN DEFAULT 0"),
+            ("bra_clinical_benefit_documented", "BOOLEAN DEFAULT 0"),
+            ("bra_benefit_vs_residual_risk_documented", "BOOLEAN DEFAULT 0"),
+            ("bra_state_of_the_art_documented", "BOOLEAN DEFAULT 0"),
+            ("bra_supporting_evidence_addressed", "BOOLEAN DEFAULT 0"),
+            ("bra_approval_clinical_medical_recorded", "BOOLEAN DEFAULT 0"),
+            ("bra_approval_quality_regulatory_recorded", "BOOLEAN DEFAULT 0"),
+            ("bra_approval_design_authority_recorded", "BOOLEAN DEFAULT 0"),
+            ("cross_functional_review_completed", "BOOLEAN DEFAULT 0"),
+            ("formal_release_approval_recorded", "BOOLEAN DEFAULT 0"),
+            ("additional_controls_reduced_risk", "BOOLEAN DEFAULT 0"),
+            ("benefit_risk_analysis_approved", "BOOLEAN DEFAULT 0"),
+            ("critical_hazard_severity_floor_waived", "BOOLEAN DEFAULT 0"),
+            ("risk_eliminated", "BOOLEAN DEFAULT 0"),
+            ("system_level_verification_recorded", "BOOLEAN DEFAULT 0"),
+            ("critical_hazard_category_flag", "BOOLEAN DEFAULT 0"),
+            ("system_level_verification_required", "BOOLEAN DEFAULT 0"),
+            ("residual_all_feasible_controls_implemented", "BOOLEAN DEFAULT 0"),
+            ("residual_further_reduction_not_practicable", "BOOLEAN DEFAULT 0"),
+        ]:
+            if not _has_column_sqlite(conn, table, col):
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
+
+
+def ensure_project_profile_governance_columns(engine: Engine) -> None:
+    """Project-level RMF/RMR attestations on project_profiles (SQLite runtime migration)."""
+    dialect = engine.dialect.name
+    if dialect != "sqlite":
+        return
+    with engine.begin() as conn:
+        table = "project_profiles"
+        for col, col_type in [
+            ("overall_device_benefit_risk_profile_acceptable", "BOOLEAN"),
+            ("rmr_overall_residual_risk_conclusion_documented", "BOOLEAN"),
+        ]:
+            if not _has_column_sqlite(conn, table, col):
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
