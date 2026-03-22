@@ -102,4 +102,14 @@ def get_current_user(
         except Exception:
             pass
 
+    # Local development: default to SmartRisk Pro for every authenticated user (Auth0 + dev tokens).
+    # Opt out with SMARTRISK_DEV_FORCE_PRO=false (or 0/no/off). Ignored in production/staging.
+    if env not in ("production", "prod", "staging"):
+        raw = os.getenv("SMARTRISK_DEV_FORCE_PRO", "true").strip().lower()
+        if raw not in ("0", "false", "no", "off"):
+            try:
+                setattr(user, "plan", PLAN_PRO)
+            except Exception:
+                pass
+
     return user

@@ -170,6 +170,27 @@ def get_document_ai_prompt_registry() -> Dict[str, Dict[str, Any]]:
             ],
             "style": ["Short, audit-friendly sentences.", "Prefer bullets and explicit 'see linked document' wording."],
         },
+        "capa": {
+            "purpose": (
+                "CAPA log / controlled record template: trigger, problem, containment, root cause, corrective/preventive actions, "
+                "verification of effectiveness plan, risk linkage — draft structure only."
+            ),
+            "required_sections": [
+                "DRAFT banner and project context",
+                "Trigger / problem / containment placeholders",
+                "Root cause (hypothesis vs confirmed — evidence required for confirmation)",
+                "Corrective and preventive actions (placeholders)",
+                "Verification of effectiveness plan (not results without evidence)",
+                "Optional risk / FMEA linkage placeholders",
+            ],
+            "constraints": base_constraints
+            + [
+                "Do NOT record effectiveness as confirmed or closed without objective evidence.",
+                "Do NOT fabricate complaints, NCR numbers, audit findings, signatures, or dates of completion.",
+                "Do NOT claim regulatory submission, recall, or field action decisions.",
+            ],
+            "style": ["Controlled-document tone.", "Explicit TBD placeholders.", "Bullets for each CAPA entry."],
+        },
         "benefit_risk_analysis": {
             "purpose": (
                 "Benefit–Risk Analysis Report (ISO 14971): structured evaluation of whether overall residual risks "

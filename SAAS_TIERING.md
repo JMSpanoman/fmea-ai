@@ -35,6 +35,13 @@ SmartRisk supports two product tiers:
   - Legacy `ai` (`/fmea/fmea/generate`, `/fmea/pfmea/generate`) – AI FMEA generation
   - `ai_phase1` (`/ai/fmea/suggest`, `/ai/fmea/check`) – AI suggestions
 
+### Loading Pro in local development
+
+- **Dev login** (`POST /auth/dev-login`): In non–production-like environments (`ENVIRONMENT` not `production` / `prod` / `staging`), the resolved plan defaults to **Pro** and the user row is updated accordingly.
+- **Auth0 users**: New users are created with plan **lite** in the database. In **non–production-like** environments, the API **defaults** to treating every user as **Pro** (`SMARTRISK_DEV_FORCE_PRO` defaults to enabled). Opt out with **`SMARTRISK_DEV_FORCE_PRO=false`** if you need to test Lite locally.
+- **Manual override**: `UPDATE users SET plan = 'pro' WHERE email = 'you@example.com';`
+- **Staging / production**: `SMARTRISK_DEV_FORCE_PRO` is ignored; plan should come from subscription/admin tooling (future) or manual DB updates.
+
 ### Frontend Feature Flags
 
 - **Config** (`frontend/src/config/features.ts`):

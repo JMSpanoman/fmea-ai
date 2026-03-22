@@ -857,6 +857,33 @@ def export_document_html(
         html = design_outputs_doc_renderer.render_design_outputs_doc_html(evidence)
         return HTMLResponse(content=html)
 
+    if doc_type == "capa":
+        from services.capa_document_builder import (
+            parse_capa_document_content,
+            render_capa_document_html,
+            render_capa_legacy_text_html,
+        )
+
+        parsed, legacy = parse_capa_document_content(content)
+        if isinstance(parsed, dict):
+            html = render_capa_document_html(
+                parsed,
+                title=document.name or "CAPA",
+                project_name=project.name,
+                doc_status=str(document.status or ""),
+                version=int(export_version or 1),
+            )
+            return HTMLResponse(content=html)
+        if legacy:
+            html = render_capa_legacy_text_html(
+                content or "",
+                title=document.name or "CAPA",
+                project_name=project.name,
+                doc_status=str(document.status or ""),
+                version=int(export_version or 1),
+            )
+            return HTMLResponse(content=html)
+
     # If content already looks like full HTML, return as-is
     lowered = content.lstrip().lower()
     if lowered.startswith("<!doctype") or lowered.startswith("<html") or lowered.startswith("<!doctype html"):

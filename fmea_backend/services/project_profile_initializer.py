@@ -618,35 +618,14 @@ def _draft_pms_report(*, project_id: str, profile: Any, refs: dict[str, Any]) ->
 
 
 def _draft_capa_log(*, project_id: str, profile: Any) -> str:
-    return (
-        "CAPA — Draft (CAPA Log)\n"
-        "\n"
-        "SYSTEM-GENERATED DRAFT SCAFFOLD (deterministic)\n"
-        f"Project ID: {project_id}\n"
-        "\n"
-        "Important\n"
-        "- Structure-only: do not record effectiveness confirmation unless objective evidence exists.\n"
-        "- Entries below are placeholders; create/track real CAPAs as they occur.\n"
-        "\n"
-        "CAPA Entries\n"
-        "\n"
-        "CAPA-001 — Draft (sample empty entry)\n"
-        "- Trigger reference: (blank — complaint/quality event/nonconformance reference or free text)\n"
-        "- Problem statement: (blank)\n"
-        "- Containment: (blank)\n"
-        "- Root cause analysis: (blank)\n"
-        "- Corrective action(s): (blank)\n"
-        "- Preventive action(s): (blank)\n"
-        "- Verification of effectiveness plan: (blank)\n"
-        "- Status: Open\n"
-        "- Owner: (blank)\n"
-        "- Dates: Opened ____  Target ____  Closed ____\n"
-        "\n"
-        "Risk linkage (optional; placeholders)\n"
-        "- Related hazard(s): (blank)\n"
-        "- Related FMEA row(s): (blank)\n"
-        "- Related risk control(s): (blank)\n"
-    )
+    """
+    Single structured CAPA document (JSON). No duplicated text scaffolds or '(blank)' placeholders.
+    """
+    _ = profile
+    from services.capa_document_builder import build_capa_document_record, serialize_capa_document
+
+    rec = build_capa_document_record(project_id=project_id, project_name=None)
+    return serialize_capa_document(rec.model_dump(mode="json"))
 
 
 def _draft_usability_risk_analysis(

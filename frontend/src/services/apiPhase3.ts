@@ -50,10 +50,17 @@ export const documentsApi = {
     apiRequest<Document[]>(`/projects/${projectId}/documents`),
   getById: (projectId: string, documentId: string): Promise<Document> =>
     apiRequest<Document>(`/projects/${projectId}/documents/${documentId}`),
-  getGuidanceRegistry: (): Promise<Record<string, { purpose_text: string; population_text: string; ai_available: boolean; ai_button_text?: string }>> =>
-    apiRequest<Record<string, { purpose_text: string; population_text: string; ai_available: boolean; ai_button_text?: string }>>(
-      '/documents/guidance'
-    ),
+  getGuidanceRegistry: async (): Promise<
+    Record<string, { purpose_text: string; population_text: string; ai_available: boolean; ai_button_text?: string }>
+  > => {
+    const res = await api.get<
+      Record<string, { purpose_text: string; population_text: string; ai_available: boolean; ai_button_text?: string }>
+    >('/documents/guidance', {
+      params: { _t: Date.now() },
+      headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+    });
+    return res.data;
+  },
   generateAiSampleForType: (projectId: string, documentType: string): Promise<Document> =>
     apiRequest<Document>(`/projects/${projectId}/documents/${documentType}/ai-sample`, { method: 'POST' }),
   generateAiExampleForType: (projectId: string, documentType: string): Promise<Document> =>

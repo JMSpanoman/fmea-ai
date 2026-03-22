@@ -1,2 +1,6 @@
-Given risk data and failure information, generate CAPA content including root cause, CAPA plan, effectiveness check, and risk linkages. Return JSON.
+(Deprecated for full-document drafting — the controlled CAPA document is stored as structured JSON.)
 
+For AI enrichment, see `capa_ai_assist_prompt.txt` (ai_assist reviewer output only).
+
+If you must output legacy shape for compatibility:
+Return JSON only: { "draft": "<text>" } with a short note pointing users to structured CAPA JSON in the product.

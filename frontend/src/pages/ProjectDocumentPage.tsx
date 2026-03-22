@@ -143,6 +143,7 @@ export default function ProjectDocumentPage() {
 
   const title = useMemo(() => doc?.name || 'Document', [doc]);
   const docType = (doc?.type || '').toLowerCase();
+  const isCapa = docType === 'capa';
   const isRmf = docType === 'rmf';
   const isFmea = docType === 'fmea';
   const isHazardAnalysis = docType === 'hazard_analysis';
@@ -170,7 +171,7 @@ export default function ProjectDocumentPage() {
     const t = docType;
     const sources: string[] = [];
     if (!t) return sources;
-    if (['rmp', 'hazard_analysis', 'design_inputs_doc', 'design_outputs_doc', 'vv_plan', 'vv_evidence', 'traceability_matrix', 'fmea'].includes(t)) {
+    if (['rmp', 'hazard_analysis', 'design_inputs_doc', 'design_outputs_doc', 'vv_plan', 'vv_evidence', 'traceability_matrix', 'fmea', 'capa'].includes(t)) {
       sources.push('Project Setup');
       sources.push('Components');
     }
@@ -1192,6 +1193,13 @@ export default function ProjectDocumentPage() {
 
         {tab === 'edit' && !isRmf ? (
           <div className="space-y-4">
+            {isCapa ? (
+              <div className="rounded-md border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
+                This CAPA is stored as <strong>structured JSON</strong> (single object). Edit the JSON directly, or use{' '}
+                <strong>Generate with AI</strong> to refresh only the <code className="rounded bg-sky-100 px-1">ai_assist</code>{' '}
+                reviewer block — the system scaffold is not duplicated.
+              </div>
+            ) : null}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
@@ -1345,9 +1353,17 @@ export default function ProjectDocumentPage() {
                 subtitle={
                   isFmea
                     ? 'Structured risk analysis table with scoring and mitigation actions'
-                    : 'Structured report output rendered from the selected document version'
+                    : isCapa
+                      ? 'Structured CAPA (HTML export) — AI assist is separated in the preview when present'
+                      : 'Structured report output rendered from the selected document version'
                 }
               >
+                {isCapa ? (
+                  <div className="mb-3 rounded-md border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900 print:hidden">
+                    Preview loads the server HTML export. Sections and workflow gates come from the JSON record;{' '}
+                    <strong>AI assist</strong> appears in the highlighted panel when populated.
+                  </div>
+                ) : null}
                 <div className="min-w-0 max-h-[min(72vh,56rem)] overflow-auto rounded-lg border border-neutral-200 bg-white [scrollbar-gutter:stable] print:max-h-none print:overflow-visible print:border-neutral-300 print:shadow-none">
                   {previewHtml ? (
                     <div ref={previewHostRef} className="report-preview report-preview-inner min-w-0 p-3 sm:p-4 print:p-2">

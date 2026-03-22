@@ -705,6 +705,19 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 <i className="fa-solid fa-chart-line w-4 h-4 mr-2"></i>
                 <span>Post-Market Surveillance</span>
               </button>
+              <button
+                onClick={() => {
+                  const pid = selectedProject?.id;
+                  if (pid) navigate(`/projects/${pid}/pms/plan-generator`);
+                  else navigate('/projects');
+                }}
+                className={`flex items-center w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                  location.pathname.includes('/pms/plan-generator') ? 'bg-blue-600 text-white' : 'text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <i className="fa-solid fa-file-medical w-4 h-4 mr-2"></i>
+                <span>PMS plan generator</span>
+              </button>
               <button 
                 onClick={() => navigate('/complaints')}
                 className={`flex items-center w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${

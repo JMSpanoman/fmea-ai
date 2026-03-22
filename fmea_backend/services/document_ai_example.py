@@ -357,23 +357,35 @@ def generate_ai_example_for_document(
     now = datetime.now(timezone.utc).isoformat()
     ai_fn = ai_draft_fn or _default_or_stub_ai_draft_fn()
 
-    try:
-        draft = ai_fn(
-            doc_type,
-            context,
-            {
-                "project_id": project_id,
-                "project_name": project.name,
-                "document_type": doc_type,
-                "source": "AI Example",
-                "generated_at": now,
-                "current_version": getattr(doc, "version", None),
-            },
-        )
-    except Exception as e:
-        raise HTTPException(status_code=503, detail=str(e))
+    meta_example = {
+        "project_id": project_id,
+        "project_name": project.name,
+        "document_type": doc_type,
+        "source": "AI Example",
+        "generated_at": now,
+        "current_version": getattr(doc, "version", None),
+    }
 
-    new_content = _append_ai_example_section(existing=getattr(doc, "content", "") or "", draft=draft, generated_at=now)
+    if doc_type == "capa":
+        try:
+            from services.project_ai_doc_generator import merge_capa_document_json
+
+            draft = merge_capa_document_json(
+                project_id=project_id,
+                project_name=project.name,
+                existing_content=getattr(doc, "content", None),
+                context=context,
+                meta=meta_example,
+            )
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=str(e))
+        new_content = (draft or "").strip()
+    else:
+        try:
+            draft = ai_fn(doc_type, context, meta_example)
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=str(e))
+        new_content = _append_ai_example_section(existing=getattr(doc, "content", "") or "", draft=draft, generated_at=now)
     new_meta = {
         **meta1,
         "ai_example_generated": True,
@@ -382,6 +394,8 @@ def generate_ai_example_for_document(
         "generated_with_ai": True,
         "ai_example_source": "generate_ai_endpoint",
     }
+    if doc_type == "capa":
+        new_meta["capa_ai_assist_only"] = True
 
     updated = document_crud.update_document(
         db,

@@ -8,16 +8,13 @@ type GuidanceEntry = {
   ai_button_text?: string;
 };
 
-let cachedRegistry: Record<string, GuidanceEntry> | null = null;
-let cachedRegistryPromise: Promise<Record<string, GuidanceEntry>> | null = null;
-
+/**
+ * Always fetch fresh guidance from the API (no module-level cache).
+ * Stale caches caused users to miss backend updates (e.g. ai_available flags) until hard refresh.
+ */
 async function loadGuidanceRegistry(): Promise<Record<string, GuidanceEntry>> {
-  if (cachedRegistry) return cachedRegistry;
-  if (!cachedRegistryPromise) {
-    cachedRegistryPromise = documentsApi.getGuidanceRegistry().then((r) => (r || {}) as Record<string, GuidanceEntry>);
-  }
-  cachedRegistry = await cachedRegistryPromise;
-  return cachedRegistry;
+  const r = await documentsApi.getGuidanceRegistry();
+  return (r || {}) as Record<string, GuidanceEntry>;
 }
 
 export default function DocumentGuidanceHeader({
@@ -36,30 +33,28 @@ export default function DocumentGuidanceHeader({
   populationSources?: string[];
 }) {
   const [loading, setLoading] = useState(false);
-  const [registry, setRegistry] = useState<Record<string, GuidanceEntry> | null>(cachedRegistry);
+  const [registry, setRegistry] = useState<Record<string, GuidanceEntry> | null>(null);
 
   useEffect(() => {
     let alive = true;
-    if (!registry) {
-      setLoading(true);
-      loadGuidanceRegistry()
-        .then((r) => {
-          if (!alive) return;
-          setRegistry(r);
-        })
-        .catch(() => {
-          if (!alive) return;
-          setRegistry({});
-        })
-        .finally(() => {
-          if (!alive) return;
-          setLoading(false);
-        });
-    }
+    setLoading(true);
+    loadGuidanceRegistry()
+      .then((r) => {
+        if (!alive) return;
+        setRegistry(r);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setRegistry({});
+      })
+      .finally(() => {
+        if (!alive) return;
+        setLoading(false);
+      });
     return () => {
       alive = false;
     };
-  }, [registry]);
+  }, [documentType]);
 
   const guidance = useMemo(() => {
     const key = (documentType || '').toLowerCase();

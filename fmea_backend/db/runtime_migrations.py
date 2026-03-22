@@ -282,3 +282,146 @@ def ensure_project_profile_governance_columns(engine: Engine) -> None:
         ]:
             if not _has_column_sqlite(conn, table, col):
                 conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
+
+
+def _sqlite_table_exists(conn: Connection, table: str) -> bool:
+    row = conn.execute(
+        text("SELECT name FROM sqlite_master WHERE type='table' AND name=:t"),
+        {"t": table},
+    ).fetchone()
+    return row is not None
+
+
+def ensure_capa_workflow_schema(engine: Engine) -> None:
+    """
+    Add enterprise CAPA workflow columns and capa_evidences table (SQLite).
+    Postgres: rely on SQLAlchemy create_all for new tables; add columns via IF NOT EXISTS where needed.
+    """
+    dialect = engine.dialect.name
+
+    if dialect == "sqlite":
+        with engine.begin() as conn:
+            if _sqlite_table_exists(conn, "capas"):
+                if not _has_column_sqlite(conn, "capas", "workflow_state"):
+                    conn.execute(text("ALTER TABLE capas ADD COLUMN workflow_state VARCHAR DEFAULT 'draft'"))
+                if not _has_column_sqlite(conn, "capas", "payload"):
+                    conn.execute(text("ALTER TABLE capas ADD COLUMN payload TEXT"))
+                if not _has_column_sqlite(conn, "capas", "updated_at"):
+                    conn.execute(text("ALTER TABLE capas ADD COLUMN updated_at DATETIME"))
+            if not _sqlite_table_exists(conn, "capa_evidences"):
+                conn.execute(
+                    text(
+                        """
+                        CREATE TABLE capa_evidences (
+                            id VARCHAR NOT NULL PRIMARY KEY,
+                            capa_id VARCHAR NOT NULL,
+                            category VARCHAR NOT NULL,
+                            title VARCHAR NOT NULL,
+                            reference_uri TEXT,
+                            notes TEXT,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                            FOREIGN KEY(capa_id) REFERENCES capas (id) ON DELETE CASCADE
+                        )
+                        """
+                    )
+                )
+                conn.execute(text("CREATE INDEX IF NOT EXISTS ix_capa_evidences_capa_id ON capa_evidences (capa_id)"))
+        return
+
+    if dialect == "postgresql":
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "ALTER TABLE capas ADD COLUMN IF NOT EXISTS workflow_state VARCHAR DEFAULT 'draft'"
+                )
+            )
+            conn.execute(text("ALTER TABLE capas ADD COLUMN IF NOT EXISTS payload JSONB"))
+            conn.execute(
+                text(
+                    "ALTER TABLE capas ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW()"
+                )
+            )
+            conn.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS capa_evidences (
+                        id VARCHAR PRIMARY KEY,
+                        capa_id VARCHAR NOT NULL REFERENCES capas(id) ON DELETE CASCADE,
+                        category VARCHAR NOT NULL,
+                        title VARCHAR NOT NULL,
+                        reference_uri TEXT,
+                        notes TEXT,
+                        created_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                    """
+                )
+            )
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_capa_evidences_capa_id ON capa_evidences (capa_id)"))
+
+
+def ensure_pms_generated_plans_schema(engine: Engine) -> None:
+    """Create pms_generated_plans for SQLite / Postgres if missing (runtime migration)."""
+    dialect = engine.dialect.name
+
+    if dialect == "sqlite":
+        with engine.begin() as conn:
+            if _sqlite_table_exists(conn, "pms_generated_plans"):
+                return
+            conn.execute(
+                text(
+                    """
+                    CREATE TABLE pms_generated_plans (
+                        id VARCHAR NOT NULL PRIMARY KEY,
+                        project_id VARCHAR NOT NULL,
+                        user_id VARCHAR NOT NULL,
+                        device_name VARCHAR(512) NOT NULL,
+                        intended_use TEXT NOT NULL,
+                        summary TEXT,
+                        status VARCHAR(32) NOT NULL DEFAULT 'draft',
+                        version INTEGER NOT NULL DEFAULT 1,
+                        payload_json TEXT NOT NULL,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY(project_id) REFERENCES projects (id) ON DELETE CASCADE,
+                        FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
+                    )
+                    """
+                )
+            )
+            conn.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_pms_gen_plans_project ON pms_generated_plans (project_id)")
+            )
+            conn.execute(
+                text("CREATE INDEX IF NOT EXISTS ix_pms_gen_plans_created ON pms_generated_plans (created_at)")
+            )
+        return
+
+    if dialect == "postgresql":
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS pms_generated_plans (
+                        id VARCHAR PRIMARY KEY,
+                        project_id VARCHAR NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                        user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                        device_name VARCHAR(512) NOT NULL,
+                        intended_use TEXT NOT NULL,
+                        summary TEXT,
+                        status VARCHAR(32) NOT NULL DEFAULT 'draft',
+                        version INTEGER NOT NULL DEFAULT 1,
+                        payload_json JSONB NOT NULL,
+                        created_at TIMESTAMPTZ DEFAULT NOW()
+                    )
+                    """
+                )
+            )
+            conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_pms_gen_plans_project ON pms_generated_plans (project_id)"
+                )
+            )
+            conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_pms_gen_plans_created ON pms_generated_plans (created_at)"
+                )
+            )

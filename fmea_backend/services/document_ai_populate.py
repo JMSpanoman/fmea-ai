@@ -223,28 +223,44 @@ def generate_ai_populated_draft_for_document(
     now = datetime.now(timezone.utc).isoformat()
     ai_fn = _default_or_stub_ai_draft_fn()
 
-    try:
-        draft = ai_fn(
-            doc_type,
-            context,
-            {
-                "project_id": project_id,
-                "project_name": project.name,
-                "document_type": doc_type,
-                "source": "Generate with AI",
-                "generated_at": now,
-                "current_version": getattr(doc, "version", None),
-                "mode": "populate",
-            },
-        )
-    except Exception as e:
-        raise HTTPException(status_code=503, detail=str(e))
+    meta_populate = {
+        "project_id": project_id,
+        "project_name": project.name,
+        "document_type": doc_type,
+        "source": "Generate with AI",
+        "generated_at": now,
+        "current_version": getattr(doc, "version", None),
+        "mode": "populate",
+    }
+
+    if doc_type == "capa":
+        # Single JSON object: deterministic structure + merged ai_assist (never duplicate scaffold / never text addendum).
+        try:
+            from services.project_ai_doc_generator import merge_capa_document_json
+
+            draft = merge_capa_document_json(
+                project_id=project_id,
+                project_name=project.name,
+                existing_content=getattr(doc, "content", None),
+                context=context,
+                meta=meta_populate,
+            )
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=str(e))
+    else:
+        try:
+            draft = ai_fn(doc_type, context, meta_populate)
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=str(e))
 
     can_overwrite, overwrite_info = _should_overwrite_with_ai(
         doc_type=doc_type, content=getattr(doc, "content", None), status=getattr(doc, "status", None), scaffold=scaffold
     )
 
-    if can_overwrite:
+    if doc_type == "capa":
+        new_content = (draft or "").strip()
+        populate_mode = "capa_structured_merge"
+    elif can_overwrite:
         # Replace the scaffold with a real draft (new version).
         header = (
             "DRAFT — Generated with AI (Populate)\n"
@@ -255,19 +271,23 @@ def generate_ai_populated_draft_for_document(
         new_content = (draft or "").strip()
         if "project id:" not in (new_content or "").lower():
             new_content = header + new_content
+        populate_mode = "overwrite"
     else:
         new_content = _append_ai_populate_addendum(existing=getattr(doc, "content", "") or "", draft=draft, generated_at=now)
+        populate_mode = "append_addendum"
 
     new_meta = {
         **meta1,
         "ai_populate_generated": True,
         "ai_populate_last_generated_at": now,
         "ai_populate_last_generated_by": str(user_id),
-        "ai_populate_mode": "overwrite" if can_overwrite else "append_addendum",
+        "ai_populate_mode": populate_mode,
         "ai_populate_overwrite_info": overwrite_info,
         "generated_with_ai": True,
         "ai_populate_source": "generate_with_ai_populate_endpoint",
     }
+    if doc_type == "capa":
+        new_meta["capa_ai_assist_only"] = True
 
     updated = document_crud.update_document(
         db,
@@ -290,7 +310,7 @@ def generate_ai_populated_draft_for_document(
                 "generated_at": now,
                 "document_type": doc_type,
                 "mode": "populate",
-                "populate_mode": ("overwrite" if can_overwrite else "append_addendum"),
+                "populate_mode": populate_mode,
                 "overwrite_info": overwrite_info,
             }
             db.commit()

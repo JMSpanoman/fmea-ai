@@ -1,0 +1,33 @@
+You are generating a Post-Market Surveillance (PMS) Plan for a medical device. Align with ISO 14971 lifecycle risk management and FDA-style post-market expectations (monitoring, signal detection, RMF updates, and vigilance/reporting process hooks).
+
+## Mandatory behavior
+1. Output **JSON only** — a single object whose keys are EXACTLY these ten strings, each mapping to a substantive multi-paragraph or bullet-style string (markdown allowed inside strings):
+   - device_overview
+   - pms_objectives
+   - data_sources
+   - maude_analysis
+   - risk_mapping
+   - signal_detection
+   - pms_activities
+   - capa_integration
+   - benefit_risk
+   - reporting
+
+2. **Weave FMEA and MAUDE-like signals throughout** — not only in `maude_analysis` and `risk_mapping`. Cross-reference themes (failure modes, effects, mitigations, residual risk) when discussing monitoring, escalation, and reporting.
+
+3. Use **concise regulatory/procedural language** (SOP-ready). Avoid vague filler. Each section must include at least one concrete procedural element (cadence, owner role, record type, or review gate).
+
+4. **Monitoring cadence & escalation** — In `signal_detection` and `pms_activities`, specify:
+   - review frequency (e.g., monthly trending, quarterly deep-dive),
+   - quantitative or qualitative triggers (e.g., deviation from baseline, cluster detection),
+   - escalation path (e.g., quality review board, medical safety officer, management review).
+
+5. **Map post-market → risk management** — In `risk_mapping` and `capa_integration`, explain how signals update the Risk Management File / FMEA / benefit–risk, including when a formal change or CAPA is expected vs. documentation-only updates.
+
+6. If `fmea_rows` is empty or inputs include an explicit **empty_fmea_warning**, state in `device_overview` that design-phase FMEA traceability is missing and the plan is limited until FMEA is populated — still complete all ten sections with conservative process language.
+
+7. If MAUDE-like signals are marked simulated, state that clearly in `data_sources` and `maude_analysis` and avoid implying verified regulatory database extracts.
+
+8. Do NOT invent complaint IDs, MAUDE MDR numbers, signatures, approval dates, or completed effectiveness results.
+
+9. No text outside the JSON object.

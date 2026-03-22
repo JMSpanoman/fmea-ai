@@ -41,13 +41,11 @@ from models.fmea import FMEARow
 from schemas import project as project_schemas
 from schemas import fmea as fmea_schemas
 from schemas import change_control as change_control_schemas
-from schemas import capa as capa_schemas
 from schemas import nonconformance as nonconformance_schemas
 
 from crud import project as project_crud
 from crud import fmea as fmea_crud
 from crud import change_control as change_control_crud
-from crud import capa as capa_crud
 from crud import nonconformance as nonconformance_crud
 
 from auth.dependencies import get_current_user
@@ -77,6 +75,7 @@ from routers import reports_risk_control_measures
 from routers import reports_design_inputs
 # PMS Signal router
 from routers import pms_signal
+from routers import pms_plan_generator
 # Reports - V&V Evidence router
 from routers import reports_vv_evidence
 from routers import project_profile
@@ -124,7 +123,7 @@ async def lifespan(app: FastAPI):
     # Create database tables if they don't exist
     from database import engine, Base
     # Import all models to ensure they're registered
-    from models import user, project, fmea, component, project_profile as _project_profile, risk_item, risk_item_version, risk_control, approval, trace_link, ai_event, audit_log_event, design_input, design_output, vv_test, risk_management_plan, pms_signal, generated_artifact, hazard_library, harm_library, risk_control_library, verification_library, device_architecture as _device_architecture, hazard_generation_rule as _hazard_generation_rule, suggested_risk_analysis as _suggested_risk_analysis, device as _device, project_risk_item as _project_risk_item, project_risk_control as _project_risk_control, project_verification as _project_verification
+    from models import user, project, fmea, component, project_profile as _project_profile, risk_item, risk_item_version, risk_control, approval, trace_link, ai_event, audit_log_event, design_input, design_output, vv_test, risk_management_plan, pms_signal, pms_generated_plan as _pms_generated_plan, generated_artifact, hazard_library, harm_library, risk_control_library, verification_library, device_architecture as _device_architecture, hazard_generation_rule as _hazard_generation_rule, suggested_risk_analysis as _suggested_risk_analysis, device as _device, project_risk_item as _project_risk_item, project_risk_control as _project_risk_control, project_verification as _project_verification
     from models.hazard_analysis_item import HazardAnalysisItem  # noqa: F401 - register table
     from models.risk_acceptability_criteria import RiskAcceptabilityCriteria, OrganizationRiskCriteriaConfig, ProjectRiskCriteriaOverride  # noqa: F401 - register tables
     from models.project_risk_criteria import ProjectRiskCriteria, RuleEvaluationAudit  # noqa: F401 - rule engine tables
@@ -133,7 +132,7 @@ async def lifespan(app: FastAPI):
 
     # SQLite runtime migrations (add missing columns on existing tables)
     try:
-        from db.runtime_migrations import ensure_component_columns, ensure_user_columns, ensure_library_reference_columns, ensure_hazard_generation_rule_columns, ensure_suggestion_set_project_id, ensure_hazard_library_columns, ensure_risk_acceptability_columns, ensure_hazard_analysis_item_columns, ensure_fmea_rule_engine_columns, ensure_project_profile_governance_columns
+        from db.runtime_migrations import ensure_component_columns, ensure_user_columns, ensure_library_reference_columns, ensure_hazard_generation_rule_columns, ensure_suggestion_set_project_id, ensure_hazard_library_columns, ensure_risk_acceptability_columns, ensure_hazard_analysis_item_columns, ensure_fmea_rule_engine_columns, ensure_project_profile_governance_columns, ensure_capa_workflow_schema, ensure_pms_generated_plans_schema
         ensure_user_columns(engine)
         ensure_component_columns(engine)
         ensure_library_reference_columns(engine)
@@ -144,6 +143,8 @@ async def lifespan(app: FastAPI):
         ensure_hazard_analysis_item_columns(engine)
         ensure_fmea_rule_engine_columns(engine)
         ensure_project_profile_governance_columns(engine)
+        ensure_capa_workflow_schema(engine)
+        ensure_pms_generated_plans_schema(engine)
     except Exception as mig_err:
         logger.error(f"Runtime migrations failed: {mig_err}", exc_info=True)
 
@@ -239,6 +240,7 @@ app.include_router(reports_risk_control_measures.router, tags=["Reports - Risk C
 app.include_router(reports_design_inputs.router, tags=["Reports - Design Inputs"])
 # PMS Signal router
 app.include_router(pms_signal.router, tags=["PMS Signals"])
+app.include_router(pms_plan_generator.router, tags=["PMS Plan Generator"])
 # Reports - V&V Evidence router
 app.include_router(reports_vv_evidence.router, tags=["Reports - V&V Evidence"])
 # Risk Knowledge Base (Hazard, Harm, Risk Control, Verification libraries)
@@ -517,69 +519,7 @@ def delete_change_control(
         logger.error(f"Error deleting change control: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-# CAPA endpoints
-@app.post("/projects/{project_id}/capas", status_code=status.HTTP_201_CREATED)
-def create_capa(
-    project_id: int,
-    capa: capa_schemas.CAPACreate,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """Create a new CAPA entry"""
-    try:
-        # Get user ID from the authenticated user
-        user_id = str(current_user.id if hasattr(current_user, "id") else current_user.username)
-        return capa_crud.create_capa(db=db, project_id=project_id, capa_data=capa, user_id=user_id)
-    except Exception as e:
-        logger.error(f"Error creating CAPA: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-@app.get("/projects/{project_id}/capas", response_model=List[capa_schemas.CAPAOut])
-def get_capas(
-    project_id: int,
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
-):
-    """Get all CAPA entries for a project"""
-    try:
-        # Get user ID from the authenticated user
-        user_id = str(current_user.id if hasattr(current_user, "id") else current_user.username)
-        capas = capa_crud.get_capas_for_project(db=db, project_id=project_id, user_id=user_id)
-        
-        # Convert SQLAlchemy models to Pydantic schemas
-        capa_outputs = []
-        for capa_entry in capas:
-            capa_out = capa_schemas.CAPAOut(
-                id=capa_entry.id,
-                project_id=capa_entry.project_id,
-                user_id=capa_entry.user_id,
-                issue_description=capa_entry.issue_description,
-                source=capa_entry.source,
-                detection_date=capa_entry.detection_date,
-                severity=capa_entry.severity,
-                root_cause=capa_entry.root_cause,
-                corrective_action=capa_entry.corrective_action,
-                preventive_action=capa_entry.preventive_action,
-                action_owner=capa_entry.action_owner,
-                due_date=capa_entry.due_date,
-                status=capa_entry.status,
-                effectiveness_check_plan=capa_entry.effectiveness_check_plan,
-                fmea_link=capa_entry.fmea_link,
-                regulatory_impact=capa_entry.regulatory_impact,
-                closure_summary=capa_entry.closure_summary,
-                milestones=capa_entry.milestones,
-                risk_controls_update=capa_entry.risk_controls_update,
-                analysis_timestamp=capa_entry.analysis_timestamp,
-                version=capa_entry.version,
-                created_at=capa_entry.created_at,
-                updated_at=capa_entry.updated_at
-            )
-            capa_outputs.append(capa_out)
-        
-        return capa_outputs
-    except Exception as e:
-        logger.error(f"Error getting CAPAs: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+# CAPA: use routers/capa_phase2.py (projects/{project_id}/capas, UUID projects).
 
 # Non-Conformance endpoints
 @app.post("/projects/{project_id}/non-conformances", status_code=status.HTTP_201_CREATED)

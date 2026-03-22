@@ -38,7 +38,7 @@ const FMEA_TYPES = [
 
 const FmeaPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
   const isPro = isProPlan(user?.plan);
   const [componentDescription, setComponentDescription] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -2618,6 +2618,32 @@ const FmeaPage: React.FC = () => {
 
   return (
     <div className="p-6">
+      {/* Lite (basic) mode — optional path to full SmartRisk Pro */}
+      {!isPro && (
+        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <span className="font-semibold">SmartRisk Lite</span>
+              <span className="text-amber-900/90">
+                {' '}
+                — standalone FMEA only. Open SmartRisk Pro for projects, traceability, design controls, and the full
+                workflow.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                await refresh();
+                navigate('/', { replace: true });
+              }}
+              className="shrink-0 rounded-md bg-amber-700 px-4 py-2 text-sm font-medium text-white hover:bg-amber-800"
+            >
+              Open SmartRisk Pro
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">FMEA Generator</h1>

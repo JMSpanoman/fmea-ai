@@ -40,6 +40,8 @@ import DesignInputsReportPage from './pages/Design/Reports/DesignInputsReportPag
 import VVEvidenceReportPage from './pages/VV/Reports/VVEvidenceReportPage';
 import PmsSignalsPage from './pages/PMS/PmsSignalsPage';
 import PmsSignalReportPage from './pages/PMS/PmsSignalReportPage';
+import PmsPlanGeneratorPage from './pages/PMS/PmsPlanGeneratorPage';
+import PmsPlanDetailPage from './pages/PMS/PmsPlanDetailPage';
 import RiskTraceabilityMatrixPage from './pages/RiskTraceabilityMatrixPage';
 import ResidualRiskRiskBenefitPage from './pages/ResidualRiskRiskBenefitPage';
 import RiskControlImplementationPage from './pages/RiskControlImplementationPage';
@@ -146,6 +148,8 @@ function App() {
                     <Route path=":projectId/reports/vv-evidence" element={<VVEvidenceReportPage />} />
                     <Route path=":projectId/pms/signals" element={<PmsSignalsPage />} />
                     <Route path=":projectId/pms/reports/signal-feedback" element={<PmsSignalReportPage />} />
+                    <Route path=":projectId/pms/plan-generator" element={<PmsPlanGeneratorPage />} />
+                    <Route path=":projectId/pms/plan-generator/:generationId" element={<PmsPlanDetailPage />} />
                     <Route path=":projectId/device-architecture" element={<DeviceArchitecturePage />} />
                     <Route path=":projectId/components/:componentId" element={<ComponentDetailPage />} />
                     <Route path=":projectId/risk-outputs" element={<ProjectRiskOutputsPage />} />

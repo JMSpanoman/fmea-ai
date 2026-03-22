@@ -68,6 +68,7 @@ def _is_placeholder_for_type(doc_type: str, content: Optional[str]) -> bool:
         ("vv_evidence", "v&v evidence report starter"),
         ("traceability_matrix", "traceability matrix export configuration starter"),
         ("rmp", "rmp starter"),
+        ("capa", "capa starter"),
     ]
     for t, needle in starters:
         if doc_type == t and needle in c:
@@ -96,6 +97,131 @@ def _should_ai_generate(
     if setup_scaffold is not None and (doc_content or "") == setup_scaffold:
         return True
     return False
+
+
+def generate_capa_ai_assist(*, context: str, meta: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    AI reviewer output ONLY for the CAPA controlled document (ai_assist block).
+    Never returns a full CAPA scaffold or duplicates system structure.
+    """
+    import json
+    import os
+    from pathlib import Path
+
+    from services.capa_document_builder import normalize_ai_assist_dict
+
+    if os.getenv("SMARTQS_TEST_AI", "").strip() == "1":
+        return normalize_ai_assist_dict(
+            {
+                "problem_review": "Stub AI review (SMARTQS_TEST_AI=1). Replace with real model output in production.",
+                "root_cause_challenges": ["Confirm that the trigger reference is traceable to an authorized record."],
+                "missing_information": ["Containment verification evidence (if required by procedure)."],
+                "suggested_actions": ["Define measurable effectiveness criteria before implementation."],
+            }
+        )
+
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        return {}
+
+    import openai
+
+    prompts_dir = Path(__file__).parent.parent.parent / "ai_prompts"
+    system_prompt = ""
+    try:
+        system_prompt = (prompts_dir / "phase3_system_prompt.txt").read_text().strip()
+    except Exception:
+        system_prompt = (
+            "You are a medical device quality systems reviewer. "
+            "Provide concise critique and suggestions only. Output JSON only."
+        )
+    try:
+        capa_ai = (prompts_dir / "capa_ai_assist_prompt.txt").read_text().strip()
+    except Exception:
+        capa_ai = (
+            "Return JSON only: {\n"
+            '  "ai_assist": {\n'
+            '    "problem_review": "string or null",\n'
+            '    "root_cause_challenges": ["string"],\n'
+            '    "missing_information": ["string"],\n'
+            '    "suggested_actions": ["string"]\n'
+            "  }\n"
+            "}\n"
+            "Rules: Do NOT repeat CAPA structure. Do NOT invent complaint/NCR IDs or approvals."
+        )
+
+    user_prompt = (
+        f"{capa_ai}\n\n"
+        f"Context:\n{context}\n\n"
+        f"Metadata (JSON): {json.dumps(meta)}\n"
+    )
+
+    def _extract_json_object(text: str) -> dict:
+        try:
+            return json.loads(text)
+        except Exception:
+            import re
+
+            m = re.search(r"\{[\s\S]*\}", text or "")
+            if not m:
+                raise
+            return json.loads(m.group(0))
+
+    client = openai.OpenAI(api_key=openai_api_key)
+    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    try:
+        resp = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.3,
+        )
+        content = resp.choices[0].message.content or ""
+        data = _extract_json_object(content) if content else {}
+    except Exception:
+        try:
+            resp = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.3,
+            )
+            content = resp.choices[0].message.content or ""
+            data = _extract_json_object(content) if content else {}
+        except Exception:
+            return {}
+
+    inner = data.get("ai_assist") if isinstance(data.get("ai_assist"), dict) else data
+    return normalize_ai_assist_dict(inner)
+
+
+def merge_capa_document_json(
+    *,
+    project_id: str,
+    project_name: str,
+    existing_content: Optional[str],
+    context: str,
+    meta: Dict[str, Any],
+) -> str:
+    """
+    Single structured CAPA document JSON: deterministic base + merged ai_assist (never concatenated text blocks).
+    """
+    from services.capa_document_builder import (
+        load_or_build_capa_record,
+        merge_ai_assist_only,
+        serialize_capa_document,
+    )
+
+    base = load_or_build_capa_record(existing_content, project_id=project_id, project_name=project_name)
+    ai_assist = generate_capa_ai_assist(context=context, meta=meta)
+    merged = merge_ai_assist_only(base, ai_assist)
+    merged["legacy_format"] = False
+    return serialize_capa_document(merged)
 
 
 def _default_ai_draft_fn(doc_type: str, context: str, meta: Dict[str, Any]) -> str:
@@ -448,6 +574,24 @@ From available project evidence (best-effort, draft):
                 except Exception:
                     pass
 
+        if dt == "capa":
+            # Single structured JSON CAPA document (deterministic base; ai_assist empty without OpenAI).
+            pid = str(meta.get("project_id") or "").strip()
+            pn = str(meta.get("project_name") or "Project").strip() or "Project"
+            if pid:
+                try:
+                    from services.capa_document_builder import (
+                        build_capa_document_record,
+                        merge_ai_assist_only,
+                        serialize_capa_document,
+                    )
+
+                    base = build_capa_document_record(project_id=pid, project_name=pn)
+                    merged = merge_ai_assist_only(base.model_dump(mode="json"), {})
+                    return serialize_capa_document(merged)
+                except Exception:
+                    pass
+
         # Generic fallback for other doc types
         return f"""## AI Draft Unavailable (OpenAI not configured)
 
@@ -466,6 +610,19 @@ TBD
         if env in ("production", "prod", "staging"):
             raise RuntimeError("AI service unavailable. Please configure OPENAI_API_KEY.")
         return _fallback_draft()
+
+    # CAPA: OpenAI enriches ai_assist only; never emits a second full scaffold.
+    if (doc_type or "").strip().lower() == "capa":
+        pid = str(meta.get("project_id") or "").strip()
+        pn = str(meta.get("project_name") or "Project").strip() or "Project"
+        if pid:
+            return merge_capa_document_json(
+                project_id=pid,
+                project_name=pn,
+                existing_content=None,
+                context=context,
+                meta=meta,
+            )
 
     # Use the existing Phase 3 system prompt + document drafting prompt files if present.
     from pathlib import Path

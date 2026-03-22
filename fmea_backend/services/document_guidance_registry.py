@@ -214,8 +214,8 @@ def get_document_guidance_registry() -> Dict[str, Dict[str, Any]]:
                 "SmartQS provides a CAPA log scaffold. Trigger references can later be linked to quality events/complaints/NCRs where available. "
                 "No effectiveness confirmation is included without objective evidence."
             ),
-            "ai_available": False,
-            "ai_button_text": "",
+            "ai_available": True,
+            "ai_button_text": "Generate with AI",
         },
         "usability_risk_analysis": {
             "purpose_text": (

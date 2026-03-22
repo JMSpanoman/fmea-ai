@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
@@ -20,9 +20,15 @@ is_sqlite = DATABASE_URL.startswith("sqlite")
 if is_sqlite:
     # SQLite configuration for development
     engine = create_engine(
-        DATABASE_URL, 
-        connect_args={"check_same_thread": False}  # Needed for SQLite
+        DATABASE_URL,
+        connect_args={"check_same_thread": False},  # Needed for SQLite
     )
+
+    @event.listens_for(engine, "connect")
+    def _sqlite_pragma(dbapi_conn, _connection_record):
+        cur = dbapi_conn.cursor()
+        cur.execute("PRAGMA foreign_keys=ON")
+        cur.close()
 else:
     # PostgreSQL configuration for production
     engine = create_engine(

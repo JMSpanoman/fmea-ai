@@ -43,3 +43,6 @@ class Project(Base):
         "RiskAnalysisSuggestionSet", back_populates="project", cascade="all, delete-orphan"
     )
     devices = relationship("Device", back_populates="project", cascade="all, delete-orphan")
+    pms_generated_plans = relationship(
+        "PmsGeneratedPlan", back_populates="project", cascade="all, delete-orphan"
+    )
