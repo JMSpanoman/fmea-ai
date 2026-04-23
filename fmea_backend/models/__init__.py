@@ -12,6 +12,9 @@ from .capa import CAPA
 from .capa_evidence import CAPAEvidence
 from .pms_signal import PMSSignal
 from .pms_generated_plan import PmsGeneratedPlan
+from .maude_adverse_event import MaudeAdverseEvent
+from .maude_nlp_extraction import MaudeNlpExtraction
+from .postmarket_intelligence import PostmarketFmeaEvidenceLink, PostmarketProjectRun
 from .trace_link import TraceLink
 # Phase 3 models
 from .document import Document, DocumentVersion
@@ -65,7 +68,7 @@ from .suggested_risk_analysis import (
 
 __all__ = [
     "Project", "FMEARow", "User", "Component", "FMEAVersion",  # Phase 1
-    "DesignInput", "DesignOutput", "VVTest", "CAPA", "CAPAEvidence", "PMSSignal", "PmsGeneratedPlan", "TraceLink",  # Phase 2
+    "DesignInput", "DesignOutput", "VVTest", "CAPA", "CAPAEvidence", "PMSSignal", "PmsGeneratedPlan", "MaudeAdverseEvent", "MaudeNlpExtraction", "PostmarketProjectRun", "PostmarketFmeaEvidenceLink", "TraceLink",  # Phase 2
     "Document", "DocumentVersion", "TrainingRecord", "ChangeControl", "Audit",  # Phase 3
     "Supplier", "SupplierEvaluation", "NCR", "Complaint", "Equipment", "CalibrationRecord",
     "QualityEvent", "Approval", "RiskItem", "RiskItemVersion", "RiskControl", "RiskManagementPlan", "AIEvent",  # Phase 3 continued + Risk Items

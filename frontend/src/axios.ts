@@ -1,9 +1,8 @@
 // src/axios.ts
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import { resolveApiBaseUrl } from './config/apiBaseUrl';
 
-// Single source of truth: VITE_API_BASE_URL when present; otherwise use /api which is proxied
-// in dev (Vite proxy) and prod (nginx -> BACKEND_URL).
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = resolveApiBaseUrl();
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

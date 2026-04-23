@@ -20,6 +20,9 @@ class FMEARowBase(BaseModel):
     residual_detection: Optional[int] = None
     financial_impact: Optional[Decimal] = None
     ai_metadata: Optional[Dict[str, Any]] = None
+    evidence_source: Optional[str] = None
+    postmarket_review_status: Optional[str] = None
+    postmarket_evidence_summary: Optional[str] = None
     # Risk Knowledge Base library references
     hazard_library_id: Optional[str] = None
     harm_library_id: Optional[str] = None
@@ -78,6 +81,9 @@ class FMEARowUpdate(BaseModel):
     residual_detection: Optional[int] = None
     financial_impact: Optional[Decimal] = None
     ai_metadata: Optional[Dict[str, Any]] = None
+    evidence_source: Optional[str] = None
+    postmarket_review_status: Optional[str] = None
+    postmarket_evidence_summary: Optional[str] = None
     component_id: Optional[str] = None
     hazard_library_id: Optional[str] = None
     harm_library_id: Optional[str] = None

@@ -68,6 +68,11 @@ def get_project(db: Session, project_id: str, user_id: str) -> Optional[Project]
         Project.user_id == user_id
     ).first()
 
+
+def get_project_by_id(db: Session, project_id: str) -> Optional[Project]:
+    """Resolve a project by primary key only (internal jobs, document generation)."""
+    return db.query(Project).filter(Project.id == project_id).first()
+
 def update_project(db: Session, project_id: str, project: ProjectUpdate, user_id: str) -> Optional[Project]:
     """Update a project"""
     db_project = get_project(db, project_id, user_id)

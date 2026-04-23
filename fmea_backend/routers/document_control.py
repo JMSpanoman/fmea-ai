@@ -5,6 +5,7 @@ from auth.dependencies import get_current_user
 from auth.plan import require_pro
 from models.user import User
 from schemas import document as doc_schemas
+from schemas.pms_report_document import PmsReportRegenerateDocumentResponse
 from crud import document as doc_crud
 from crud import project as project_crud
 from typing import List, Optional
@@ -111,6 +112,68 @@ def create_document(
         document = doc_schemas.DocumentCreate(**document_dict)
     
     return doc_crud.create_document(db, document)
+
+
+def _regenerate_pms_report_document_handler(
+    project_id: str,
+    db: Session,
+    current_user: User,
+) -> PmsReportRegenerateDocumentResponse:
+    project = project_crud.get_project(db, project_id, current_user.id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    from services.pms_report_document_sync import regenerate_pms_report_document_for_project
+
+    try:
+        result = regenerate_pms_report_document_for_project(
+            db, project_id=project_id, user_id=current_user.id
+        )
+        return PmsReportRegenerateDocumentResponse(
+            project_id=result.project_id,
+            report_mode=result.report_mode,
+            document_id=result.document_id,
+            document_key=result.document_key,
+            created_new_document=result.created_new_document,
+            updated_existing_document=result.updated_existing_document,
+            previous_document_found=result.previous_document_found,
+            updated_at=result.updated_at.isoformat() if result.updated_at else None,
+            preview_excerpt=result.preview_excerpt,
+            linked_maude_rows_count=result.linked_maude_rows_count,
+            pms_signal_count=result.pms_signal_count,
+            scoring_summary_present=result.scoring_summary_present,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PMS report regenerate failed: {e}") from e
+
+
+@router.post(
+    "/documents/pms-report-regenerate",
+    response_model=PmsReportRegenerateDocumentResponse,
+    summary="Regenerate stored PMS Report document (same prefix as GET /documents)",
+)
+def regenerate_pms_report_document_via_documents(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> PmsReportRegenerateDocumentResponse:
+    """
+    Primary path for the Documentation hub: uses the same ``/projects/{project_id}/documents`` prefix
+    as document listing so reverse proxies cannot drop ``/postmarket`` routes.
+    """
+    return _regenerate_pms_report_document_handler(project_id, db, current_user)
+
+
+@router.post("/documents/pms-report/refresh", response_model=PmsReportRegenerateDocumentResponse)
+def refresh_pms_report_document(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> PmsReportRegenerateDocumentResponse:
+    """Backward-compatible alias for ``/documents/pms-report-regenerate``."""
+    return _regenerate_pms_report_document_handler(project_id, db, current_user)
+
 
 @router.get("/documents/{document_id}", response_model=doc_schemas.DocumentOut)
 def get_document(

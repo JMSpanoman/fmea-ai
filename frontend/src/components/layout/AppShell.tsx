@@ -124,7 +124,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             <div className="flex items-center gap-2">
               <span className="text-2xl">✨</span>
               <span className="text-h3 font-bold text-gray-900">Smart Risk</span>
-              {!isPro && (
+              {isPro ? (
+                <span className="text-xs px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-medium">Pro</span>
+              ) : (
                 <span className="text-xs px-2 py-0.5 rounded bg-gray-200 text-gray-600 font-medium">Lite</span>
               )}
             </div>

@@ -425,3 +425,22 @@ def ensure_pms_generated_plans_schema(engine: Engine) -> None:
                     "CREATE INDEX IF NOT EXISTS ix_pms_gen_plans_created ON pms_generated_plans (created_at)"
                 )
             )
+
+
+def ensure_fmea_postmarket_columns(engine: Engine) -> None:
+    """
+    Add post-market provenance columns to fmea_rows (SQLite dev DBs).
+
+    For PostgreSQL production, run equivalent ALTER TABLE statements via your migration tool.
+    """
+    dialect = engine.dialect.name
+    if dialect != "sqlite":
+        return
+    with engine.begin() as conn:
+        for col, typ in [
+            ("evidence_source", "VARCHAR(64)"),
+            ("postmarket_review_status", "VARCHAR(32)"),
+            ("postmarket_evidence_summary", "TEXT"),
+        ]:
+            if not _has_column_sqlite(conn, "fmea_rows", col):
+                conn.execute(text(f"ALTER TABLE fmea_rows ADD COLUMN {col} {typ}"))

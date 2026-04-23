@@ -463,6 +463,12 @@ export default function ProjectDashboardPage() {
           >
             Risk outputs
           </button>
+          <button
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+            onClick={() => navigate(`/projects/${finalProjectId}/postmarket-report`)}
+          >
+            MAUDE report
+          </button>
         </div>
       </div>
 

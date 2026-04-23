@@ -1072,7 +1072,7 @@ export default function ProjectDocumentPage() {
           <div className="flex flex-shrink-0 flex-wrap gap-2">
             <button
               type="button"
-              className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-800 disabled:opacity-50 print:hidden"
+              className="rounded-md border border-neutral-900 bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-neutral-50 disabled:opacity-50 print:hidden"
               onClick={() => setShowGenerate(true)}
               disabled={saving}
             >
@@ -1160,7 +1160,7 @@ export default function ProjectDocumentPage() {
               type="button"
               className={`rounded-md px-4 py-2 text-sm font-medium transition ${
                 tab === 'preview'
-                  ? 'bg-neutral-900 text-white'
+                  ? 'border border-neutral-900 bg-white text-black'
                   : 'border border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-50'
               }`}
               onClick={() => setTab('preview')}

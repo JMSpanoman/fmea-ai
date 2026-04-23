@@ -69,6 +69,7 @@ import RiskItemListPage from './pages/RiskItems/RiskItemListPage';
 import DeviceArchitecturePage from './pages/DeviceArchitecturePage';
 import ComponentDetailPage from './pages/ComponentDetailPage';
 import ProjectRiskOutputsPage from './pages/ProjectRiskOutputsPage';
+import PostMarketReportPage from './pages/PostMarketReportPage';
 import RiskAcceptabilityCriteriaPage from './pages/RiskAcceptabilityCriteriaPage';
 import ProjectRiskRuleCriteriaPage from './pages/ProjectRiskRuleCriteriaPage';
 import RiskItemDetailPage from './pages/RiskItems/RiskItemDetailPage';
@@ -150,6 +151,7 @@ function App() {
                     <Route path=":projectId/pms/reports/signal-feedback" element={<PmsSignalReportPage />} />
                     <Route path=":projectId/pms/plan-generator" element={<PmsPlanGeneratorPage />} />
                     <Route path=":projectId/pms/plan-generator/:generationId" element={<PmsPlanDetailPage />} />
+                    <Route path=":projectId/postmarket-report" element={<PostMarketReportPage />} />
                     <Route path=":projectId/device-architecture" element={<DeviceArchitecturePage />} />
                     <Route path=":projectId/components/:componentId" element={<ComponentDetailPage />} />
                     <Route path=":projectId/risk-outputs" element={<ProjectRiskOutputsPage />} />

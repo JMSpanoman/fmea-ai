@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from models.document import Document, DocumentVersion
 from schemas.document import DocumentCreate, DocumentUpdate
@@ -153,7 +154,7 @@ def get_document_by_type(db: Session, *, project_id: str, doc_type: str) -> Opti
         return None
     return (
         db.query(Document)
-        .filter(Document.project_id == project_id, Document.type == t)
+        .filter(Document.project_id == project_id, func.lower(Document.type) == t)
         .first()
     )
 

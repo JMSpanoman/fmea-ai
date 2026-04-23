@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useProject } from '../contexts/ProjectContext';
 
 const PostMarket: React.FC = () => {
+  const { currentProject } = useProject();
   const [deviceName, setDeviceName] = useState('CardioStent XR');
   const [deviceModel, setDeviceModel] = useState('CS-XR-2025');
   const [reportPeriodStart, setReportPeriodStart] = useState('2025-01-01');
@@ -33,6 +36,22 @@ const PostMarket: React.FC = () => {
           <p className="text-neutral-600 text-sm mt-1">
             Fill in minimal fields and let AI pull real-world data to pre-populate your PSUR.
           </p>
+          {currentProject?.id ? (
+            <p className="mt-3">
+              <Link
+                to={`/projects/${currentProject.id}/postmarket-report`}
+                className="text-sky-700 text-sm font-medium hover:underline"
+              >
+                Open structured MAUDE evidence report (Smart Risk) →
+              </Link>
+            </p>
+          ) : (
+            <p className="mt-3 text-neutral-500 text-sm">
+              Select a project from the sidebar, then use{' '}
+              <span className="font-medium text-neutral-700">SmartQS Post Market → MAUDE evidence report</span> for the
+              regulatory-style MAUDE summary.
+            </p>
+          )}
         </div>
 
         <div id="report-form" className="border border-neutral-200 rounded-md mb-6">

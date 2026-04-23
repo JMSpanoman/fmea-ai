@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { API_BASE_URL } from '../axios';
+import { defaultToProPlanForLocalUi } from '../config/features';
 
 interface User {
   id: string;
@@ -25,6 +26,21 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+/**
+ * Plan shown in the SPA (nav, LandingPage, ProGate).
+ * - `VITE_FORCE_PLAN=lite` — force Lite on any host (for testing).
+ * - `VITE_FORCE_PLAN=pro` — force Pro on any host.
+ * - Otherwise — on Vite dev or localhost (incl. `vite preview`), default to Pro so local
+ *   matches backend `SMARTRISK_DEV_FORCE_PRO` without requiring a rebuild for env changes.
+ */
+function withPlanOverride(user: User): User {
+  const raw = (import.meta.env.VITE_FORCE_PLAN as string | undefined)?.trim().toLowerCase();
+  if (raw === 'lite') return { ...user, plan: 'lite' };
+  if (raw === 'pro') return { ...user, plan: 'pro' };
+  if (defaultToProPlanForLocalUi()) return { ...user, plan: 'pro' };
+  return user;
+}
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,14 +56,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
     const data: any = await res.json();
     // Be tolerant of differing shapes between dev-login and /auth/me
-    return {
+    return withPlanOverride({
       id: String(data?.id ?? data?.user?.id ?? ''),
       email: String(data?.email ?? data?.user?.email ?? ''),
       plan: data?.plan ?? data?.user?.plan ?? 'lite',
       username: data?.username ?? data?.user?.username,
       name: data?.full_name ?? data?.name ?? data?.user?.full_name ?? data?.user?.name,
       role: data?.role ?? data?.user?.role,
-    };
+    });
   }, []);
 
   const refresh = useCallback(async () => {

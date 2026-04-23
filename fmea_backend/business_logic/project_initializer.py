@@ -99,7 +99,10 @@ def _default_content_for(doc_type: str) -> str:
     if doc_type == "pms_plan":
         return "PMS Plan starter. Use Project Initialization to draft a conservative structure (no execution/results)."
     if doc_type == "pms_report":
-        return "PMS Report starter. Use Project Initialization to draft a conservative template (DRAFT — no PMS data)."
+        return (
+            "PMS Report starter. Project Initialization embeds MAUDE/NLP + PMS-signal data when available; "
+            "otherwise a conservative draft template."
+        )
     if doc_type == "capa":
         return "CAPA starter. Use Project Initialization to draft a CAPA log scaffold (no conclusions/effectiveness)."
     if doc_type == "usability_risk_analysis":

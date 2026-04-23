@@ -1,7 +1,8 @@
 // Phase 1 API Service
+import { resolveApiBaseUrl } from '../config/apiBaseUrl';
 import { Project, Component, FmeaRow, AIFMEASuggestRequest, AIFMEASuggestResponse, AIConsistencyCheckRequest, AIConsistencyCheckResponse } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = resolveApiBaseUrl();
 
 // Get auth token from localStorage or context
 const getAuthToken = (): string | null => {

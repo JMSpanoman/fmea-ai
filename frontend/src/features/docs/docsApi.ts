@@ -4,6 +4,22 @@ import { documentsApi } from '../../services/apiPhase3';
 import type { Document as BackendDocument } from '../../types';
 
 const storageKey = (projectId: string) => `smartqs.docs.instances:${projectId}`;
+export const PMS_REPORT_DOCUMENT_TYPE = 'pms_report';
+
+export interface PmsReportRegenerateDocumentResponse {
+  project_id: string;
+  report_mode: 'populated' | 'draft' | string;
+  document_id: string;
+  document_key: string;
+  created_new_document: boolean;
+  updated_existing_document: boolean;
+  previous_document_found: boolean;
+  updated_at?: string | null;
+  preview_excerpt: string;
+  linked_maude_rows_count: number;
+  pms_signal_count: number;
+  scoring_summary_present: boolean;
+}
 
 export async function loadProjectDocInstances(projectId: string): Promise<Record<string, DocumentInstance>> {
   try {
@@ -23,12 +39,19 @@ export async function saveProjectDocInstances(
   localStorage.setItem(storageKey(projectId), JSON.stringify(instances));
 }
 
-function mapBackendStatus(status?: string): DocStatus {
+export function mapBackendDocumentStatus(status?: string): DocStatus {
   if (status === 'approved') return 'approved';
   if (status === 'in_review') return 'in_review';
   if (status === 'draft') return 'draft';
   // treat obsolete or unknown as draft-ish (can be adjusted later)
   return 'draft';
+}
+
+/** Normalize backend `Document.type` to registry ids (e.g. `pms_report`). */
+export function normalizeRegistryDocTypeKey(raw: string | undefined): string {
+  const t = (raw || '').toString().trim().toLowerCase().replace(/\s+/g, '_');
+  if (t === 'pms-report' || t === 'pmsreport') return PMS_REPORT_DOCUMENT_TYPE;
+  return t;
 }
 
 export async function loadConnectedProjectDocInstances(
@@ -48,13 +71,13 @@ export async function loadConnectedProjectDocInstances(
 
   const merged: Record<string, DocumentInstance> = { ...local };
   for (const d of backendDocs) {
-    const docTypeId = (d.type || '').toString();
+    const docTypeId = normalizeRegistryDocTypeKey(d.type);
     const prev = merged[docTypeId] || ({ docTypeId } as DocumentInstance);
     merged[docTypeId] = {
       ...prev,
       docTypeId,
       backendDocId: d.id,
-      status: mapBackendStatus(d.status),
+      status: mapBackendDocumentStatus(d.status),
       updatedAt: d.updated_at || d.created_at,
       version: `v${d.version ?? 0}`,
       content: d.content || '',
@@ -76,6 +99,39 @@ export async function updateBackendDocument(
 
 export async function approveBackendDocument(projectId: string, backendDocId: string): Promise<BackendDocument> {
   return await documentsApi.approve(projectId, backendDocId);
+}
+
+/** Regenerates and upserts the stored PMS report document from MAUDE/signals data. */
+export async function refreshPmsReportDocument(
+  projectId: string
+): Promise<PmsReportRegenerateDocumentResponse> {
+  const pathPrimary = `/projects/${projectId}/documents/pms-report-regenerate`;
+  const pathFallback = '/postmarket/report/regenerate-document';
+  try {
+    const res = await api.post<PmsReportRegenerateDocumentResponse>(pathPrimary);
+    try {
+      window.dispatchEvent(new CustomEvent('project-documents-changed', { detail: { projectId } }));
+    } catch {
+      // ignore
+    }
+    return res.data;
+  } catch (err: unknown) {
+    const is404 =
+      err &&
+      typeof err === 'object' &&
+      'response' in err &&
+      (err as { response?: { status?: number } }).response?.status === 404;
+    if (!is404) throw err;
+    const res = await api.post<PmsReportRegenerateDocumentResponse>(pathFallback, {
+      project_id: projectId,
+    });
+    try {
+      window.dispatchEvent(new CustomEvent('project-documents-changed', { detail: { projectId } }));
+    } catch {
+      // ignore
+    }
+    return res.data;
+  }
 }
 
 export async function generateBackendDocument(

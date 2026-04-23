@@ -131,6 +131,21 @@ export function isProPlan(plan: string | null | undefined): boolean {
   return (plan || PLAN_LITE).toLowerCase() === PLAN_PRO;
 }
 
+/**
+ * Use full SmartRisk Pro in the browser when developing locally.
+ * - `npm run dev`: import.meta.env.DEV is true
+ * - `npm run preview` on localhost: env vars from .env.local are NOT re-read unless you rebuild;
+ *   this hostname check still upgrades the UI to Pro without a rebuild.
+ *
+ * Opt out on localhost: set `VITE_FORCE_PLAN=lite` in .env.local and rebuild (or use dev server).
+ */
+export function defaultToProPlanForLocalUi(): boolean {
+  if (import.meta.env.DEV) return true;
+  if (typeof window === 'undefined') return false;
+  const h = window.location.hostname;
+  return h === 'localhost' || h === '127.0.0.1' || h === '[::1]';
+}
+
 /** Nav item with optional plan requirement */
 export interface NavItemConfig {
   path: string;

@@ -69,6 +69,44 @@
   .glass {
     @apply bg-surface-primary/80 backdrop-blur-glass border border-border;
   }
+
+  /*
+   * Post-market report page: design tokens use dark surfaces (surface.primary) with black text — illegible.
+   * Scope a white “paper” layout with dark gray body text.
+   */
+  .postmarket-report-page {
+    @apply bg-white text-neutral-900;
+  }
+  .postmarket-report-page .bg-surface-primary {
+    background-color: #ffffff !important;
+  }
+  .postmarket-report-page .bg-surface-secondary\/30 {
+    background-color: rgba(229, 231, 235, 0.75) !important;
+  }
+  .postmarket-report-page .bg-surface-secondary {
+    background-color: #e5e7eb !important;
+  }
+  .postmarket-report-page .text-text-primary {
+    color: #111827 !important;
+  }
+  .postmarket-report-page .text-text-secondary {
+    color: #4b5563 !important;
+  }
+  .postmarket-report-page .border-border {
+    border-color: #d1d5db !important;
+  }
+  .postmarket-report-page input.bg-surface-primary {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+  }
+  .postmarket-report-page button.bg-text-primary {
+    background-color: #111827 !important;
+    color: #ffffff !important;
+  }
+  .postmarket-report-page .bg-text-primary\/60,
+  .postmarket-report-page .bg-text-primary\/70 {
+    background-color: rgba(55, 65, 81, 0.75) !important;
+  }
 }
 
 .fa, .fas, .far, .fal, .fab {

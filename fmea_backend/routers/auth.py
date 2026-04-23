@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from database import get_db
 from models.user import User, PLAN_LITE, PLAN_PRO
 from schemas.user import UserCreate, UserLogin, UserOut, UserProfile, Token, UserUpdate, PasswordChange
 from crud import user as user_crud
 from auth.security import create_access_token, verify_token, get_password_hash, verify_password
 from auth.dependencies import get_current_user
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 import os
 
 router = APIRouter()
@@ -100,12 +100,18 @@ def login_user(user_credentials: UserLogin, db: Session = Depends(get_db)):
     }
 
 @router.post("/dev-login", response_model=Token)
-def dev_login(payload: dict = Body(default=None)):
+def dev_login(
+    payload: Optional[dict] = Body(default=None),
+    db: Session = Depends(get_db),
+):
     """
     Development-only login endpoint.
     SECURITY: This endpoint is disabled in production by default.
     If you explicitly enable it (e.g., for demos), it should be gated by env flags.
     """
+    import logging
+
+    logger = logging.getLogger(__name__)
     env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
     is_prod_like = env in ("production", "prod", "staging")
     # NOTE: This endpoint is intentionally email-gated in production-like environments:
@@ -116,8 +122,7 @@ def dev_login(payload: dict = Body(default=None)):
     from crud import project as project_crud
     from crud import user as user_crud
     from schemas import project as project_schemas
-    from database import get_db
-    
+
     # Allow choosing a dev identity so multiple users can sign in locally.
     # Backward-compatible: if no payload provided, uses dev@example.com.
     email = "dev@example.com"
@@ -154,16 +159,15 @@ def dev_login(payload: dict = Body(default=None)):
     auth0_id = f"dev:{email.lower()}"
     username = email.split("@")[0] if "@" in email else email
     access_token = create_dev_token(sub=auth0_id, email=email, username=username, role=role)
-    
-    # Get or create dev user and their default project
-    db = next(get_db())
-    user_id = None
+
+    now = datetime.now(timezone.utc)
+    user_id: Optional[str] = None
     try:
         # Find or create the dev user
         dev_user = user_crud.get_user_by_auth0_id(db, auth0_id)
         if not dev_user:
             dev_user = user_crud.create_user_from_auth0(db, auth0_id, email)
-        
+
         if dev_user:
             user_id = dev_user.id
             # Keep DB plan in sync with resolved dev-login plan.
@@ -180,45 +184,39 @@ def dev_login(payload: dict = Body(default=None)):
                 default_project = project_schemas.ProjectCreate(
                     name="Default Project",
                     description="Your first project - get started by creating FMEA, CAPA, or other quality management documents.",
-                    user_id=user_id
+                    user_id=user_id,
                 )
                 project_crud.create_project(db, default_project, user_id)
 
             # Backfill required docs for all existing projects (dev convenience, idempotent)
             try:
                 from business_logic.project_initializer import initialize_project_required_docs
+
                 existing_projects = project_crud.get_projects_by_user(db, user_id)
                 for p in existing_projects:
                     initialize_project_required_docs(db, p.id)
             except Exception as init_err:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Failed to initialize required docs during dev-login: {init_err}", exc_info=True)
+                logger.error("Failed to initialize required docs during dev-login: %s", init_err, exc_info=True)
     except Exception as e:
-        # If project creation fails, continue with login
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error in dev-login setup: {str(e)}", exc_info=True)
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": {
-            "id": user_id or auth0_id,
-            "username": username or "dev-user",
-            "email": email,
-            "plan": plan,
-            "full_name": "Development User",
-            "role": role or "admin",
-            "company": "Development",
-            "department": "IT",
-            "phone": None,
-            "bio": None,
-            "is_verified": True,
-            "created_at": "2024-01-01T00:00:00Z",
-            "last_login": "2024-01-01T00:00:00Z"
-        }
-    }
+        # If project creation fails, continue with login (JWT still valid for local dev)
+        logger.error("Error in dev-login DB setup: %s", e, exc_info=True)
+
+    user_profile = UserProfile(
+        id=str(user_id or auth0_id),
+        username=username or "dev-user",
+        email=email,
+        plan=plan,
+        full_name="Development User",
+        role=role or "user",
+        company="Development",
+        department="IT",
+        phone=None,
+        bio=None,
+        is_verified=True,
+        created_at=now,
+        last_login=now,
+    )
+    return Token(access_token=access_token, token_type="bearer", user=user_profile)
 
 @router.get("/me", response_model=UserProfile)
 def get_current_user_profile(current_user: User = Depends(get_current_user)):

@@ -72,6 +72,11 @@ class FMEARow(Base):
     # Financial and AI fields
     financial_impact = Column(Numeric, nullable=True)
     ai_metadata = Column(JSON, nullable=True)
+
+    # Post-market (MAUDE / openFDA) provenance — draft rows require expert review before release use
+    evidence_source = Column(String(64), nullable=True, index=True)
+    postmarket_review_status = Column(String(32), nullable=True, index=True)
+    postmarket_evidence_summary = Column(Text, nullable=True)
     
     # Risk Knowledge Base library references (optional)
     hazard_library_id = Column(String, nullable=True, index=True)  # FK to hazard_library.id

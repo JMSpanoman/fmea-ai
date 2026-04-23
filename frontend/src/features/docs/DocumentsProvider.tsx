@@ -2,13 +2,18 @@ import React, { createContext, useContext, useEffect, useMemo, useReducer, useRe
 import { docTypeById, documentTypes, docsGroups } from './docsRegistry';
 import type { DocApproval, DocsFilters, DocumentInstance, DocStatus } from './docsTypes';
 import {
+  PMS_REPORT_DOCUMENT_TYPE,
   approveBackendDocument,
   generateBackendDocument,
   loadConnectedProjectDocInstances,
+  mapBackendDocumentStatus,
+  refreshPmsReportDocument as refreshPmsReportDocumentApi,
   saveProjectDocInstances,
   simulateGenerate,
   updateBackendDocument,
+  type PmsReportRegenerateDocumentResponse,
 } from './docsApi';
+import { documentsApi } from '../../services/apiPhase3';
 
 type GenerateState = { docTypeId: string; status: 'idle' | 'loading' | 'error'; error?: string };
 
@@ -181,6 +186,10 @@ interface DocsContextValue {
     updateStatus: (docTypeId: string, status: DocStatus) => void;
     approve: (docTypeId: string, approval: DocApproval) => void;
     generate: (docTypeId: string) => Promise<void>;
+    /** Reloads all document instances from GET /projects/:id/documents */
+    reloadInstancesFromBackend: () => Promise<void>;
+    /** Regenerate stored PMS report doc, fetch full row, merge instances */
+    refreshPmsReportDocument: () => Promise<PmsReportRegenerateDocumentResponse>;
   };
   derived: {
     groups: typeof docsGroups;
@@ -345,6 +354,29 @@ export function DocumentsProvider({
         } catch (e: any) {
           dispatch({ type: 'GENERATE_FAIL', docTypeId, error: e?.message || 'Generate failed' });
         }
+      },
+      reloadInstancesFromBackend: async () => {
+        const instances = await loadConnectedProjectDocInstances(projectId);
+        dispatch({ type: 'LOAD_INSTANCES', instances });
+      },
+      refreshPmsReportDocument: async () => {
+        const meta = await refreshPmsReportDocumentApi(projectId);
+        const full = await documentsApi.getById(projectId, meta.document_id);
+        dispatch({
+          type: 'APPLY_BACKEND_DOC',
+          docTypeId: PMS_REPORT_DOCUMENT_TYPE,
+          patch: {
+            backendDocId: full.id,
+            status: mapBackendDocumentStatus(full.status),
+            updatedAt: full.updated_at || full.created_at || meta.updated_at || nowIso(),
+            lastGeneratedAt: full.updated_at || full.created_at || meta.updated_at || nowIso(),
+            version: `v${full.version ?? 0}`,
+            content: full.content || '',
+          },
+        });
+        const instances = await loadConnectedProjectDocInstances(projectId);
+        dispatch({ type: 'LOAD_INSTANCES', instances });
+        return meta;
       },
     }),
     // depend on state for backendDocId and content/status updates

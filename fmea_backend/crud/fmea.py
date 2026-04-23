@@ -82,6 +82,9 @@ def _serialize_for_diff(row: FMEARow) -> Dict[str, Any]:
         "rule_engine_result_json": getattr(row, "rule_engine_result_json", None),
         "ai_suggested_values_json": getattr(row, "ai_suggested_values_json", None),
         "risk_criteria_version_applied": getattr(row, "risk_criteria_version_applied", None),
+        "evidence_source": getattr(row, "evidence_source", None),
+        "postmarket_review_status": getattr(row, "postmarket_review_status", None),
+        "postmarket_evidence_summary": getattr(row, "postmarket_evidence_summary", None),
     }
 
 def create_fmea_row(db: Session, fmea_row: FMEARowCreate) -> FMEARow:
@@ -106,6 +109,9 @@ def create_fmea_row(db: Session, fmea_row: FMEARowCreate) -> FMEARow:
         residual_detection=fmea_row.residual_detection,
         financial_impact=fmea_row.financial_impact,
         ai_metadata=fmea_row.ai_metadata,
+        evidence_source=getattr(fmea_row, "evidence_source", None),
+        postmarket_review_status=getattr(fmea_row, "postmarket_review_status", None),
+        postmarket_evidence_summary=getattr(fmea_row, "postmarket_evidence_summary", None),
         hazard_library_id=getattr(fmea_row, "hazard_library_id", None),
         harm_library_id=getattr(fmea_row, "harm_library_id", None),
         risk_control_library_id=getattr(fmea_row, "risk_control_library_id", None),

@@ -708,6 +708,19 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               <button
                 onClick={() => {
                   const pid = selectedProject?.id;
+                  if (pid) navigate(`/projects/${pid}/postmarket-report`);
+                  else navigate('/projects');
+                }}
+                className={`flex items-center w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                  location.pathname.includes('/postmarket-report') ? 'bg-blue-600 text-white' : 'text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <i className="fa-solid fa-file-lines w-4 h-4 mr-2"></i>
+                <span>MAUDE evidence report</span>
+              </button>
+              <button
+                onClick={() => {
+                  const pid = selectedProject?.id;
                   if (pid) navigate(`/projects/${pid}/pms/plan-generator`);
                   else navigate('/projects');
                 }}

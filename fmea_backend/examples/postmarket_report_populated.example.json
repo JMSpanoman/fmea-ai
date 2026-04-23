@@ -1,0 +1,111 @@
+{
+  "report_mode": "populated",
+  "report_title": "Post-Market Surveillance Report (data-backed)",
+  "generated_at": "2025-03-24T12:00:00+00:00",
+  "project_summary": {
+    "project_id": "proj_auto_injector_demo",
+    "project_name": "Combination auto-injector — PMS demo",
+    "project_description": "Prefilled syringe + needle safety shield; illustrative MAUDE-derived example only."
+  },
+  "filter_summary": {
+    "device_type_used": "syringe, needle",
+    "device_name_label": "Auto-injector family",
+    "component_filter": null,
+    "failure_mode_filter": null,
+    "date_from": "2023-01-01",
+    "date_to": "2025-03-24"
+  },
+  "reporting_period": {
+    "date_from": "2023-01-01",
+    "date_to": "2025-03-24",
+    "label": "2023-01-01 to 2025-03-24 (filter window; UTC boundaries for PMS signals)",
+    "markets_regions_note": null
+  },
+  "summary": {
+    "maude_nlp_linked_records_reviewed": 186,
+    "pms_signal_records_in_scope": 2,
+    "unique_normalized_failure_modes": 14,
+    "malfunction_outcome_events": 142,
+    "injury_outcome_events": 31,
+    "death_outcome_events": 2,
+    "other_outcome_events": 8,
+    "unknown_outcome_events": 3,
+    "date_range_analyzed_start": "2023-02-11",
+    "date_range_analyzed_end": "2025-02-02"
+  },
+  "top_findings": {
+    "top_failure_modes": [
+      { "phrase": "incomplete dose delivery", "count": 34, "percentage_of_analyzed": null },
+      { "phrase": "needle shield deployment failure", "count": 28, "percentage_of_analyzed": null },
+      { "phrase": "premature activation / accidental firing", "count": 19, "percentage_of_analyzed": null }
+    ],
+    "top_causes": [
+      { "phrase": "plunger binding or stuck", "count": 22, "percentage_of_analyzed": null },
+      { "phrase": "spring force insufficient", "count": 14, "percentage_of_analyzed": null }
+    ],
+    "top_effects": [
+      { "phrase": "under-dosing / therapy interruption", "count": 26, "percentage_of_analyzed": null },
+      { "phrase": "needlestick / unintended sharp exposure", "count": 11, "percentage_of_analyzed": null }
+    ],
+    "top_components": [
+      { "phrase": "plunger rod", "count": 18, "percentage_of_analyzed": null },
+      { "phrase": "needle shield", "count": 16, "percentage_of_analyzed": null },
+      { "phrase": "safety interlock", "count": 12, "percentage_of_analyzed": null }
+    ],
+    "trend_qualitative": "Reported events in analyzed records are distributed across 24 monthly period(s). This pattern is descriptive only and does not establish causality or statistical control limits."
+  },
+  "signals_identified": [
+    {
+      "signal_id": "PMS-014",
+      "description": "Incomplete dose delivery associated with plunger malfunction: recurring complaints in distributor field data review.",
+      "source": "complaint | LOT 23-AX-9912",
+      "status": "under_review",
+      "notes": "Trend meeting scheduled; FMEA gap check requested."
+    },
+    {
+      "signal_id": "MAUDE-THEME-01",
+      "description": "Post-market narrative theme observed in MAUDE NLP extractions: incomplete dose delivery. Phrasing reflects reporter language; expert review required before causal inference.",
+      "source": "MAUDE NLP / openFDA-derived extractions",
+      "status": "monitor",
+      "notes": "Derived from aggregated failure-mode counts in the selected filter window."
+    },
+    {
+      "signal_id": "MAUDE-THEME-02",
+      "description": "Post-market narrative theme observed in MAUDE NLP extractions: needle shield deployment failure. Phrasing reflects reporter language; expert review required before causal inference.",
+      "source": "MAUDE NLP / openFDA-derived extractions",
+      "status": "monitor",
+      "notes": "Derived from aggregated failure-mode counts in the selected filter window."
+    }
+  ],
+  "recommended_actions": [
+    "Review project FMEA coverage against the top post-market themes; treat any suggested additions as draft inputs pending expert adjudication.",
+    "Assess whether occurrence / probability scoring in the risk file remains appropriate given the descriptive themes in this window (not incidence rates).",
+    "Evaluate whether CAPA, additional monitoring, or supplier engagement is warranted where injury, death, or escalating complaint-like malfunction patterns appear.",
+    "Where use-related or labeling patterns appear in narratives, review IFU, training, and human factors assumptions before concluding residual risk."
+  ],
+  "evidence_summary": {
+    "total_maude_records_analyzed": 186,
+    "date_range_analyzed_start": "2023-02-11",
+    "date_range_analyzed_end": "2025-02-02",
+    "qualitative_summary": "Analyzed 186 MAUDE-linked narrative extraction(s) for device-type filter «syringe, needle». Reported events suggest the themes below are commonly observed in this filtered corpus; supporting post-market evidence indicates priorities for expert review, not confirmed root causes.",
+    "component_focus_note": null
+  },
+  "top_failure_modes": [],
+  "top_causes": [],
+  "top_effects": [],
+  "outcome_breakdown": [],
+  "trend_summary": null,
+  "missing_real_world_risks": [
+    {
+      "normalized_failure_mode": "shield re-engagement failure after partial deployment",
+      "component": null,
+      "supporting_event_count": 9,
+      "rationale": "Repeated post-market theme with limited overlap to normalized FMEA failure-mode phrases for this project — requires expert review.",
+      "add_to_fmea_available": true,
+      "requires_expert_review": true
+    }
+  ],
+  "recommended_fmea_drafts": [],
+  "disclaimer": "FDA MAUDE and openFDA data are supportive evidence only: extracts may be incomplete, duplicated, or under-reported. Counts and themes in this report do not represent true device incidence and must not replace clinical, quality, or regulatory judgment. Findings require documented expert review before any update to probability scores, labeling, usability files, or the risk management file.",
+  "future_data_sources_placeholder": "Future releases may incorporate FDA recalls, internal complaints, CAPA, and vigilance feeds using the same report structure."
+}

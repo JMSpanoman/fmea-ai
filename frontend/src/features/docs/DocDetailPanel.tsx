@@ -8,6 +8,7 @@ import { ImpactBanner } from './ImpactBanner';
 import { DocActions } from './DocActions';
 import { ApproveModal } from './ApproveModal';
 import { htmlToText, isProbablyHtml } from './htmlUtils';
+import { isAxiosError } from 'axios';
 import api from '../../axios';
 import authService from '../../services/authService';
 import { projectInitializeApi } from '../../services/apiPhase1';
@@ -54,6 +55,10 @@ export function DocDetailPanel({
   const [fmeaExportHtml, setFmeaExportHtml] = useState<string>('');
   const [fmeaExportError, setFmeaExportError] = useState<string>('');
   const [fmeaExportLoading, setFmeaExportLoading] = useState(false);
+
+  const [pmsRefreshLoading, setPmsRefreshLoading] = useState(false);
+  const [pmsRefreshError, setPmsRefreshError] = useState<string>('');
+  const [pmsRefreshSuccess, setPmsRefreshSuccess] = useState<string>('');
 
   useEffect(() => {
     let cancelled = false;
@@ -102,6 +107,10 @@ export function DocDetailPanel({
 
   const generating = state.generate.status === 'loading' && state.generate.docTypeId === docTypeId;
   const showGenerate = canGenerate(docTypeId);
+
+  const pmsStoredBodyMissing =
+    docTypeId === 'pms_report' &&
+    (!inst.content?.trim() || inst.content.trim().toLowerCase() === 'not found');
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden flex flex-col h-[calc(100vh-220px)]">
@@ -152,6 +161,77 @@ export function DocDetailPanel({
             }}
           />
         </div>
+
+        {docType.id === 'pms_report' ? (
+          <div className="mt-3 rounded-lg border border-gray-200 bg-sky-50/80 p-3">
+            <div className="text-sm font-semibold text-gray-900">Post-market data → PMS Report document</div>
+            <p className="text-sm text-gray-700 mt-1">
+              The preview below is the <b>stored project document</b> (versioned in Document Control), not the live{' '}
+              <code className="text-xs bg-white/80 px-1 rounded">POST /postmarket/report</code> JSON. If you still see the
+              legacy &quot;No PMS data included&quot; text after ingesting MAUDE data, refresh from the server.
+            </p>
+            {!inst.backendDocId ? (
+              <div className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-sm text-amber-900">
+                No stored PMS Report document exists yet for this project. Use <b>Refresh</b> below to create and
+                fill it from the latest MAUDE / signals data.
+              </div>
+            ) : null}
+            {pmsRefreshSuccess ? (
+              <div className="mt-2 rounded-md border border-emerald-200 bg-emerald-50 p-2 text-sm text-emerald-900">
+                {pmsRefreshSuccess}
+              </div>
+            ) : null}
+            {pmsRefreshError ? (
+              <div className="mt-2 rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-800">{pmsRefreshError}</div>
+            ) : null}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={pmsRefreshLoading}
+                onClick={() => {
+                  setPmsRefreshError('');
+                  setPmsRefreshSuccess('');
+                  setPmsRefreshLoading(true);
+                  void actions
+                    .refreshPmsReportDocument()
+                    .then((meta) => {
+                      const excerpt = (meta.preview_excerpt || '').trim();
+                      setPmsRefreshSuccess(
+                        excerpt
+                          ? `Stored document updated (${meta.report_mode}). Preview: ${excerpt}`
+                          : `Stored document updated (${meta.report_mode}).`
+                      );
+                    })
+                    .catch((e: unknown) => {
+                      if (isAxiosError(e)) {
+                        const d = e.response?.data as { detail?: unknown } | undefined;
+                        const detail =
+                          typeof d?.detail === 'string'
+                            ? d.detail
+                            : Array.isArray(d?.detail)
+                              ? JSON.stringify(d?.detail)
+                              : e.message;
+                        setPmsRefreshError(detail || 'Refresh failed');
+                        return;
+                      }
+                      setPmsRefreshError(e instanceof Error ? e.message : 'Refresh failed');
+                    })
+                    .finally(() => setPmsRefreshLoading(false));
+                }}
+                className="px-3 py-2 rounded-md text-sm bg-sky-700 text-white hover:bg-sky-800 disabled:opacity-50"
+              >
+                {pmsRefreshLoading ? 'Refreshing…' : 'Refresh PMS report from MAUDE / signals'}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(`/projects/${state.projectId}/postmarket-report`)}
+                className="px-3 py-2 rounded-md text-sm border border-gray-300 bg-white text-gray-900 hover:bg-gray-50"
+              >
+                Open interactive post-market report
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {/* Registry explanation + "where it lives" link (for key doc types) */}
         {['rmp', 'risk_acceptability_criteria', 'hazard_analysis', 'fmea', 'rmf', 'traceability_matrix'].includes(docType.id) ? (
@@ -357,6 +437,14 @@ export function DocDetailPanel({
                       rows={16}
                     />
                   )}
+                </div>
+              ) : pmsStoredBodyMissing ? (
+                <div className="rounded-md border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+                  <p className="font-medium text-gray-900">No report body in Documentation yet</p>
+                  <p className="mt-1 text-gray-600">
+                    Use <b>Refresh PMS report from MAUDE / signals</b> above to build the stored document from current
+                    post-market data. This preview reads the versioned project document, not the live JSON report API.
+                  </p>
                 </div>
               ) : (
                 <textarea

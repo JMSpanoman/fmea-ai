@@ -13,7 +13,7 @@ import api from '../axios';
  */
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const { currentProject, setCurrentProject, clearCurrentProject } = useProject();
   const ranRef = useRef(false);
 
@@ -21,6 +21,7 @@ export default function LandingPage() {
   const isPro = isProPlan(plan);
 
   useEffect(() => {
+    if (isLoading || !user) return;
     if (ranRef.current) return;
     ranRef.current = true;
 
@@ -83,7 +84,7 @@ export default function LandingPage() {
         navigate(isPro ? '/projects' : '/dfmea', { replace: true });
       }
     })();
-  }, [clearCurrentProject, currentProject?.id, isPro, navigate, setCurrentProject]);
+  }, [clearCurrentProject, currentProject?.id, isLoading, isPro, navigate, setCurrentProject, user]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface-primary">

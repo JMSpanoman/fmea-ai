@@ -96,8 +96,10 @@ def _content_is_placeholder_for_type(doc_type: str, content: Optional[str]) -> b
         return True
     if doc_type == "pms_plan" and c.startswith("pms plan starter"):
         return True
-    if doc_type == "pms_report" and c.startswith("pms report starter"):
-        return True
+    if doc_type == "pms_report":
+        from services.pms_report_document_sync import pms_report_content_is_auto_refreshable_placeholder
+
+        return pms_report_content_is_auto_refreshable_placeholder(content)
     if doc_type == "capa" and c.startswith("capa starter"):
         return True
     if doc_type == "usability_risk_analysis" and c.startswith("usability risk analysis starter"):
@@ -572,6 +574,10 @@ def _draft_pms_plan(
 
 
 def _draft_pms_report(*, project_id: str, profile: Any, refs: dict[str, Any]) -> str:
+    """
+    Static scaffold only. Prefer ``build_pms_report_document_markdown`` (see ``postmarket_report``)
+    so MAUDE/NLP rows and ``pms_signals`` populate the document when data exists.
+    """
     def _ref(label: str, doc: Any, doc_type: str) -> str:
         if not doc:
             return f"- {label}: (type={doc_type}) — (not present yet)"
@@ -1036,8 +1042,18 @@ def _should_populate(doc: Document) -> bool:
     """
     Populate only if the document is empty/placeholder OR explicitly marked Not started.
     Never overwrite otherwise.
+
+    PMS Report: approved documents are not auto-regenerated from placeholders (use
+    POST /projects/{id}/documents/pms-report/refresh explicitly if needed).
     """
-    return _status_is_not_started(doc.status) or _content_is_placeholder_for_type((doc.type or "").lower(), doc.content)
+    if _status_is_not_started(doc.status):
+        return True
+    dt = (doc.type or "").lower()
+    if _content_is_placeholder_for_type(dt, doc.content):
+        if dt == "pms_report" and (doc.status or "").strip().lower() == "approved":
+            return False
+        return True
+    return False
 
 
 def _normalize_tags(tags: Any) -> List[str]:
@@ -2117,18 +2133,27 @@ def initialize_project_from_profile(db: Session, *, project_id: str) -> Dict[str
         document_crud.update_document(db, pms_plan.id, DocumentUpdate(content=pms_plan_content, status="draft"), project_id)
         stats.updated_documents.append("pms_plan")
 
-    # PMS Report
+    # PMS Report — use same MAUDE/NLP/PMS-signal aggregation as POST /postmarket/report when data exists.
     pms_report = by_type.get("pms_report")
     if pms_report and _should_populate(pms_report):
-        pms_report_content = _draft_pms_report(
-            project_id=project_id,
-            profile=profile,
-            refs={
-                "pms_plan": _d("pms_plan"),
-                "hazard_analysis": _d("hazard_analysis"),
-                "fmea": _d("fmea"),
-            },
-        )
+        pms_refs = {
+            "pms_plan": _d("pms_plan"),
+            "hazard_analysis": _d("hazard_analysis"),
+            "fmea": _d("fmea"),
+        }
+        try:
+            from services.postmarket_report import build_pms_report_document_markdown
+
+            pms_report_content = build_pms_report_document_markdown(db, project_id=project_id, refs=pms_refs)
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).exception("PMS report document: falling back to static draft template")
+            pms_report_content = _draft_pms_report(
+                project_id=project_id,
+                profile=profile,
+                refs=pms_refs,
+            )
         document_crud.update_document(db, pms_report.id, DocumentUpdate(content=pms_report_content, status="draft"), project_id)
         stats.updated_documents.append("pms_report")
 
@@ -2193,6 +2218,13 @@ def build_project_setup_scaffolds(
         fmea_rows=fmea_crud.get_fmea_rows_by_project(db, project_id),
     )
 
+    try:
+        from services.postmarket_report import build_pms_report_document_markdown
+
+        pms_report_scaffold = build_pms_report_document_markdown(db, project_id=project_id, refs={})
+    except Exception:
+        pms_report_scaffold = _draft_pms_report(project_id=project_id, profile=profile, refs={})
+
     return {
         "rmp": _draft_rmp(project_id=project_id, profile=profile, components=components),
         "rmf": _draft_rmf_scaffold(project_id=project_id, profile=profile, components=components),
@@ -2219,7 +2251,7 @@ def build_project_setup_scaffolds(
         "residual_risk": _build_residual_risk_eval(project_id=project_id, profile=profile),
         "traceability_matrix": tm_content,
         "pms_plan": _draft_pms_plan(project_id=project_id, profile=profile, components=components, refs={}, risks_exist=False),
-        "pms_report": _draft_pms_report(project_id=project_id, profile=profile, refs={}),
+        "pms_report": pms_report_scaffold,
         "capa": _draft_capa_log(project_id=project_id, profile=profile),
         "usability_risk_analysis": _draft_usability_risk_analysis(project_id=project_id, profile=profile, components=components, refs={}),
         "hf_validation": _draft_hf_validation(project_id=project_id, profile=profile),

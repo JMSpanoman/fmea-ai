@@ -200,8 +200,10 @@ def get_document_guidance_registry() -> Dict[str, Dict[str, Any]]:
                 "Provides a template to summarize post-market data reviewed during a defined reporting period."
             ),
             "population_text": (
-                "SmartQS provides a structure-only report template. Populate after post-market data exists; "
-                "this draft must not be treated as evidence of data review."
+                "Project Initialization refreshes this document from stored MAUDE NLP-linked rows, PMS signals, and pipeline snapshots "
+                "when present; otherwise a conservative draft scaffold remains. "
+                "Use Project → Post-market report (Pro) for interactive filters and the same aggregation logic. "
+                "Configure OPENAI_API_KEY (and optionally OPENFDA_API_KEY) per fmea_backend/postmarket.env.example when using ingest/NLP."
             ),
             "ai_available": False,
             "ai_button_text": "",
