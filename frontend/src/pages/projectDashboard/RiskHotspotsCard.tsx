@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Document } from '../../types';
 import { inferDocStatus } from './DocumentRow';
+import type { LoadAvailability } from './model';
 
 function daysSince(iso?: string | null) {
   if (!iso) return null;
@@ -12,7 +13,15 @@ function daysSince(iso?: string | null) {
 
 type Hotspot = { title: string; reason: string; href: string };
 
-export function RiskHotspotsCard({ projectId, documents }: { projectId: string; documents: Document[] }) {
+export function RiskHotspotsCard({
+  projectId,
+  documents,
+  availability,
+}: {
+  projectId: string;
+  documents: Document[];
+  availability: LoadAvailability;
+}) {
   const navigate = useNavigate();
 
   const hotspots = useMemo(() => {
@@ -20,7 +29,6 @@ export function RiskHotspotsCard({ projectId, documents }: { projectId: string; 
     const byType: Record<string, Document> = {};
     for (const d of documents || []) if (d?.type) byType[d.type] = d;
 
-    // Missing key risk artifacts
     const keyDocs = [
       { type: 'hazard_analysis', title: 'Hazard Analysis' },
       { type: 'fmea', title: 'FMEA' },
@@ -39,7 +47,6 @@ export function RiskHotspotsCard({ projectId, documents }: { projectId: string; 
       }
     }
 
-    // Stale drafts (risk docs)
     for (const d of documents || []) {
       const st = inferDocStatus({ status: d.status, content: d.content });
       if (st !== 'draft') continue;
@@ -58,32 +65,42 @@ export function RiskHotspotsCard({ projectId, documents }: { projectId: string; 
   }, [documents, projectId]);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Risk Hotspots</div>
-      <div className="mt-2 text-sm text-gray-600">Top issues inferred from document gaps and staleness.</div>
+    <section className="sr-card p-5 h-full" aria-labelledby="risk-hotspots-heading">
+      <h2 id="risk-hotspots-heading" className="inline-flex items-center gap-2 text-base font-semibold text-navy">
+        <span className="inline-flex w-8 h-8 items-center justify-center rounded-full bg-canvas text-muted" aria-hidden="true">
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M8 4h8l1 4H7l1-4zM6 8h12v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8z" />
+          </svg>
+        </span>
+        Risk hotspots
+      </h2>
+      <p className="mt-1 text-sm text-muted">Top issues inferred from document gaps and staleness.</p>
 
       <div className="mt-4">
-        {hotspots.length ? (
+        {availability === 'loading' ? (
+          <p className="text-sm text-muted">Loading hotspots…</p>
+        ) : availability === 'error' ? (
+          <p className="text-sm text-red-700">Hotspots are unavailable.</p>
+        ) : hotspots.length ? (
           <div className="space-y-3">
             {hotspots.map((h) => (
-              <div key={h.title} className="rounded-md border border-gray-200 p-3">
-                <div className="text-sm font-medium text-gray-900">{h.title}</div>
-                <div className="text-sm text-gray-600 mt-1">{h.reason}</div>
+              <div key={h.title} className="rounded-control border border-gray-200 p-3">
+                <div className="text-sm font-medium text-navy">{h.title}</div>
+                <div className="text-sm text-muted mt-1">{h.reason}</div>
                 <button
                   type="button"
                   onClick={() => navigate(h.href)}
-                  className="mt-2 text-sm text-sky-700 hover:underline"
+                  className="mt-2 text-sm text-brand hover:underline min-h-control"
                 >
-                  Open →
+                  Open
                 </button>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-sm text-gray-700">No hotspots detected.</div>
+          <p className="text-sm text-muted text-center py-6">No hotspots detected.</p>
         )}
       </div>
-    </div>
+    </section>
   );
 }
-

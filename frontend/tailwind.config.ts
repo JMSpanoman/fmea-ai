@@ -1,58 +1,102 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
       colors: {
-        // Design system colors
+        brand: {
+          DEFAULT: 'var(--sr-color-brand)',
+          hover: 'var(--sr-color-brand-hover)',
+          muted: 'var(--sr-color-brand-muted)',
+          foreground: 'var(--sr-color-brand-foreground)',
+        },
+        navy: 'var(--sr-color-navy)',
+        ink: 'var(--sr-color-ink)',
+        muted: 'var(--sr-color-muted)',
+        subtle: 'var(--sr-color-subtle)',
+        canvas: 'var(--sr-color-canvas)',
+        healthy: {
+          DEFAULT: 'var(--sr-color-healthy)',
+          muted: 'var(--sr-color-healthy-muted)',
+        },
+        attention: {
+          DEFAULT: 'var(--sr-color-attention)',
+          muted: 'var(--sr-color-attention-muted)',
+        },
+        info: {
+          DEFAULT: 'var(--sr-color-info)',
+          muted: 'var(--sr-color-info-muted)',
+        },
+        draft: {
+          DEFAULT: 'var(--sr-color-draft)',
+          muted: 'var(--sr-color-draft-muted)',
+        },
         background: {
-          main: '#050816',
-          secondary: '#0B1020',
+          main: 'var(--sr-color-canvas)',
+          secondary: 'var(--sr-color-surface)',
         },
         surface: {
-          primary: '#0E172A',
-          secondary: '#111827',
+          primary: 'var(--sr-color-surface)',
+          secondary: 'var(--sr-color-neutral-muted)',
         },
         primary: {
-          DEFAULT: '#C4B5FD',   // light purple (readable with dark text)
-          hover: '#A78BFA',
+          DEFAULT: 'var(--sr-color-brand)',
+          hover: 'var(--sr-color-brand-hover)',
         },
-        success: '#22C55E',
-        danger: '#EF4444',
+        success: 'var(--sr-color-healthy)',
+        danger: 'var(--sr-color-danger)',
         text: {
-          primary: '#000000',
-          secondary: '#000000',
+          primary: 'var(--sr-color-ink)',
+          secondary: 'var(--sr-color-muted)',
         },
-        border: 'rgba(148, 163, 184, 0.35)',
+        border: 'var(--sr-color-border)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['var(--sr-font-sans)', 'Inter', 'system-ui', 'sans-serif'],
       },
       fontSize: {
-        'h1': ['28px', { lineHeight: '1.2', fontWeight: '700' }],
-        'h2': ['22px', { lineHeight: '1.3', fontWeight: '600' }],
-        'h3': ['18px', { lineHeight: '1.4', fontWeight: '500' }],
-        'body': ['14px', { lineHeight: '1.5', fontWeight: '400' }],
+        h1: ['1.75rem', { lineHeight: '1.2', fontWeight: '700' }],
+        h2: ['1.375rem', { lineHeight: '1.3', fontWeight: '600' }],
+        h3: ['1.125rem', { lineHeight: '1.4', fontWeight: '600' }],
+        body: ['0.875rem', { lineHeight: '1.5', fontWeight: '400' }],
       },
       spacing: {
-        '18': '4.5rem',
-        '22': '5.5rem',
+        18: '4.5rem',
+        22: '5.5rem',
+        header: 'var(--sr-header-height)',
+        sidebar: 'var(--sr-sidebar-width)',
+      },
+      minHeight: {
+        control: 'var(--sr-control-height-md)',
+        'control-lg': 'var(--sr-control-height-lg)',
+      },
+      height: {
+        control: 'var(--sr-control-height-md)',
+        'control-lg': 'var(--sr-control-height-lg)',
+        header: 'var(--sr-header-height)',
+      },
+      width: {
+        sidebar: 'var(--sr-sidebar-width)',
       },
       borderRadius: {
-        'card': '0.75rem',
-        'button': '9999px',
+        card: 'var(--sr-radius-lg)',
+        control: 'var(--sr-radius-md)',
+        button: 'var(--sr-radius-md)',
       },
       boxShadow: {
-        'elevated': '0 10px 30px rgba(15, 23, 42, 0.8)',
-        'glow': '0 0 20px rgba(196, 181, 253, 0.4)',
+        card: 'var(--sr-shadow-card)',
+        header: 'var(--sr-shadow-header)',
+        focus: 'var(--sr-shadow-focus)',
+        elevated: '0 8px 24px rgba(21, 32, 51, 0.08)',
+        glow: '0 0 0 3px rgba(15, 107, 110, 0.18)',
       },
       backdropBlur: {
-        'glass': '10px',
+        glass: '10px',
       },
     },
   },
   plugins: [],
-}
+};

@@ -29,7 +29,7 @@ const PostMarketReportPage: React.FC = () => {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-600">
           <Link to={`/projects/${projectId}/dashboard`} className="text-sky-700 hover:underline">
-            ← Mission Control
+            ← Project overview
           </Link>
           <span className="text-neutral-300">|</span>
           <Link to={`/projects/${projectId}/pms/signals`} className="text-sky-700 hover:underline">

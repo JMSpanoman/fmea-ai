@@ -1,3 +1,4 @@
+@import './styles/tokens.css';
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
@@ -8,70 +9,81 @@
   * {
     @apply border-border;
   }
-  
-  body {
-    font-family: 'Inter', system-ui, sans-serif;
-    background: #E5E7EB !important;
-    background-color: #E5E7EB !important;
-    min-height: 100vh;
-    color: #000000 !important;
-  }
-  
-  /* Force all text to be black */
-  body * {
-    color: #000000 !important;
-  }
-  
-  /* Force all backgrounds to be light grey */
-  html,
-  html body,
-  #root,
-  #root > * {
-    background: #E5E7EB !important;
-    background-color: #E5E7EB !important;
-  }
 
   html {
     scroll-behavior: smooth;
   }
+
+  body {
+    font-family: var(--sr-font-sans);
+    background: var(--sr-color-canvas);
+    color: var(--sr-color-ink);
+    min-height: 100vh;
+  }
+
+  #root {
+    min-height: 100vh;
+    background: var(--sr-color-canvas);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--sr-color-brand);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
 @layer components {
-  /* Custom scrollbar for dark theme */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    background-color: #E5E7EB;
+    background-color: var(--sr-color-canvas);
   }
 
   ::-webkit-scrollbar-thumb {
-    background-color: #9CA3AF;
-    border-radius: 9999px;
+    background-color: var(--sr-color-border-strong);
+    border-radius: var(--sr-radius-full);
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: #6B7280;
+    background-color: var(--sr-color-muted);
   }
 
-  /* Smooth transitions */
   .transition-smooth {
-    transition: all 150ms ease-in-out;
+    transition: color 150ms ease-in-out, background-color 150ms ease-in-out,
+      border-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
   }
 
   .transition-smooth-slow {
-    transition: all 250ms ease-in-out;
+    transition: color 250ms ease-in-out, background-color 250ms ease-in-out,
+      border-color 250ms ease-in-out, box-shadow 250ms ease-in-out, transform 250ms ease-in-out;
   }
 
-  /* Glassmorphism effect */
-  .glass {
-    @apply bg-surface-primary/80 backdrop-blur-glass border border-border;
+  .sr-card {
+    background: var(--sr-color-surface);
+    border: 1px solid var(--sr-color-border);
+    border-radius: var(--sr-radius-lg);
+    box-shadow: var(--sr-shadow-card);
   }
 
   /*
-   * Post-market report page: design tokens use dark surfaces (surface.primary) with black text — illegible.
+   * Post-market report page: design tokens previously used dark surfaces with black text.
    * Scope a white “paper” layout with dark gray body text.
    */
   .postmarket-report-page {

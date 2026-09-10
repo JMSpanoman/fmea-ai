@@ -6,14 +6,22 @@ import { documentsApi } from '../services/apiPhase3';
 import api from '../axios';
 import type { Document } from '../types';
 import { docTypeById as docsRegistryById } from '../features/docs/docsRegistry';
-import { KpiCardsRow, KpiCard, MiniBreakdown } from './projectDashboard/KpiCardsRow';
-import { NextActionsCard } from './projectDashboard/NextActionsCard';
 import { DocumentHub } from './projectDashboard/DocumentHub';
-import { inferDocStatus } from './projectDashboard/DocumentRow';
 import { ProjectReadinessCard } from './projectDashboard/ProjectReadinessCard';
 import { TraceabilityHealthCard } from './projectDashboard/TraceabilityHealthCard';
 import { RiskHotspotsCard } from './projectDashboard/RiskHotspotsCard';
 import { RecentActivityCard } from './projectDashboard/RecentActivityCard';
+import { RecommendedActionCard } from './projectDashboard/RecommendedActionCard';
+import { RiskOverviewCard } from './projectDashboard/RiskOverviewCard';
+import { ProjectProgressPath } from './projectDashboard/ProjectProgressPath';
+import {
+  selectPrimaryRecommendedAction,
+  selectProjectProgress,
+  selectProjectReadiness,
+  selectRiskStatusCounts,
+  selectTraceabilityHealth,
+  type LoadAvailability,
+} from './projectDashboard/model';
 import { projectGenerateAiDraftsFromSetupApi } from '../services/apiPhase1';
 
 type LoadState = 'idle' | 'loading' | 'error' | 'ready';
@@ -89,20 +97,6 @@ const typeLabel = (t: string) => {
   }
 };
 
-function computeReadiness(docs: Document[]) {
-  if (!docs?.length) return { pct: 0, breakdown: [] as Array<{ label: string; value: string }> };
-  const statuses = docs.map((d) => inferDocStatus({ status: d.status, content: d.content }));
-  const approved = statuses.filter((s) => s === 'approved').length;
-  const pct = Math.round((approved / statuses.length) * 100);
-  const breakdown = [
-    { label: 'Approved', value: String(approved) },
-    { label: 'In review', value: String(statuses.filter((s) => s === 'in_review').length) },
-    { label: 'Draft', value: String(statuses.filter((s) => s === 'draft').length) },
-    { label: 'Not started', value: String(statuses.filter((s) => s === 'not_started').length) },
-  ];
-  return { pct, breakdown };
-}
-
 export default function ProjectDashboardPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
@@ -116,6 +110,7 @@ export default function ProjectDashboardPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [openingWizard, setOpeningWizard] = useState(false);
   const [setupIncomplete, setSetupIncomplete] = useState(false);
+  const [setupEvaluated, setSetupEvaluated] = useState(false);
   const [setupExists, setSetupExists] = useState(false);
   const [generatingInitialDrafts, setGeneratingInitialDrafts] = useState(false);
   const [generatingAiFmea, setGeneratingAiFmea] = useState(false);
@@ -129,7 +124,42 @@ export default function ProjectDashboardPage() {
     return 'Project';
   }, [currentProject, finalProjectId]);
 
-  const readiness = useMemo(() => computeReadiness(documents), [documents]);
+  const availability: LoadAvailability = useMemo(() => {
+    if (state === 'error') return 'error';
+    if (state === 'ready' && documents.length === 0) return 'empty';
+    if (state === 'ready') return 'ready';
+    return 'loading';
+  }, [state, documents.length]);
+
+  const readiness = useMemo(
+    () => (availability === 'ready' || availability === 'empty' ? selectProjectReadiness(documents) : null),
+    [availability, documents]
+  );
+  const riskCounts = useMemo(
+    () => (availability === 'ready' || availability === 'empty' ? selectRiskStatusCounts(documents) : null),
+    [availability, documents]
+  );
+  const traceabilityHealth = useMemo(
+    () => (availability === 'ready' || availability === 'empty' ? selectTraceabilityHealth(documents) : null),
+    [availability, documents]
+  );
+  const progressStages = useMemo(
+    () =>
+      selectProjectProgress({
+        setupComplete: setupEvaluated ? !setupIncomplete : false,
+        documents: availability === 'loading' || availability === 'error' ? [] : documents,
+      }),
+    [setupEvaluated, setupIncomplete, availability, documents]
+  );
+  const recommended = useMemo(
+    () =>
+      selectPrimaryRecommendedAction({
+        projectId: finalProjectId,
+        documents,
+        setupComplete: setupEvaluated ? !setupIncomplete : undefined,
+      }),
+    [finalProjectId, documents, setupEvaluated, setupIncomplete]
+  );
 
   const checkSetup = async () => {
     if (!finalProjectId) return;
@@ -140,6 +170,7 @@ export default function ProjectDashboardPage() {
     if (skipped) {
       setSetupIncomplete(true);
       setSetupExists(true);
+      setSetupEvaluated(true);
       return;
     }
 
@@ -170,6 +201,7 @@ export default function ProjectDashboardPage() {
 
     setSetupIncomplete(!(hasIntendedUse && hasComponents));
     setSetupExists(Boolean(hasAnyProfile || hasComponents));
+    setSetupEvaluated(true);
   };
 
   const load = async () => {
@@ -220,6 +252,7 @@ export default function ProjectDashboardPage() {
   };
 
   useEffect(() => {
+    setSetupEvaluated(false);
     if (!finalProjectId) return;
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -318,11 +351,11 @@ export default function ProjectDashboardPage() {
 
   if (!finalProjectId) {
     return (
-      <div className="p-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p className="text-yellow-800">Select or create a project to continue.</p>
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
+        <div className="sr-card p-4 border-attention/30 bg-attention-muted">
+          <p className="text-navy">Select or create a project to continue.</p>
           <button
-            className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+            className="mt-3 min-h-control px-4 rounded-control bg-brand text-white text-sm font-medium hover:bg-brand-hover"
             onClick={() => navigate('/projects')}
           >
             Go to Projects
@@ -429,131 +462,91 @@ export default function ProjectDashboardPage() {
   }, [finalProjectId, setupExists, state]);
 
   return (
-    <div className="p-6">
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <div>
-          <div className="text-2xl font-bold text-gray-900">Mission Control</div>
-          <div className="text-sm text-gray-600 mt-1">
-            <span className="font-medium">Project:</span> {projectName}{' '}
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <button
-            className="px-4 py-2 bg-white border border-gray-200 text-gray-900 rounded-md hover:bg-gray-50"
-            onClick={load}
-            disabled={state === 'loading'}
-          >
-            {state === 'loading' ? 'Loading…' : 'Reload'}
-          </button>
-          <button
-            className="px-4 py-2 bg-sky-600 text-white rounded-md hover:bg-sky-700"
-            onClick={() => navigate(`/projects/${finalProjectId}/documents`)}
-          >
-            Project Docs
-          </button>
-          <button
-            className="px-4 py-2 bg-sky-500 text-white rounded-md hover:bg-sky-600"
-            onClick={() => navigate(`/projects/${finalProjectId}/docs`)}
-          >
-            Documentation
-          </button>
-          <button
-            className="px-4 py-2 bg-sky-500 text-white rounded-md hover:bg-sky-600"
-            onClick={() => navigate(`/projects/${finalProjectId}/risk-outputs`)}
-          >
-            Risk outputs
-          </button>
-          <button
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-            onClick={() => navigate(`/projects/${finalProjectId}/postmarket-report`)}
-          >
-            MAUDE report
-          </button>
-        </div>
+    <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full">
+      <header className="mb-6">
+        <h1 className="text-2xl sm:text-[1.75rem] font-bold text-navy">Project overview</h1>
+        <p className="mt-1 text-sm text-muted">
+          Track progress, manage risk, and build your documentation for the {projectName}.
+        </p>
+      </header>
+
+      <div className="mb-6">
+        <ProjectProgressPath stages={progressStages} />
       </div>
 
       {actionError ? (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <div className="sr-card p-4 mb-6 border-red-200 bg-red-50">
           <p className="text-red-800 font-medium">Action failed</p>
           <p className="text-red-700 text-sm mt-1">{actionError}</p>
         </div>
       ) : null}
-      {/* Keep success info subtle: show only when user explicitly triggers actions like deterministic drafts. */}
       {actionInfo && !actionInfo.toLowerCase().includes('ai fmea') ? (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="sr-card p-4 mb-6 border-blue-200 bg-blue-50">
           <p className="text-blue-900 font-medium">Action result</p>
           <p className="text-blue-800 text-sm mt-1">{actionInfo}</p>
         </div>
       ) : null}
 
       {anySetupDraftsGenerated ? (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 mb-6">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="text-sm font-semibold text-emerald-900">Initial drafts generated from project setup</div>
-              <div className="text-sm text-emerald-900/90 mt-1">
-                These documents were created deterministically from your <b>Project Profile</b> and <b>Components</b>.
-              </div>
-            </div>
+        <div className="sr-card p-4 mb-6 border-emerald-200 bg-emerald-50">
+          <div className="text-sm font-semibold text-emerald-900">Initial drafts generated from project setup</div>
+          <div className="text-sm text-emerald-900/90 mt-1">
+            These documents were created deterministically from your <b>Project Profile</b> and <b>Components</b>.
           </div>
         </div>
       ) : null}
 
       {showGenerateDraftsCta ? (
-        <div className="rounded-lg border border-sky-200 bg-sky-50 p-4 mb-6">
+        <div className="sr-card p-4 mb-6 border-brand/20 bg-brand-muted">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="text-sm font-semibold text-sky-900">Generate initial drafts</div>
-              <div className="text-sm text-sky-900/90 mt-1">
+              <div className="text-sm font-semibold text-navy">Generate initial drafts</div>
+              <div className="text-sm text-muted mt-1">
                 Your project setup is saved, but the key documents are still empty. Generate deterministic draft content (no AI).
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={runInitializeFromProfile}
-                disabled={generatingInitialDrafts}
-                className="px-4 py-2 rounded-md bg-sky-600 text-white text-sm hover:bg-sky-700 disabled:opacity-50"
-              >
-                {generatingInitialDrafts ? 'Generating…' : 'Generate initial drafts'}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={runInitializeFromProfile}
+              disabled={generatingInitialDrafts}
+              className="min-h-control px-4 rounded-control bg-brand text-white text-sm font-medium hover:bg-brand-hover disabled:opacity-50"
+            >
+              {generatingInitialDrafts ? 'Generating…' : 'Generate initial drafts'}
+            </button>
           </div>
         </div>
       ) : null}
 
       {setupIncomplete ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 mb-6">
+        <div className="sr-card p-4 mb-6 border-attention/20 bg-attention-muted">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="text-sm font-semibold text-amber-900">Complete Project Setup to unlock auto-population</div>
-              <div className="text-sm text-amber-900/90 mt-1">
+              <div className="text-sm font-semibold text-navy">Complete Project Setup to unlock auto-population</div>
+              <div className="text-sm text-muted mt-1">
                 Add an <b>intended use</b> and at least <b>one component</b> to enable deterministic prefill.
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  if (setupSkippedKey) localStorage.removeItem(setupSkippedKey);
-                  navigate(`/projects/${finalProjectId}/setup`);
-                }}
-                className="px-4 py-2 rounded-md bg-amber-600 text-white text-sm hover:bg-amber-700"
-              >
-                Complete setup
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (setupSkippedKey) localStorage.removeItem(setupSkippedKey);
+                navigate(`/projects/${finalProjectId}/setup`);
+              }}
+              className="min-h-control px-4 rounded-control bg-attention text-white text-sm font-medium hover:opacity-90"
+            >
+              Complete setup
+            </button>
           </div>
         </div>
       ) : null}
 
       {state === 'error' ? (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <div className="sr-card p-4 mb-6 border-red-200 bg-red-50">
           <p className="text-red-800 font-medium">Failed to load project documents</p>
           <p className="text-red-700 text-sm mt-1">{error}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
-              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+              className="min-h-control bg-red-600 text-white px-4 rounded-control hover:bg-red-700"
               onClick={load}
               type="button"
             >
@@ -561,7 +554,7 @@ export default function ProjectDashboardPage() {
             </button>
             {String(error || '').toLowerCase().includes('project not found') ? (
               <button
-                className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 disabled:opacity-50"
+                className="min-h-control bg-healthy text-white px-4 rounded-control hover:opacity-90 disabled:opacity-50"
                 onClick={openProjectWizard}
                 type="button"
                 disabled={openingWizard}
@@ -574,42 +567,42 @@ export default function ProjectDashboardPage() {
         </div>
       ) : null}
 
-      {/* Primary Next Actions (full width) */}
       <div className="mb-6">
-        <NextActionsCard projectId={finalProjectId} documents={documents} />
+        <RecommendedActionCard
+          primary={recommended.primary}
+          remaining={recommended.remaining}
+          loading={availability === 'loading'}
+        />
       </div>
 
-      {/* Key widgets */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <ProjectReadinessCard documents={documents} />
-        <TraceabilityHealthCard documents={documents} />
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <div className="text-xs font-semibold text-gray-700 uppercase tracking-wider">High Risk Items</div>
-          <div className="mt-2 text-2xl font-bold text-gray-900">Unknown</div>
-          <div className="mt-1 text-sm text-gray-600">
-            We’ll surface this once risk thresholds are derived from existing risk data.
-          </div>
-          <div className="mt-3">
-            <MiniBreakdown items={readiness.breakdown} />
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <ProjectReadinessCard readiness={readiness} availability={availability} />
+        <TraceabilityHealthCard health={traceabilityHealth} availability={availability} />
+        <RiskOverviewCard counts={riskCounts} availability={availability} />
       </div>
 
-      {/* Hotspots + activity */}
-      <div className="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <RiskHotspotsCard projectId={finalProjectId} documents={documents} />
-        <RecentActivityCard projectId={finalProjectId} documents={documents} />
+      <div className="mt-4 grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <RiskHotspotsCard
+          projectId={finalProjectId}
+          documents={documents}
+          availability={availability}
+        />
+        <RecentActivityCard
+          projectId={finalProjectId}
+          documents={documents}
+          availability={availability}
+        />
       </div>
 
       <div className="mt-6">
         {state === 'loading' ? (
-          <div className="text-gray-600">Loading…</div>
+          <p className="text-muted">Loading documents…</p>
         ) : (
-      <DocumentHub
-        projectId={finalProjectId}
-        documents={documents}
-        generatedFromSetupByDocId={generatedFromSetupByDocId}
-      />
+          <DocumentHub
+            projectId={finalProjectId}
+            documents={documents}
+            generatedFromSetupByDocId={generatedFromSetupByDocId}
+          />
         )}
       </div>
     </div>

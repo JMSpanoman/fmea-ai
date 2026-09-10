@@ -1,0 +1,74 @@
+:root {
+  /* Brand */
+  --sr-color-brand: #0f6b6e;
+  --sr-color-brand-hover: #0c585a;
+  --sr-color-brand-muted: #e6f2f2;
+  --sr-color-brand-foreground: #ffffff;
+
+  /* Text */
+  --sr-color-navy: #152033;
+  --sr-color-ink: #1b2a41;
+  --sr-color-muted: #5c6b7a;
+  --sr-color-subtle: #7a8794;
+
+  /* Surfaces */
+  --sr-color-canvas: #f3f6f8;
+  --sr-color-surface: #ffffff;
+  --sr-color-border: #e3e8ee;
+  --sr-color-border-strong: #cfd8e3;
+
+  /* Status */
+  --sr-color-healthy: #16a34a;
+  --sr-color-healthy-muted: #e8f8ee;
+  --sr-color-attention: #d97706;
+  --sr-color-attention-muted: #fff6e8;
+  --sr-color-info: #2563eb;
+  --sr-color-info-muted: #eef4ff;
+  --sr-color-danger: #dc2626;
+  --sr-color-danger-muted: #fef2f2;
+  --sr-color-draft: #b45309;
+  --sr-color-draft-muted: #fff7ed;
+  --sr-color-neutral-muted: #f4f6f8;
+
+  /* Typography */
+  --sr-font-sans: 'Inter', system-ui, sans-serif;
+  --sr-text-xs: 0.75rem;
+  --sr-text-sm: 0.875rem;
+  --sr-text-md: 1rem;
+  --sr-text-lg: 1.125rem;
+  --sr-text-xl: 1.25rem;
+  --sr-text-2xl: 1.5rem;
+  --sr-leading-tight: 1.25;
+  --sr-leading-normal: 1.5;
+
+  /* Spacing */
+  --sr-space-1: 0.25rem;
+  --sr-space-2: 0.5rem;
+  --sr-space-3: 0.75rem;
+  --sr-space-4: 1rem;
+  --sr-space-5: 1.25rem;
+  --sr-space-6: 1.5rem;
+  --sr-space-8: 2rem;
+  --sr-space-10: 2.5rem;
+
+  /* Radii */
+  --sr-radius-sm: 0.375rem;
+  --sr-radius-md: 0.625rem;
+  --sr-radius-lg: 0.75rem;
+  --sr-radius-xl: 1rem;
+  --sr-radius-full: 9999px;
+
+  /* Shadows */
+  --sr-shadow-none: none;
+  --sr-shadow-card: 0 1px 2px rgba(21, 32, 51, 0.05);
+  --sr-shadow-header: 0 1px 0 rgba(21, 32, 51, 0.06);
+  --sr-shadow-focus: 0 0 0 3px rgba(15, 107, 110, 0.28);
+
+  /* Control heights (touch target ~44px on interactive controls) */
+  --sr-control-height-sm: 2.25rem;
+  --sr-control-height-md: 2.5rem;
+  --sr-control-height-lg: 2.75rem;
+
+  --sr-sidebar-width: 16.5rem;
+  --sr-header-height: 3.75rem;
+}

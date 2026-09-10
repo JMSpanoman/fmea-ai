@@ -1,9 +1,29 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
-// https://vitejs.dev/config/
+const proxy = {
+  '/api': {
+    target: 'http://localhost:8000',
+    changeOrigin: true,
+    rewrite: (path: string) => path.replace(/^\/api/, ''),
+  },
+  '/postmarket': {
+    target: 'http://localhost:8000',
+    changeOrigin: true,
+  },
+  '/fmea': {
+    target: 'http://localhost:8000',
+    changeOrigin: true,
+  },
+};
+
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    css: true,
+  },
   build: {
     rollupOptions: {
       external: [],
@@ -20,41 +40,12 @@ export default defineConfig({
     port: 5173,
     host: '0.0.0.0',
     strictPort: false,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-      '/postmarket': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
-      '/fmea': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
-    },
+    proxy,
   },
-  // Same proxy as dev so `npm run preview` can talk to the local API (full production bundle).
   preview: {
     port: 5173,
     host: '0.0.0.0',
     strictPort: false,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-      '/postmarket': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
-      '/fmea': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
-    },
+    proxy,
   },
 });

@@ -18,16 +18,16 @@ export const Button: React.FC<ButtonProps> = ({
   const baseStyles = 'inline-flex items-center justify-center font-medium transition-smooth focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-surface-primary';
   
   const variants = {
-    primary: 'bg-primary text-gray-900 hover:bg-primary-hover hover:text-gray-900 focus:ring-primary shadow-elevated hover:shadow-glow',
-    secondary: 'bg-transparent border-2 border-primary text-primary hover:bg-primary/10 focus:ring-primary',
+    primary: 'bg-brand text-white hover:bg-brand-hover focus:ring-brand',
+    secondary: 'bg-white border border-gray-200 text-navy hover:bg-gray-50 focus:ring-brand',
     danger: 'bg-danger text-white hover:bg-red-600 focus:ring-danger',
-    ghost: 'bg-transparent text-text-secondary hover:bg-surface-secondary hover:text-text-primary',
+    ghost: 'bg-transparent text-muted hover:bg-gray-50 hover:text-navy',
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm rounded-lg',
-    md: 'px-4 py-2 text-body rounded-button',
-    lg: 'px-6 py-3 text-base rounded-button',
+    sm: 'px-3 min-h-control text-sm rounded-control',
+    md: 'px-4 min-h-control text-body rounded-control',
+    lg: 'px-6 min-h-control-lg text-base rounded-control',
   };
 
   return (
