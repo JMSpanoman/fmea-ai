@@ -74,7 +74,7 @@ const Login: React.FC = () => {
               autoComplete="email"
               required={isProd || allowlistEnabled}
               className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-              placeholder={isProd ? 'Enter your email address' : 'dev1@example.com'}
+              placeholder={isProd ? 'gridmatrix@gridmatrix.com' : 'dev1@example.com'}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}

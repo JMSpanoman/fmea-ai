@@ -9,7 +9,7 @@ The payload structure exactly matches the Postman example provided:
 ```json
 {
   "arguments": {
-    "connectionID": "sts009-5058D89DF83D575A6858B413DCAC1F67_1d16ae0d-0e93-4e02-a517-ff8acb1ff4b2_0",
+    "connectionID": "<MC_CONNECTION_ID>",
     "processTask": {
       "formInfoCard": {},
       "message": "",
@@ -96,9 +96,9 @@ The `push_batch` function processes one row at a time, as required by MasterCont
 ## Environment Variables
 
 ```env
-MC_BASE=https://sts009.mastercontrol.com/api
-MC_TOKEN=440e7b71-a606-4989-8b36-286036987231
-MC_CONNECTION_ID=sts009-5058D89DF83D575A6858B413DCAC1F67_1d16ae0d-0e93-4e02-a517-ff8acb1ff4b2_0
+MC_BASE=
+MC_TOKEN=
+MC_CONNECTION_ID=
 MC_RPN_CALCULATED=false
 ```
 

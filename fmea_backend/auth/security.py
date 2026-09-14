@@ -14,6 +14,23 @@ if os.getenv("ENVIRONMENT", "").lower() not in ("production", "prod"):
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+def _runtime_env_name() -> str:
+    return (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
+
+
+def get_jwt_secret() -> str:
+    """
+    HS256 secret for /auth/dev-login tokens.
+    Accepts JWT_SECRET_KEY or SECRET_KEY. Production/staging must set one explicitly.
+    """
+    secret = (os.getenv("JWT_SECRET_KEY") or os.getenv("SECRET_KEY") or "").strip()
+    if secret:
+        return secret
+    if _runtime_env_name() in ("production", "prod", "staging"):
+        raise RuntimeError("JWT_SECRET_KEY or SECRET_KEY must be set in production")
+    return "your-secret-key-change-in-production"
+
+
 # Auth0 Configuration
 AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN", "dev-dsf588bqn08hhddj.us.auth0.com")
 API_AUDIENCE = os.getenv("API_AUDIENCE", os.getenv("AUTH0_AUDIENCE", ""))
@@ -79,7 +96,7 @@ def verify_auth0_token(token: str) -> Optional[Dict]:
             header = jwt.get_unverified_header(token)
             if header.get("alg") == "HS256":
                 from jose import jwt as jose_jwt
-                SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+                SECRET_KEY = get_jwt_secret()
                 payload = jose_jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
                 logger.info("[auth] Token verified using local HS256 (dev) method")
                 return payload
@@ -89,7 +106,7 @@ def verify_auth0_token(token: str) -> Optional[Dict]:
         if not AUTH0_DOMAIN:
             # Fallback to simple JWT validation if Auth0 not configured
             from jose import jwt as jose_jwt
-            SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+            SECRET_KEY = get_jwt_secret()
             try:
                 payload = jose_jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
                 logger.info("[auth] Token verified using fallback JWT method")
@@ -150,7 +167,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.utcnow() + timedelta(minutes=30)
     to_encode.update({"exp": expire})
     
-    SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+    SECRET_KEY = get_jwt_secret()
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
     return encoded_jwt
 

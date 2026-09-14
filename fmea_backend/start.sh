@@ -8,6 +8,7 @@ export GUNICORN_TIMEOUT="${GUNICORN_TIMEOUT:-120}"
 # Database initialization is handled by SQLAlchemy on app startup (see main.py lifespan).
 # We intentionally do not run init_db.py here because it can create a schema that does not
 # match the SQLAlchemy models (causing auth/runtime failures).
+# Demo user/project seeding runs in the FastAPI lifespan after schema init.
 
 # Start the application
 echo "Starting application..."

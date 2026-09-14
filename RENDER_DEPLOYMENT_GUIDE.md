@@ -28,13 +28,16 @@ This guide will help you deploy your FMEA system with trial limits to Render.
    - URL: `https://fmea-backend.onrender.com`
    - Docker build from `./Dockerfile.backend`
 
-2. **Set Environment Variables** (in Render Dashboard):
-   - `ENVIRONMENT`: `production` ✅ (already set)
-   - `CORS_ORIGINS`: `https://fmea-frontend.onrender.com` ✅ (already set)
-   - `DATABASE_URL`: `sqlite:////app/db/fmea.db` ✅ (already set)
-   - `SECRET_KEY`: Auto-generated ✅ (already set)
-   - `OPENAI_API_KEY`: Set your OpenAI API key here
-   - `PORT`: `8000` ✅ (already set)
+2. **Set Environment Variables** (in Render Dashboard). Do not paste secret *values* into git or chat:
+   - `ENVIRONMENT`: `production`
+   - `CORS_ORIGINS`: `https://fmea-frontend.onrender.com,https://fmea-ai-frontend.onrender.com,https://demo.smartrisk.com`
+   - `DATABASE_URL`: `sqlite:////app/db/fmea.db` (file on the `/app/db` disk; not public)
+   - `JWT_SECRET_KEY`: auto-generated (required)
+   - `ALLOW_DEV_LOGIN`: `true` for the allowlisted demo login only
+   - `DEV_LOGIN_ALLOWED_EMAILS`: `gridmatrix@gridmatrix.com,john@fotonconsulting.com`
+   - `DEMO_ENSURE_PROJECT` / `DEMO_PROJECT_ID` / `DEMO_USER_EMAIL`: see `render.yaml`
+   - `OPENAI_API_KEY`: set in the dashboard if AI features are needed
+   - `PORT`: `8000`
 
 ### Step 3: Deploy Frontend Service
 
@@ -44,10 +47,9 @@ This guide will help you deploy your FMEA system with trial limits to Render.
    - Docker build from `./Dockerfile.frontend`
 
 2. **Set Environment Variables** (in Render Dashboard):
-   - `VITE_API_BASE_URL`: `https://fmea-backend.onrender.com` ✅ (already set)
-   - `BACKEND_URL`: `https://fmea-backend.onrender.com` ✅ (already set)
-   - `NODE_ENV`: `production` ✅ (already set)
-   - `PORT`: `80` ✅ (already set)
+   - `BACKEND_URL`: `https://fmea-backend.onrender.com` (nginx `/api` proxy; leave `VITE_API_BASE_URL` unset)
+   - `NODE_ENV`: `production`
+   - `PORT`: `80`
 
 ### Step 4: Configure OpenAI API Key
 
@@ -74,8 +76,9 @@ This guide will help you deploy your FMEA system with trial limits to Render.
    - Should show login page
 
 3. **Test Login**:
-   - Try logging in with: `john@fotonconsulting.com`
-   - Should see admin access with unlimited AI generations
+   - Open `https://fmea-frontend.onrender.com/projects/cd214464-e10b-488a-86dc-f24022508b60/dashboard`
+   - Sign in with the allowlisted demo email `gridmatrix@gridmatrix.com` (non-admin)
+   - Refresh that dashboard URL; nginx must return the SPA, not 404
 
 ## 🔧 Manual Deployment (Alternative)
 

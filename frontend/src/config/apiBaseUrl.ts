@@ -2,9 +2,10 @@
  * Resolves the axios/fetch API base URL.
  *
  * - Default `/api` is proxied in dev (Vite strips `/api` → FastAPI root) and in prod nginx.
- * - Absolute URLs must target the FastAPI **root** (e.g. http://localhost:8000), not .../api,
- *   because routers are mounted at `/postmarket`, `/projects`, etc. A common mistake is
- *   `VITE_API_BASE_URL=http://localhost:8000/api`, which produces 404 on `/api/postmarket/report`.
+ * - Absolute URLs must target the FastAPI **root** (not .../api), because routers are mounted
+ *   at `/postmarket`, `/projects`, etc. A common mistake is setting VITE_API_BASE_URL to an
+ *   `/api` suffix, which produces 404 on `/api/postmarket/report`. Production nginx proxies
+ *   `/api` to the backend; leave VITE_API_BASE_URL unset there.
  */
 export function resolveApiBaseUrl(): string {
   const raw = import.meta.env.VITE_API_BASE_URL as string | undefined;

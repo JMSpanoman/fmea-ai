@@ -1,5 +1,4 @@
 services:
-  # Backend Service
   - type: web
     name: fmea-backend
     env: docker
@@ -9,31 +8,42 @@ services:
     region: oregon
     branch: main
     healthCheckPath: /health
+    disk:
+      name: fmea-sqlite
+      mountPath: /app/db
+      sizeGB: 1
     envVars:
       - key: ENVIRONMENT
         value: production
       - key: CORS_ORIGINS
-        value: https://fmea-frontend.onrender.com,https://fmea-ai-frontend.onrender.com
+        value: https://fmea-frontend.onrender.com,https://fmea-ai-frontend.onrender.com,https://demo.smartrisk.com
       - key: DATABASE_URL
         value: sqlite:////app/db/fmea.db
+      - key: JWT_SECRET_KEY
+        generateValue: true
       - key: SECRET_KEY
         generateValue: true
       - key: OPENAI_API_KEY
-        sync: false  # Set this in Render dashboard
-      # Render starter instances are memory-constrained; keep concurrency low to avoid OOM.
+        sync: false
       - key: WEB_CONCURRENCY
         value: "1"
       - key: GUNICORN_TIMEOUT
         value: "120"
-      # Optional: enable /auth/dev-login for demos in production. If enabled, set an allowlist.
       - key: ALLOW_DEV_LOGIN
         value: "true"
       - key: DEV_LOGIN_ALLOWED_EMAILS
-        value: "john@fotonconsulting.com"  # Expand later as needed (comma-separated)
+        value: "gridmatrix@gridmatrix.com,john@fotonconsulting.com"
+      - key: DEMO_ENSURE_PROJECT
+        value: "true"
+      - key: DEMO_REASSIGN_PROJECT
+        value: "true"
+      - key: DEMO_PROJECT_ID
+        value: "cd214464-e10b-488a-86dc-f24022508b60"
+      - key: DEMO_USER_EMAIL
+        value: "gridmatrix@gridmatrix.com"
       - key: PORT
-        value: 8000
+        value: "8000"
 
-  # Frontend Service
   - type: web
     name: fmea-frontend
     env: docker
@@ -42,12 +52,11 @@ services:
     plan: starter
     region: oregon
     branch: main
+    healthCheckPath: /health
     envVars:
-      - key: VITE_API_BASE_URL
-        value: https://fmea-backend.onrender.com
       - key: BACKEND_URL
         value: https://fmea-backend.onrender.com
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: 80
+        value: "80"

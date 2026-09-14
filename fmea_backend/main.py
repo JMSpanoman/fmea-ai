@@ -190,6 +190,14 @@ async def lifespan(app: FastAPI):
     except Exception as backfill_err:
         logger.error(f"Starter content backfill failed: {backfill_err}", exc_info=True)
 
+    try:
+        from scripts.ensure_demo_project import ensure_demo_project
+
+        ensure_demo_project()
+    except Exception as demo_err:
+        logger.error("Demo project ensure failed: %s", demo_err, exc_info=True)
+        raise
+
     yield
     # Shutdown
     logger.info("Shutting down Smart FMEA Builder API")

@@ -114,6 +114,9 @@ def dev_login(
     logger = logging.getLogger(__name__)
     env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
     is_prod_like = env in ("production", "prod", "staging")
+    allow_dev_login = str(os.getenv("ALLOW_DEV_LOGIN") or "").strip().lower() in ("1", "true", "yes", "on")
+    if is_prod_like and not allow_dev_login:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Demo login is disabled")
     # NOTE: This endpoint is intentionally email-gated in production-like environments:
     # - requires explicit email (no implicit dev@example.com)
     # - optional allowlist via DEV_LOGIN_ALLOWED_EMAILS
