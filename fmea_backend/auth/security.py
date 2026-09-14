@@ -1,7 +1,7 @@
 from jose import jwt, JWTError
 from jose.utils import base64url_decode
 import requests
-from typing import Optional, Dict
+from typing import Optional, Dict, Set
 import os
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
@@ -29,6 +29,27 @@ def get_jwt_secret() -> str:
     if _runtime_env_name() in ("production", "prod", "staging"):
         raise RuntimeError("JWT_SECRET_KEY or SECRET_KEY must be set in production")
     return "your-secret-key-change-in-production"
+
+
+BUILTIN_DEV_LOGIN_EMAILS = (
+    "john@fotonconsulting.com",
+    "gridmatrix@gridmatrix.com",
+)
+
+
+def get_dev_login_allowed_emails() -> Set[str]:
+    """
+    Production demo-login allowlist.
+    Always includes the built-in demo identities so a host env var that only
+    lists John cannot block gridmatrix@gridmatrix.com.
+    """
+    raw = str(os.getenv("DEV_LOGIN_ALLOWED_EMAILS") or "").strip()
+    allowed = {e.strip().lower() for e in raw.split(",") if e.strip()}
+    allowed.update(BUILTIN_DEV_LOGIN_EMAILS)
+    demo = str(os.getenv("DEMO_USER_EMAIL") or "").strip().lower()
+    if demo:
+        allowed.add(demo)
+    return allowed
 
 
 # Auth0 Configuration

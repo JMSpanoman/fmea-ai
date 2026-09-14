@@ -16,7 +16,7 @@ services:
       - key: ENVIRONMENT
         value: production
       - key: CORS_ORIGINS
-        value: https://fmea-frontend.onrender.com,https://fmea-ai-frontend.onrender.com,https://demo.smartrisk.com
+        value: https://fmea-frontend-dczh.onrender.com,https://fmea-frontend.onrender.com,https://fmea-ai-frontend.onrender.com,https://demo.smartrisk.com
       - key: DATABASE_URL
         value: sqlite:////app/db/fmea.db
       - key: JWT_SECRET_KEY

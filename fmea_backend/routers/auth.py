@@ -143,17 +143,17 @@ def dev_login(
     if is_prod_like:
         if not isinstance(payload, dict) or not str(payload.get("email") or "").strip():
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="email is required")
-        allowed = str(os.getenv("DEV_LOGIN_ALLOWED_EMAILS") or "").strip()
-        if not allowed:
-            # Default lock-down: only John is allowed unless explicitly expanded.
-            allowed = "john@fotonconsulting.com"
-        allowed_set = {e.strip().lower() for e in allowed.split(",") if e.strip()}
-        if email.lower() not in allowed_set:
+        from auth.security import get_dev_login_allowed_emails
+
+        if email.lower() not in get_dev_login_allowed_emails():
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not allowed")
 
     # Resolve plan for dev login.
     # In local/dev environments we default to Pro to unlock full SmartRisk.
     plan = PLAN_PRO if not is_prod_like else PLAN_LITE
+    if email.lower() == "gridmatrix@gridmatrix.com":
+        role = "user"
+        plan = PLAN_PRO
     if email.lower() == "john@fotonconsulting.com" and (not isinstance(payload, dict) or not payload.get("role")):
         role = "admin"
         plan = PLAN_PRO

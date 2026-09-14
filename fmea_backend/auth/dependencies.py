@@ -75,12 +75,18 @@ def get_current_user(
         except Exception:
             pass
 
-    # Production allowlist: only allow specific users (default: John).
+    # Production allowlist: only allow specific users (John + built-in demo identities).
     if env in ("production", "prod", "staging"):
-        allowed = str(os.getenv("DEV_LOGIN_ALLOWED_EMAILS") or "").strip() or "john@fotonconsulting.com"
-        allowed_set = {e.strip().lower() for e in allowed.split(",") if e.strip()}
-        if token_email.lower() not in allowed_set:
+        from auth.security import get_dev_login_allowed_emails
+
+        if token_email.lower() not in get_dev_login_allowed_emails():
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Email not allowed")
+        if token_email.lower() == "gridmatrix@gridmatrix.com":
+            token_role = "user"
+            try:
+                setattr(user, "plan", PLAN_PRO)
+            except Exception:
+                pass
 
     try:
         setattr(user, "email", token_email or getattr(user, "email", ""))

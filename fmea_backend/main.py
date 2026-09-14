@@ -104,7 +104,15 @@ def get_cors_origins():
         "CORS_ORIGINS",
         "http://localhost:3000,http://localhost:3001,http://localhost:5173,http://localhost:5174,http://localhost:4173",
     )
-    return [origin.strip() for origin in cors_origins.split(",")]
+    origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
+    for extra in (
+        "https://fmea-frontend-dczh.onrender.com",
+        "https://fmea-frontend.onrender.com",
+        "https://fmea-ai-frontend.onrender.com",
+    ):
+        if extra not in origins:
+            origins.append(extra)
+    return origins
 
 
 def get_cors_origin_regex() -> Optional[str]:
@@ -196,7 +204,14 @@ async def lifespan(app: FastAPI):
         ensure_demo_project()
     except Exception as demo_err:
         logger.error("Demo project ensure failed: %s", demo_err, exc_info=True)
-        raise
+        demo_required = str(os.getenv("DEMO_ENSURE_PROJECT") or "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        if demo_required:
+            raise
 
     yield
     # Shutdown
