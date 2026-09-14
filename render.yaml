@@ -8,10 +8,6 @@ services:
     region: oregon
     branch: main
     healthCheckPath: /health
-    disk:
-      name: fmea-sqlite
-      mountPath: /app/db
-      sizeGB: 1
     envVars:
       - key: ENVIRONMENT
         value: production
@@ -55,7 +51,7 @@ services:
     healthCheckPath: /health
     envVars:
       - key: BACKEND_URL
-        value: https://fmea-backend.onrender.com
+        value: https://fmea-backend-dczh.onrender.com
       - key: NODE_ENV
         value: production
       - key: PORT

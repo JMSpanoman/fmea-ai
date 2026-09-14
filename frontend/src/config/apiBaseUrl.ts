@@ -19,6 +19,11 @@ export function resolveApiBaseUrl(): string {
   if (trimmed === '') {
     return '/api';
   }
+  // Production nginx proxies /api. A dashboard-baked VITE_API_BASE_URL pointing at
+  // another Render host triggers a CORS preflight that the live backend rejects.
+  if (import.meta.env.PROD) {
+    return '/api';
+  }
   if (typeof window !== 'undefined') {
     try {
       const origin = window.location.origin;

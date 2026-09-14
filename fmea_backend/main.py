@@ -119,10 +119,13 @@ def get_cors_origin_regex() -> Optional[str]:
     """
     In dev, Vite may auto-pick ports (5173, 5174, ...). Allow localhost/127.0.0.1
     with any port to avoid CORS preflight failures during local development.
+
+    In production, also allow the Render frontend hostnames so a dashboard CORS_ORIGINS
+    value that only lists fmea-frontend.onrender.com cannot block *-dczh.
     """
     env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
     if env in ("production", "prod", "staging"):
-        return None
+        return r"^https://(fmea-frontend(-[a-z0-9]+)?|fmea-ai-frontend)\.onrender\.com$"
     return r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$"
 
 @asynccontextmanager
