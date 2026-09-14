@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import FmeaForm from './FmeaForm';
 import { FmeaRow } from '../../types';
 import { exportFmeaData } from '../../utils/exportUtils';
+import { resolveApiBaseUrl } from '../../config/apiBaseUrl';
 
 interface FmeaFormWrapperProps {
   selectedProject?: any;
@@ -161,7 +162,7 @@ const FmeaFormWrapper: React.FC<FmeaFormWrapperProps> = ({ selectedProject }) =>
           const rowsToExport = transformedData.slice(0, 10); // Get first 10 rows
           console.log(`Auto-exporting first ${rowsToExport.length} FMEA rows to MasterControl (creating ${rowsToExport.length} forms)`);
           
-          const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+          const apiBaseUrl = resolveApiBaseUrl();
           
           // Export each row separately to create individual MasterControl forms
           for (let i = 0; i < rowsToExport.length; i++) {

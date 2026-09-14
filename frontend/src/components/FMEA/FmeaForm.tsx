@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { resolveApiBaseUrl } from '../../config/apiBaseUrl';
 import ProjectDataViewer from '../ProjectDataViewer';
 import DashboardLayout from '../DashboardLayout';
 // FMEAApi is attached to window by fmea.js, so we will use it from window
@@ -101,7 +102,7 @@ const FmeaForm: React.FC = () => {
           const rowsToExport = dfmeaData.slice(0, 10); // Get first 10 rows
           console.log(`Auto-exporting first ${rowsToExport.length} FMEA rows to MasterControl (creating ${rowsToExport.length} forms)`);
           
-          const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+          const apiBaseUrl = resolveApiBaseUrl();
           
           // Export each row separately to create individual MasterControl forms
           for (let i = 0; i < rowsToExport.length; i++) {

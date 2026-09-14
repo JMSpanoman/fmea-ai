@@ -6,6 +6,7 @@ import { getProjects, createProject, Project } from '../services/apiService';
 import api from '../axios';
 import { useAuth } from '../contexts/AuthContext';
 import { isProPlan } from '../config/features';
+import { resolveApiBaseUrl } from '../config/apiBaseUrl';
 
 interface FmeaRow {
   id: string;
@@ -65,7 +66,7 @@ const FmeaPage: React.FC = () => {
       
       console.log(`Auto-exporting first ${rowsToExport.length} FMEA rows to MasterControl (creating ${rowsToExport.length} forms)`);
       
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+      const apiBaseUrl = resolveApiBaseUrl();
       
       // Export each row separately to create individual MasterControl forms
       for (let i = 0; i < rowsToExport.length; i++) {

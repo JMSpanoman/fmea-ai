@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { resolveApiBaseUrl } from '../config/apiBaseUrl';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = resolveApiBaseUrl();
 
 const TestAuth: React.FC = () => {
   const navigate = useNavigate();

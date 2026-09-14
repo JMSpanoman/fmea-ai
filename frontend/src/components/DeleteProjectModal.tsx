@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { resolveApiBaseUrl } from '../config/apiBaseUrl';
 import './DeleteProjectModal.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = resolveApiBaseUrl();
 
 interface Project {
   id: number;

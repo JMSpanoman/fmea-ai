@@ -1,5 +1,6 @@
 // Import the authenticated axios client
 import api from '../axios';
+import { resolveApiBaseUrl } from '../config/apiBaseUrl';
 
 class FMEAApi {
     constructor() {
@@ -16,19 +17,22 @@ class FMEAApi {
     }
 
     async ensureValidToken() {
-        // Check if token exists in localStorage
-        let token = localStorage.getItem('token');
-        if (!token) {
-            await this.devLogin();
+        const token = localStorage.getItem('token');
+        if (token) {
+            return token;
         }
-        return token;
+        const email = localStorage.getItem('dev_login_email') || '';
+        if (!email) {
+            return null;
+        }
+        await this.devLogin();
+        return localStorage.getItem('token');
     }
 
     // Development login
     async devLogin() {
         try {
-            // Use native fetch for dev-login to avoid circular dependency
-            const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+            const baseURL = resolveApiBaseUrl();
             const email = localStorage.getItem('dev_login_email') || '';
             
             const response = await fetch(`${baseURL}/auth/dev-login`, {
