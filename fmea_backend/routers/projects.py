@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 import logging
 from database import get_db
 from auth.dependencies import get_current_user
-from auth.plan import require_pro
+from auth.plan import require_pro, enforce_trial_project_limit
 from models.user import User
 from schemas import project as project_schemas
 from crud import project as project_crud
@@ -28,6 +28,7 @@ def create_project(
     current_user: User = Depends(require_pro),
 ):
     """Create a new project"""
+    enforce_trial_project_limit(current_user, len(project_crud.get_projects_by_user(db, current_user.id)))
     try:
         logger.info(f"Creating project '{project.name}' for user {current_user.id}")
         created_project = project_crud.create_project(db, project, current_user.id)

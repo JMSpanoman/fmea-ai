@@ -6,6 +6,7 @@ from models.user import User, PLAN_LITE, PLAN_PRO
 from crud import user as user_crud
 from auth.security import verify_token
 import os
+from jose import jwt
 
 security = HTTPBearer()
 
@@ -42,7 +43,9 @@ def get_current_user(
     if user is None:
         # Create user if doesn't exist
         email = payload.get("email", "") or payload.get("email_verified", "") or ""
-        user = user_crud.create_user_from_auth0(db, auth0_id, email)
+        trial_enabled = os.getenv("ENABLE_SELF_SERVICE_TRIALS", "false").lower() == "true"
+        is_auth0_token = jwt.get_unverified_header(token).get("alg") == "RS256"
+        user = user_crud.create_user_from_auth0(db, auth0_id, email, start_trial=trial_enabled and is_auth0_token)
         if user is None:
             import logging
             logger = logging.getLogger(__name__)
@@ -76,7 +79,7 @@ def get_current_user(
             pass
 
     # Production allowlist: only allow specific users (John + built-in demo identities).
-    if env in ("production", "prod", "staging"):
+    if env in ("production", "prod", "staging") and str(auth0_id).startswith("dev:"):
         from auth.security import get_dev_login_allowed_emails
 
         if token_email.lower() not in get_dev_login_allowed_emails():
@@ -87,6 +90,8 @@ def get_current_user(
                 setattr(user, "plan", PLAN_PRO)
             except Exception:
                 pass
+    elif env in ("production", "prod", "staging") and os.getenv("ENABLE_SELF_SERVICE_TRIALS", "false").lower() != "true":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Customer signup is not enabled")
 
     try:
         setattr(user, "email", token_email or getattr(user, "email", ""))

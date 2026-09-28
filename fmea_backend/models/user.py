@@ -17,6 +17,8 @@ class User(Base):
     auth0_id = Column(String, unique=True, index=True, nullable=True)
     email = Column(String, nullable=False, index=True)
     plan = Column(String, nullable=False, default=PLAN_LITE, index=True)  # "lite" | "pro"
+    trial_started_at = Column(DateTime(timezone=True), nullable=True)
+    trial_ends_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Phase 3 relationships

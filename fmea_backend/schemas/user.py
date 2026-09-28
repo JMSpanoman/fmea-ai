@@ -43,6 +43,7 @@ class UserProfile(BaseModel):
     username: str
     email: str
     plan: str = "lite"  # "lite" | "pro" — SaaS tier
+    trial_ends_at: Optional[datetime] = None
     full_name: Optional[str] = None
     role: str
     company: Optional[str] = None
