@@ -28,6 +28,18 @@ def _customer_user(user: User):
         raise HTTPException(403, "Verified customer sign-in required")
 
 
+def _paid_status(subscription) -> bool:
+    prices = {os.getenv("STRIPE_PRICE_MONTHLY"), os.getenv("STRIPE_PRICE_YEARLY")}
+    prices.discard(None)
+    items = subscription["items"]["data"]
+    return (
+        subscription["status"] in ("active", "trialing")
+        and len(items) == 1
+        and items[0]["price"]["id"] in prices
+        and items[0]["quantity"] == 1
+    )
+
+
 class CheckoutChoice(BaseModel):
     interval: str
 
@@ -107,13 +119,13 @@ async def webhook(request: Request, stripe_signature: str = Header(default=""), 
             subscription = stripe.Subscription.retrieve(obj["id"])
             user.stripe_subscription_id = subscription.id
             user.subscription_status = subscription.status
-            user.plan = PLAN_PRO if subscription.status in ("active", "trialing") else PLAN_LITE
+            user.plan = PLAN_PRO if _paid_status(subscription) else PLAN_LITE
     elif kind in ("invoice.paid", "invoice.payment_failed") and customer_id:
         user = db.query(User).filter(User.stripe_customer_id == customer_id).first()
         if user and user.stripe_subscription_id:
             subscription = stripe.Subscription.retrieve(user.stripe_subscription_id)
             user.subscription_status = subscription.status
-            user.plan = PLAN_PRO if subscription.status in ("active", "trialing") else PLAN_LITE
+            user.plan = PLAN_PRO if _paid_status(subscription) else PLAN_LITE
     # Always record signed events, including events for unrelated customers.
     db.add(BillingEvent(id=event["id"]))
     db.commit()
