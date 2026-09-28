@@ -41,7 +41,9 @@ def create_user_from_auth0(db: Session, auth0_id: str, email: str, *, start_tria
         # Idempotency: if the user already exists (common in dev-login / repeated /auth/me),
         # return the existing record instead of failing auth.
         db.rollback()
-        existing = get_user_by_auth0_id(db, auth0_id) or get_user_by_email(db, email)
+        # Email is mutable and is not proof of ownership of an existing account.
+        # Only the verified identity provider subject may recover this user.
+        existing = get_user_by_auth0_id(db, auth0_id)
         if existing:
             # Best-effort keep email in sync
             try:

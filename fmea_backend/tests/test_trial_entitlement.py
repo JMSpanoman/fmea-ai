@@ -37,3 +37,4 @@ def test_trial_cannot_create_second_project():
     with pytest.raises(HTTPException) as exc:
         enforce_trial_project_limit(user, existing_count=1)
     assert exc.value.status_code == 403
+

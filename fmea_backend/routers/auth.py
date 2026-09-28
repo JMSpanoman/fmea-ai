@@ -116,6 +116,11 @@ def dev_login(
     env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
     is_prod_like = env in ("production", "prod", "staging")
     allow_dev_login = str(os.getenv("ALLOW_DEV_LOGIN") or "").strip().lower() in ("1", "true", "yes", "on")
+    # A public trial must never share an email-only sign-in endpoint. Retire the
+    # demo path before activating self-service accounts, even if the old Render
+    # ALLOW_DEV_LOGIN setting has not yet been removed.
+    if is_prod_like and os.getenv("ENABLE_SELF_SERVICE_TRIALS", "false").lower() == "true":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Demo login is disabled")
     if is_prod_like and not allow_dev_login:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Demo login is disabled")
     # NOTE: This endpoint is intentionally email-gated in production-like environments:

@@ -42,7 +42,7 @@ def get_current_user(
     user = user_crud.get_user_by_auth0_id(db, auth0_id)
     if user is None:
         # Create user if doesn't exist
-        email = payload.get("email", "") or payload.get("email_verified", "") or ""
+        email = payload.get("email", "") or ""
         trial_enabled = os.getenv("ENABLE_SELF_SERVICE_TRIALS", "false").lower() == "true"
         is_auth0_token = jwt.get_unverified_header(token).get("alg") == "RS256"
         user = user_crud.create_user_from_auth0(db, auth0_id, email, start_trial=trial_enabled and is_auth0_token)
@@ -65,7 +65,7 @@ def get_current_user(
     env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
 
     # Special-case: John has admin access and Pro plan
-    if str(token_email).lower() == "john@fotonconsulting.com":
+    if str(auth0_id) == "dev:john@fotonconsulting.com" and str(token_email).lower() == "john@fotonconsulting.com":
         token_role = "admin"
         try:
             setattr(user, "plan", PLAN_PRO)
