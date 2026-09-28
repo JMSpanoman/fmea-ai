@@ -132,7 +132,14 @@ async def webhook(request: Request, stripe_signature: str = Header(default=""), 
     kind = event["type"]
     obj = event["data"]["object"]
     customer_id = obj.get("customer")
-    if kind in ("customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"):
+    if kind in ("checkout.session.completed", "checkout.session.async_payment_succeeded") and obj.get("mode") == "subscription" and obj.get("payment_status") == "paid":
+        user = db.query(User).filter(User.stripe_customer_id == customer_id).first()
+        if user and obj.get("subscription"):
+            subscription = client.v1.subscriptions.retrieve(obj["subscription"])
+            user.stripe_subscription_id = subscription["id"]
+            user.subscription_status = subscription["status"]
+            user.plan = PLAN_PRO if _paid_status(subscription) else PLAN_LITE
+    elif kind in ("customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"):
         user = db.query(User).filter(User.stripe_customer_id == customer_id).first()
         if user:
             # Fetch current state to protect against out-of-order Stripe events.

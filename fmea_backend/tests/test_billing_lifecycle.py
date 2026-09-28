@@ -85,11 +85,18 @@ def test_signed_webhook_activation_failure_cancellation_and_replay(monkeypatch):
     with pytest.raises(HTTPException) as exc:
         asyncio.run(billing.webhook(FakeRequest(), "invalid", db))
     assert exc.value.status_code == 400
+    event = {"id": "evt_unpaid", "livemode": False, "type": "checkout.session.completed",
+             "data": {"object": {"mode": "subscription", "payment_status": "unpaid",
+                                 "subscription": "sub_1", "customer": "cus_1"}}}
+    asyncio.run(billing.webhook(FakeRequest(), "valid", db))
+    assert db.user.plan == "lite"
+    event = {"id": "evt_1", "livemode": False, "type": "customer.subscription.created",
+             "data": {"object": {"id": "sub_1", "customer": "cus_1"}}}
     asyncio.run(billing.webhook(FakeRequest(), "valid", db))
     assert db.user.plan == "pro"
-    assert len(db.events) == 1
+    assert len(db.events) == 2
     asyncio.run(billing.webhook(FakeRequest(), "valid", db))
-    assert len(db.events) == 1
+    assert len(db.events) == 2
 
     event = {"id": "evt_2", "livemode": False, "type": "invoice.payment_failed",
              "data": {"object": {"id": "in_1", "customer": "cus_1"}}}
