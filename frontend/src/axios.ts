@@ -3,6 +3,11 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import { resolveApiBaseUrl } from './config/apiBaseUrl';
 
 const API_BASE_URL = resolveApiBaseUrl();
+export const customerAuthEnabled = Boolean(import.meta.env.VITE_AUTH0_DOMAIN && import.meta.env.VITE_AUTH0_CLIENT_ID && import.meta.env.VITE_AUTH0_AUDIENCE);
+let customerTokenGetter: (() => Promise<string>) | null = null;
+export function setCustomerTokenGetter(getter: (() => Promise<string>) | null) {
+  customerTokenGetter = getter;
+}
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -10,6 +15,10 @@ const api: AxiosInstance = axios.create({
 
 // Helper function to get a fresh token via dev-login
 async function ensureValidToken(): Promise<string | null> {
+  if (customerAuthEnabled) {
+    if (!customerTokenGetter) return null;
+    try { return await customerTokenGetter(); } catch { return null; }
+  }
   let token = localStorage.getItem('token');
   
   // If no token, try to get one via dev-login
@@ -97,7 +106,7 @@ api.interceptors.response.use(
 
       try {
         // Clear old token
-        localStorage.removeItem('token');
+        if (!customerAuthEnabled) localStorage.removeItem('token');
 
         // Get a fresh token
         const token = await ensureValidToken();

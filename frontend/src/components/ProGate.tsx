@@ -6,6 +6,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { isProPlan } from '../config/features';
+import { customerAuthEnabled } from '../axios';
 
 interface ProGateProps {
   /** Current user plan from AuthContext (uses context if not passed) */
@@ -60,7 +61,7 @@ export function ProGate({ plan: planProp, children, redirectLiteTo, message }: P
           Back to FMEA
         </button>
         <p className="mt-4 text-sm text-gray-500">
-          Contact us to upgrade to SmartRisk Pro.
+          {customerAuthEnabled ? <button onClick={() => navigate('/billing')} className="underline">Compare plans and upgrade</button> : 'Contact us to upgrade to SmartRisk Pro.'}
         </p>
       </div>
     </div>

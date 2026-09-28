@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ProjectProvider } from './contexts/ProjectContext';
 import { AuthProvider } from './contexts/AuthContext';
+import BillingPage from './pages/BillingPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AppShell } from './components/layout/AppShell';
 import { ToastProvider } from './components/ui/Toast';
@@ -107,6 +108,10 @@ function App() {
                 <ErrorBoundary>
                   <Routes>
                   <Route path="/" element={<LandingPage />} />
+                  <Route path="/create-account" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/billing" element={<BillingPage />} />
+                  <Route path="/billing/success" element={<BillingPage />} />
+                  <Route path="/billing/cancel" element={<BillingPage />} />
                   <Route path="/dashboard" element={<LandingPage />} />
                   <Route path="/home" element={<HomePage />} />
                   <Route path="/nonconformance" element={<NonConformancePage />} />

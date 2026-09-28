@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { API_BASE_URL } from '../axios';
 import { defaultToProPlanForLocalUi } from '../config/features';
+import { customerAuthEnabled } from '../axios';
+import { CustomerAuthProvider } from './CustomerAuthProvider';
 
 interface User {
   id: string;
@@ -41,7 +43,7 @@ function withPlanOverride(user: User): User {
   return user;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+const LegacyAuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -189,6 +191,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) =>
+  customerAuthEnabled ? <CustomerAuthProvider>{children}</CustomerAuthProvider> : <LegacyAuthProvider>{children}</LegacyAuthProvider>;
+
+export { AuthContext };
+export type { User, AuthContextType };
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
