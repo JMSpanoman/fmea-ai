@@ -19,8 +19,17 @@ class User(Base):
     plan = Column(String, nullable=False, default=PLAN_LITE, index=True)  # "lite" | "pro"
     trial_started_at = Column(DateTime(timezone=True), nullable=True)
     trial_ends_at = Column(DateTime(timezone=True), nullable=True)
+    stripe_customer_id = Column(String, unique=True, nullable=True, index=True)
+    stripe_subscription_id = Column(String, unique=True, nullable=True, index=True)
+    subscription_status = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Phase 3 relationships
     training_records = relationship("TrainingRecord", back_populates="user", cascade="all, delete-orphan")
     approvals = relationship("Approval", back_populates="approver", cascade="all, delete-orphan")
+
+
+class BillingEvent(Base):
+    __tablename__ = "billing_events"
+    id = Column(String, primary_key=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

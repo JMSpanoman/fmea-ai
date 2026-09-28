@@ -18,6 +18,8 @@ def test_trial_entitlement_expires_at_14_days_and_does_not_rewrite_paid_plan():
     assert get_user_plan(active) == "pro"
     assert get_user_plan(expired) == "lite"
     assert get_user_plan(paid) == "pro"
+    canceled = SimpleNamespace(plan="pro", subscription_status="canceled", trial_ends_at=now - timedelta(days=1))
+    assert get_user_plan(canceled) == "lite"
 
 
 def test_sqlite_migration_preserves_existing_user_and_is_repeatable():
@@ -28,8 +30,8 @@ def test_sqlite_migration_preserves_existing_user_and_is_repeatable():
     ensure_user_columns(engine)
     ensure_user_columns(engine)
     with engine.connect() as conn:
-        row = conn.execute(text("SELECT id, email, trial_ends_at FROM users")).one()
-    assert row == ("existing", "existing@example.com", None)
+        row = conn.execute(text("SELECT id, email, trial_ends_at, stripe_customer_id, subscription_status FROM users")).one()
+    assert row == ("existing", "existing@example.com", None, None, None)
 
 
 def test_trial_cannot_create_second_project():
@@ -37,4 +39,3 @@ def test_trial_cannot_create_second_project():
     with pytest.raises(HTTPException) as exc:
         enforce_trial_project_limit(user, existing_count=1)
     assert exc.value.status_code == 403
-

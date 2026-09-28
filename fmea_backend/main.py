@@ -32,6 +32,8 @@ if os.getenv("ENVIRONMENT", "").lower() not in ("production", "prod"):
 
 from database import get_db
 from models.project import Project
+from models.user import BillingEvent
+from routers import billing
 from models.fmea import FMEARow
 # Legacy models (commented out for Phase 1)
 # from models.change_control import ChangeControl
@@ -230,6 +232,7 @@ app = FastAPI(
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+app.include_router(billing.router, prefix="/billing", tags=["Billing"])
 
 # Phase 1 routers (primary)
 app.include_router(projects_phase1.router, tags=["Projects"])

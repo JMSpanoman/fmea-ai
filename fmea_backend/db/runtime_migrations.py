@@ -58,6 +58,9 @@ def ensure_user_columns(engine: Engine) -> None:
             conn.execute(text("ALTER TABLE users ADD COLUMN trial_started_at DATETIME"))
         if not _has_column_sqlite(conn, "users", "trial_ends_at"):
             conn.execute(text("ALTER TABLE users ADD COLUMN trial_ends_at DATETIME"))
+        for column in ("stripe_customer_id", "stripe_subscription_id", "subscription_status"):
+            if not _has_column_sqlite(conn, "users", column):
+                conn.execute(text(f"ALTER TABLE users ADD COLUMN {column} VARCHAR"))
 
 
 def ensure_library_reference_columns(engine: Engine) -> None:
