@@ -1,3 +1,4 @@
+import { getStoredAccessToken } from '../axios';
 // Phase 1 API Service
 import { resolveApiBaseUrl } from '../config/apiBaseUrl';
 import { Project, Component, FmeaRow, AIFMEASuggestRequest, AIFMEASuggestResponse, AIConsistencyCheckRequest, AIConsistencyCheckResponse } from '../types';
@@ -7,7 +8,7 @@ const API_BASE_URL = resolveApiBaseUrl();
 // Get auth token from localStorage or context
 const getAuthToken = (): string | null => {
   // Single source of truth: JWT stored under `token`
-  return localStorage.getItem('token') || localStorage.getItem('auth_token') || null;
+  return getStoredAccessToken();
 };
 
 const apiRequest = async <T>(
@@ -184,4 +185,3 @@ export const exportApi = {
   csv: (projectId: string): string => `${API_BASE_URL}/projects/${projectId}/export/csv`,
   pdf: (projectId: string): string => `${API_BASE_URL}/projects/${projectId}/export/pdf`,
 };
-

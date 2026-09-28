@@ -13,9 +13,7 @@ function CustomerSession({ children }: { children: React.ReactNode }) {
     setLoadingProfile(true);
     try {
       const token = await getAccessTokenSilently();
-      // Some older SR1 fetch callers still read this key. Replace them with the
-      // SDK token getter before enabling customer sign-in on Render.
-      localStorage.setItem('token', token);
+      localStorage.removeItem('token');
       const response = await fetch(`${API_BASE_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error(`Account unavailable (${response.status})`);
       const profile = await response.json();

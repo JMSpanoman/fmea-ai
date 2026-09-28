@@ -5,8 +5,18 @@ import { resolveApiBaseUrl } from './config/apiBaseUrl';
 const API_BASE_URL = resolveApiBaseUrl();
 export const customerAuthEnabled = Boolean(import.meta.env.VITE_AUTH0_DOMAIN && import.meta.env.VITE_AUTH0_CLIENT_ID && import.meta.env.VITE_AUTH0_AUDIENCE);
 let customerTokenGetter: (() => Promise<string>) | null = null;
+let customerAccessToken: string | null = null;
+export function getStoredAccessToken(): string | null {
+  return customerAuthEnabled ? customerAccessToken : localStorage.getItem('token');
+}
+export async function getCustomerAccessToken(): Promise<string | null> {
+  if (!customerAuthEnabled || !customerTokenGetter) return null;
+  try { customerAccessToken = await customerTokenGetter(); return customerAccessToken; }
+  catch { customerAccessToken = null; return null; }
+}
 export function setCustomerTokenGetter(getter: (() => Promise<string>) | null) {
   customerTokenGetter = getter;
+  if (!getter) customerAccessToken = null;
 }
 
 const api: AxiosInstance = axios.create({
@@ -16,8 +26,7 @@ const api: AxiosInstance = axios.create({
 // Helper function to get a fresh token via dev-login
 async function ensureValidToken(): Promise<string | null> {
   if (customerAuthEnabled) {
-    if (!customerTokenGetter) return null;
-    try { return await customerTokenGetter(); } catch { return null; }
+    return getCustomerAccessToken();
   }
   let token = localStorage.getItem('token');
   

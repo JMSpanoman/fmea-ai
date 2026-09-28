@@ -1,3 +1,4 @@
+import { getStoredAccessToken, getCustomerAccessToken, customerAuthEnabled } from '../axios';
 // Import the authenticated axios client
 import api from '../axios';
 import { resolveApiBaseUrl } from '../config/apiBaseUrl';
@@ -10,14 +11,14 @@ class FMEAApi {
 
     setToken(token) {
         this.token = token;
-        // Store in localStorage for axios interceptor
-        if (token) {
+        if (token && !customerAuthEnabled) {
             localStorage.setItem('token', token);
         }
     }
 
     async ensureValidToken() {
-        const token = localStorage.getItem('token');
+        if (customerAuthEnabled) return getCustomerAccessToken();
+        const token = getStoredAccessToken();
         if (token) {
             return token;
         }
@@ -26,11 +27,17 @@ class FMEAApi {
             return null;
         }
         await this.devLogin();
-        return localStorage.getItem('token');
+        return getStoredAccessToken();
     }
 
     // Development login
     async devLogin() {
+        if (customerAuthEnabled) {
+            const token = await getCustomerAccessToken();
+            if (!token) throw new Error('Sign in to continue');
+            this.token = token;
+            return { access_token: token };
+        }
         try {
             const baseURL = resolveApiBaseUrl();
             const email = localStorage.getItem('dev_login_email') || '';
@@ -535,7 +542,7 @@ class FMEAApi {
 const fmeaApi = new FMEAApi();
 
 // Initialize with token from localStorage if available
-const existingToken = localStorage.getItem('token');
+const existingToken = getStoredAccessToken();
 const existingUser = localStorage.getItem('user');
 
 console.log('fmea.js initialization:', {

@@ -1,3 +1,4 @@
+import { getStoredAccessToken } from '../../axios';
 import React, { useState, useEffect } from 'react';
 import FmeaForm from './FmeaForm';
 import { FmeaRow } from '../../types';
@@ -36,7 +37,7 @@ const FmeaFormWrapper: React.FC<FmeaFormWrapperProps> = ({ selectedProject }) =>
   useEffect(() => {
     console.log('FmeaFormWrapper mounted');
     console.log('window.fmeaApi available:', !!window.fmeaApi);
-    console.log('Authentication token:', localStorage.getItem('token'));
+    console.log('Authentication token:', getStoredAccessToken());
     
     // Wait a bit for fmeaApi to be available
     const checkFmeaApi = () => {
@@ -484,7 +485,7 @@ const FmeaFormWrapper: React.FC<FmeaFormWrapperProps> = ({ selectedProject }) =>
               <h3 className="text-sm font-medium text-blue-800">Debug Info</h3>
               <div className="mt-2 text-sm text-blue-700">
                 <p>{debugInfo}</p>
-                <p className="mt-1">Token: {localStorage.getItem('token') ? 'Present' : 'Missing'}</p>
+                <p className="mt-1">Token: {getStoredAccessToken() ? 'Present' : 'Missing'}</p>
                 <p className="mt-1">fmeaApi: {window.fmeaApi ? 'Available' : 'Not available'}</p>
               </div>
             </div>

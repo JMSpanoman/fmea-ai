@@ -1,3 +1,4 @@
+import { getStoredAccessToken, customerAuthEnabled, getCustomerAccessToken } from '../axios';
 // src/services/authService.ts
 
 // Declare global fmeaApi
@@ -22,6 +23,12 @@ class AuthService {
 
   async authenticate(): Promise<string> {
     try {
+      if (customerAuthEnabled) {
+        const token = await getCustomerAccessToken();
+        if (!token) throw new Error('Sign in to continue');
+        this.token = token;
+        return token;
+      }
       console.log('AuthService: Starting authentication...');
       if (!window.fmeaApi) {
         console.error('AuthService: fmeaApi not available on window object');
@@ -58,8 +65,9 @@ class AuthService {
   }
 
   getToken(): string | null {
+    if (customerAuthEnabled) return getStoredAccessToken();
     if (!this.token) {
-      this.token = localStorage.getItem('token');
+      this.token = getStoredAccessToken();
     }
     return this.token;
   }

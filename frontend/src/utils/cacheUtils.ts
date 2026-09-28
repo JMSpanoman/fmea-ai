@@ -1,3 +1,4 @@
+import { getStoredAccessToken } from '../axios';
 /**
  * Cache clearing utilities for the FMEA application
  */
@@ -208,7 +209,7 @@ export const clearFmeaDataCache = () => {
 export const getCacheStatus = () => {
   const status = {
     localStorage: {
-      token: !!localStorage.getItem('token'),
+      token: !!getStoredAccessToken(),
       user: !!localStorage.getItem('user'),
       fmeaData: !!localStorage.getItem('fmeaData'),
       projectData: !!localStorage.getItem('projectData'),

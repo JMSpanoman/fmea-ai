@@ -44,6 +44,8 @@ def is_pro(user: User) -> bool:
 
 
 def enforce_trial_project_limit(user: User, existing_count: int) -> None:
-    """A trial may create one project; paid users are unaffected."""
+    """Limit current trial to one project and a subscribed Team owner to three."""
+    if getattr(user, "subscription_status", None) in ("active", "trialing") and existing_count >= 3:
+        raise HTTPException(status_code=403, detail="The Team plan includes three projects.")
     if (getattr(user, "plan", None) or PLAN_LITE).lower() != PLAN_PRO and existing_count >= 1:
         raise HTTPException(status_code=403, detail="The 14-day trial includes one project. Upgrade to create more.")

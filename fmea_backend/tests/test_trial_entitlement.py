@@ -39,3 +39,11 @@ def test_trial_cannot_create_second_project():
     with pytest.raises(HTTPException) as exc:
         enforce_trial_project_limit(user, existing_count=1)
     assert exc.value.status_code == 403
+
+
+def test_paid_team_owner_cannot_create_fourth_project():
+    user = SimpleNamespace(plan="pro", subscription_status="active")
+    enforce_trial_project_limit(user, existing_count=2)
+    with pytest.raises(HTTPException) as exc:
+        enforce_trial_project_limit(user, existing_count=3)
+    assert exc.value.status_code == 403
