@@ -19,7 +19,7 @@ python-dotenv==1.0.0
 # HTTP and API
 httpx==0.25.2
 requests==2.32.4
-stripe>=11,<15
+stripe==15.6.0
 
 # Retries
 tenacity>=8.2.0

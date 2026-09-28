@@ -1,5 +1,7 @@
 """Stripe subscription operations. Public activation requires verified Auth0 sign-in."""
 import os
+import secrets
+import string
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel
@@ -13,14 +15,31 @@ from models.user import BillingEvent, PLAN_LITE, PLAN_PRO, User
 router = APIRouter()
 
 
-def _configured():
+def _configured(*, webhook=False):
     if os.getenv("ENABLE_SR1_BILLING", "false").lower() != "true":
         raise HTTPException(503, "Billing is not available")
-    if not os.getenv("STRIPE_SECRET_KEY") or not os.getenv("STRIPE_WEBHOOK_SECRET"):
+    key = os.getenv("STRIPE_RESTRICTED_KEY") or os.getenv("STRIPE_SECRET_KEY")
+    if not key or (webhook and not os.getenv("STRIPE_WEBHOOK_SECRET")):
         raise HTTPException(503, "Billing is not configured")
+    if "_live_" in key and os.getenv("ENABLE_LIVE_BILLING", "false").lower() != "true":
+        raise HTTPException(503, "Live billing is disabled")
     import stripe
-    stripe.api_key = os.environ["STRIPE_SECRET_KEY"]
-    return stripe
+    return stripe, stripe.StripeClient(key, max_network_retries=2)
+
+
+def _price(client, interval: str) -> str:
+    if interval not in ("monthly", "yearly"):
+        raise HTTPException(422, "Choose monthly or yearly")
+    price_id = os.getenv("STRIPE_PRICE_MONTHLY" if interval == "monthly" else "STRIPE_PRICE_YEARLY")
+    if not price_id:
+        raise HTTPException(503, "Billing price is not configured")
+    price = client.v1.prices.retrieve(price_id)
+    expected_amount = 39900 if interval == "monthly" else 399000
+    expected_interval = "month" if interval == "monthly" else "year"
+    if (not price.active or price.currency != "eur" or price.unit_amount != expected_amount
+            or not price.recurring or price.recurring.interval != expected_interval):
+        raise HTTPException(503, "The configured EUR price does not match the published plan")
+    return price_id
 
 
 def _customer_user(user: User):
@@ -33,7 +52,7 @@ def _paid_status(subscription) -> bool:
     prices.discard(None)
     items = subscription["items"]["data"]
     return (
-        subscription["status"] in ("active", "trialing")
+        subscription["status"] == "active"
         and len(items) == 1
         and items[0]["price"]["id"] in prices
         and items[0]["quantity"] == 1
@@ -46,45 +65,44 @@ class CheckoutChoice(BaseModel):
 
 @router.post("/checkout")
 def checkout(choice: CheckoutChoice, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    stripe = _configured()
+    _, client = _configured()
     _customer_user(user)
-    if choice.interval not in ("monthly", "yearly"):
-        raise HTTPException(422, "Choose monthly or yearly")
-    price = os.getenv("STRIPE_PRICE_MONTHLY" if choice.interval == "monthly" else "STRIPE_PRICE_YEARLY")
+    price = _price(client, choice.interval)
     origin = os.getenv("SR1_FRONTEND_ORIGIN", "")
-    if not price or not origin.startswith("https://"):
+    if not origin.startswith("https://"):
         raise HTTPException(503, "Billing prices or return URL are not configured")
     if user.stripe_subscription_id and user.subscription_status in ("active", "trialing", "past_due"):
         raise HTTPException(409, "Manage the existing subscription in the billing portal")
     if not user.stripe_customer_id:
-        customer = stripe.Customer.create(
-            metadata={"sr1_user_id": user.id},
-            **({"email": user.email} if user.email and not user.email.endswith("@auth0.local") else {}),
-            idempotency_key=f"sr1-customer-{user.id}",
+        customer = client.v1.customers.create(
+            params={"metadata": {"sr1_user_id": user.id},
+                    **({"email": user.email} if user.email and not user.email.endswith("@auth0.local") else {})},
+            options={"idempotency_key": f"sr1-customer-{user.id}"},
         )
         user.stripe_customer_id = customer.id
         db.commit()
-    session = stripe.checkout.Session.create(
-        mode="subscription",
-        customer=user.stripe_customer_id,
-        line_items=[{"price": price, "quantity": 1}],
-        client_reference_id=user.id,
-        subscription_data={"metadata": {"sr1_user_id": user.id}},
-        success_url=f"{origin.rstrip('/')}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
-        cancel_url=f"{origin.rstrip('/')}/billing/cancel",
+    suffix = "".join(secrets.choice(string.ascii_lowercase) for _ in range(8))
+    session = client.v1.checkout.sessions.create(
+        params={"mode": "subscription", "customer": user.stripe_customer_id,
+                "line_items": [{"price": price, "quantity": 1}],
+                "client_reference_id": user.id,
+                "integration_identifier": f"smartrisk_sr1_{suffix}",
+                "subscription_data": {"metadata": {"sr1_user_id": user.id}},
+                "success_url": f"{origin.rstrip('/')}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
+                "cancel_url": f"{origin.rstrip('/')}/billing/cancel"},
     )
     return {"url": session.url}
 
 
 @router.post("/portal")
 def portal(user: User = Depends(get_current_user)):
-    stripe = _configured()
+    _, client = _configured()
     _customer_user(user)
     origin = os.getenv("SR1_FRONTEND_ORIGIN", "")
     if not user.stripe_customer_id or not origin.startswith("https://"):
         raise HTTPException(400, "No billing account")
-    session = stripe.billing_portal.Session.create(
-        customer=user.stripe_customer_id, return_url=f"{origin.rstrip('/')}/account"
+    session = client.v1.billing_portal.sessions.create(
+        params={"customer": user.stripe_customer_id, "return_url": f"{origin.rstrip('/')}/billing"}
     )
     return {"url": session.url}
 
@@ -100,13 +118,15 @@ def status(user: User = Depends(get_current_user)):
 
 @router.post("/stripe/webhook")
 async def webhook(request: Request, stripe_signature: str = Header(default=""), db: Session = Depends(get_db)):
-    stripe = _configured()
+    stripe, client = _configured(webhook=True)
     try:
         event = stripe.Webhook.construct_event(
             await request.body(), stripe_signature, os.environ["STRIPE_WEBHOOK_SECRET"]
         )
     except (ValueError, stripe.error.SignatureVerificationError):
         raise HTTPException(400, "Invalid webhook signature")
+    if bool(event.get("livemode")) != (os.getenv("ENABLE_LIVE_BILLING", "false").lower() == "true"):
+        raise HTTPException(400, "Webhook mode does not match billing environment")
     if db.get(BillingEvent, event["id"]):
         return {"received": True}
     kind = event["type"]
@@ -116,16 +136,18 @@ async def webhook(request: Request, stripe_signature: str = Header(default=""), 
         user = db.query(User).filter(User.stripe_customer_id == customer_id).first()
         if user:
             # Fetch current state to protect against out-of-order Stripe events.
-            subscription = stripe.Subscription.retrieve(obj["id"])
-            user.stripe_subscription_id = subscription.id
-            user.subscription_status = subscription.status
+            subscription = client.v1.subscriptions.retrieve(obj["id"])
+            user.stripe_subscription_id = subscription["id"]
+            user.subscription_status = subscription["status"]
             user.plan = PLAN_PRO if _paid_status(subscription) else PLAN_LITE
     elif kind in ("invoice.paid", "invoice.payment_failed") and customer_id:
         user = db.query(User).filter(User.stripe_customer_id == customer_id).first()
         if user and user.stripe_subscription_id:
-            subscription = stripe.Subscription.retrieve(user.stripe_subscription_id)
-            user.subscription_status = subscription.status
-            user.plan = PLAN_PRO if _paid_status(subscription) else PLAN_LITE
+            subscription = client.v1.subscriptions.retrieve(user.stripe_subscription_id)
+            current_invoice_id = subscription.get("latest_invoice")
+            failed_current_invoice = kind == "invoice.payment_failed" and obj["id"] == current_invoice_id
+            user.subscription_status = "past_due" if failed_current_invoice else subscription["status"]
+            user.plan = PLAN_LITE if failed_current_invoice else (PLAN_PRO if _paid_status(subscription) else PLAN_LITE)
     # Always record signed events, including events for unrelated customers.
     db.add(BillingEvent(id=event["id"]))
     db.commit()
