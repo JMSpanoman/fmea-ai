@@ -50,10 +50,10 @@ class FakeRequest:
 def test_price_validation_prevents_wrong_currency_or_amount(monkeypatch):
     monkeypatch.setenv("STRIPE_PRICE_MONTHLY", "price_month")
     client = SimpleNamespace(v1=SimpleNamespace(prices=SimpleNamespace(
-        retrieve=lambda key: SimpleNamespace(active=True, currency="eur", unit_amount=39900,
+        retrieve=lambda key: SimpleNamespace(active=True, currency="eur", unit_amount=39900, tax_behavior="exclusive",
                                              recurring=SimpleNamespace(interval="month", interval_count=1)))))
     assert billing._price(client, "monthly") == "price_month"
-    client.v1.prices.retrieve = lambda key: SimpleNamespace(active=True, currency="usd", unit_amount=39900,
+    client.v1.prices.retrieve = lambda key: SimpleNamespace(active=True, currency="usd", unit_amount=39900, tax_behavior="exclusive",
                                                              recurring=SimpleNamespace(interval="month", interval_count=1))
     with pytest.raises(HTTPException) as exc:
         billing._price(client, "monthly")

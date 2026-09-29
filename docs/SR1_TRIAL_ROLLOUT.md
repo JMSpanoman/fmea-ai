@@ -11,6 +11,8 @@ Status: implemented in draft PR #1; not deployed or ready for live payment accep
 | Team annual | €3,990 per year | Same limits; charged yearly |
 | Guided pilot | By quote, 30 days | Sales-led evaluation |
 
+The monthly and annual prices exclude VAT, as approved by the owner. Tax-exclusive price configuration does not itself enable VAT calculation or collection.
+
 Subscriptions renew automatically. Configure portal cancellation at the end of the current paid period. Payment failure restricts paid features until recovery. Saved projects are retained through expiry/cancellation and restored on reactivation. There is no automated deletion of saved work in this change.
 
 All existing projects count toward the limit; there is no archive workflow. A sample project uses one slot. Members share the owner's projects; personal trial projects are retained but hidden while the person belongs to a team. Invitations reserve one of four member seats for seven days, are bound to a verified email, and are single-use. Owners copy invitation links; this change does not send invitation emails.
@@ -21,7 +23,7 @@ All existing projects count toward the limit; there is no archive workflow. A sa
 - Server-controlled trial dates and shared project/seat limits, including reservations serialized with a workspace database lock.
 - First-project screen with a saved, editable sample FMEA or blank project choice.
 - `/billing` plan comparison, payment-confirmation polling, owner-only Checkout/portal, and `/team` management.
-- Stripe SDK 15.6.0 Checkout and portal, exact EUR price/interval checks, open-session reuse, and duplicate-subscription blocking.
+- Stripe SDK 15.6.0 Checkout and portal, exact tax-exclusive EUR price/interval checks, open-session reuse, and duplicate-subscription blocking. Portal sessions use the explicitly configured SR1 portal configuration.
 - Signed webhook verification, environment checks, durable event replay protection, current subscription retrieval, and protection against a delayed cancellation of an older subscription.
 - Trial expiry and failed/canceled subscriptions restrict access through a shared product API dependency; account and billing routes remain available for renewal/cancellation. Redirects alone never grant a plan.
 - Production rejects old demo tokens when customer trials are enabled. Migrate legitimate demo accounts before switching.
@@ -45,7 +47,7 @@ Before deployment:
 
 Create/verify a Single Page Application and API identifier. The API uses RS256. Configure the customer origin as **Allowed Callback URLs**, **Allowed Logout URLs**, and **Allowed Web Origins**. For production this is `https://fmea-frontend-dczh.onrender.com`; add the exact sandbox origin separately.
 
-Deploy `docs/auth0/sr1-email-claims.js` as an Auth0 post-login Action and attach it to the Login flow. The access token must include the namespaced email and `email_verified: true`. A user verifies their email and signs in again before the 14-day trial starts. Do not substitute an unverified client email for these claims. Auth0 tenant/application access has not yet been verified.
+Deploy `docs/auth0/sr1-email-claims.js` as an Auth0 post-login Action and attach it to the Login flow. The access token must include the namespaced email and `email_verified: true`. A user verifies their email and signs in again before the 14-day trial starts. Do not substitute an unverified client email for these claims. The owner believes Auth0 has not been set up; tenant/application access remains unverified. Auth0 is available in the Stripe Projects catalog, but provisioning is blocked by this execution environment's unavailable credential store. Use the Auth0 Dashboard to establish account access before configuring the SPA, API, and Action.
 
 Frontend Docker build variables (public values, then rebuild):
 
@@ -71,6 +73,7 @@ ENABLE_SR1_BILLING=true
 ENABLE_LIVE_BILLING=false
 STRIPE_PRICE_MONTHLY=YOUR_SANDBOX_MONTHLY_PRICE_ID
 STRIPE_PRICE_YEARLY=YOUR_SANDBOX_YEARLY_PRICE_ID
+STRIPE_PORTAL_CONFIGURATION=YOUR_SANDBOX_PORTAL_CONFIGURATION_ID
 ```
 
 Set `STRIPE_RESTRICTED_KEY` (preferred) and `STRIPE_WEBHOOK_SECRET` through Render secret environment settings. Never add actual secrets to this document, git, chat, or frontend build arguments. The fallback key variable is `STRIPE_SECRET_KEY`. The restricted key must allow the integration's Customer, Price, Subscription, Checkout Session, invoice-read, and billing-portal operations. `ENABLE_LIVE_BILLING` must match the key's mode; separate sandbox/live secrets and resources.
@@ -80,8 +83,9 @@ Set `STRIPE_RESTRICTED_KEY` (preferred) and `STRIPE_WEBHOOK_SECRET` through Rend
 - The sandbox is connected. The SmartRisk 1 Team product has active recurring EUR prices: 39,900 cents per month and 399,000 cents per year, quantity one per team. Lookup keys are `sr1_team_eur_monthly` and `sr1_team_eur_yearly`.
 - The default sandbox customer portal permits payment-method updates, invoice history, and cancellation at the end of the paid period. Plan and quantity changes are disabled pending their own acceptance tests.
 - Stripe accepted a subscription Checkout Session for each price with the expected EUR total and accepted a portal session using this configuration. These checks used a synthetic sandbox customer without a real email address. No payment was completed and no app entitlement was granted. The test sessions will expire automatically.
-- Tax behavior remains unspecified and Automatic Tax remains off. Confirm inclusive/exclusive pricing and applicable tax registrations before live activation.
-- The live catalog remains inactive.
+- Both sandbox prices now use `tax_behavior=exclusive`. The inactive live prices also use exclusive tax behavior.
+- Tax settings in both environments are pending: no head office, default product tax code, or tax registrations are configured. Automatic Tax remains off. Record the owner's confirmed tax setup and applicable registrations before enabling tax calculation; never infer a registration from the owner's personal location.
+- The live catalog remains inactive. No real payment has been taken.
 
 Still required:
 
@@ -95,7 +99,7 @@ Still required:
    - `customer.subscription.deleted`
    - `invoice.paid`
    - `invoice.payment_failed`
-4. Store its signing secret and the sandbox price IDs in Render. Verify 2xx deliveries and that app access follows Stripe. Never publish API keys or signing secrets in source.
+4. Store its signing secret, sandbox price IDs, and the sandbox SR1 portal configuration ID in Render. Verify 2xx deliveries and that app access follows Stripe. Never publish API keys or signing secrets in source.
 5. Complete the deployed acceptance test below. Successful session creation is not proof of payment, webhook delivery, or the full account-to-access journey.
 
 ## Verification completed locally
@@ -113,7 +117,7 @@ npm run build --prefix frontend
 
 Install the pinned backend requirements first; `test_sr1_checkout.py` uses the actual Stripe SDK. Stripe HTTP responses are simulated; signature verification uses the real SDK and test HMAC signatures. These are local regression checks, not proof of a real Stripe payment or deployed Auth0 login.
 
-Last run: **18 backend tests passed on Python 3.11 with the pinned requirements; five frontend tests passed; production frontend build passed**. The startup test imports the full application, creates the commercial schema, preserves a saved identity across restart, rejects anonymous/demo access in customer mode, and fails startup on a migration error. This is not a Docker image or deployed-environment test. The baseline main branch reports 96 TypeScript errors; this branch reports 95, with no new diagnostics compared with that baseline; no errors are reported in the new signup/billing/team screens or changed API helper. These need a separate baseline cleanup and are not represented as a passing typecheck.
+Last run: **19 backend tests passed on Python 3.11 with the pinned requirements; five frontend tests passed; production frontend build passed**. The startup test imports the full application, creates the commercial schema, preserves a saved identity across restart, rejects anonymous/demo access in customer mode, and fails startup on a migration error. This is not a Docker image or deployed-environment test. The baseline main branch reports 96 TypeScript errors; this branch reports 95, with no new diagnostics compared with that baseline; no errors are reported in the new signup/billing/team screens or changed API helper. These need a separate baseline cleanup and are not represented as a passing typecheck.
 
 ## Deployed acceptance test — not yet run
 

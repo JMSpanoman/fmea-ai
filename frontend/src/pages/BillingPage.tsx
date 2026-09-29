@@ -56,6 +56,7 @@ export default function BillingPage() {
         <p>Free for 14 days. No card required.</p><p>One user and one project. Your saved work remains in your account when you upgrade.</p></section>
       <section className="rounded border p-6 space-y-3"><h2 className="text-xl font-semibold">Team</h2>
         <p>Five users and three active projects.</p><p>€399 per month or €3,990 per year.</p>
+        <p>Prices exclude VAT.</p>
         <p>Renews automatically. Cancel future renewals in Manage subscription; access continues until the paid period ends.</p>
         {canCheckout && <div className="flex flex-wrap gap-3">
           <button disabled={busy} onClick={() => void action('/billing/checkout', 'monthly')} className="rounded bg-blue-700 p-3 text-white disabled:opacity-50">Choose monthly</button>

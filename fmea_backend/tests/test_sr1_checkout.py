@@ -77,9 +77,10 @@ def client(monkeypatch):
     monkeypatch.setenv('STRIPE_PRICE_YEARLY', 'price_year')
     monkeypatch.setenv('STRIPE_WEBHOOK_SECRET', 'whsec_unit_test_only')
     monkeypatch.setenv('SR1_FRONTEND_ORIGIN', 'https://example.com')
+    monkeypatch.setenv('STRIPE_PORTAL_CONFIGURATION', 'bpc_sr1_test')
     monkeypatch.setenv('ENABLE_LIVE_BILLING', 'false')
     client = Mock()
-    client.v1.prices.retrieve.return_value = SimpleNamespace(active=True, currency='eur', unit_amount=39900,
+    client.v1.prices.retrieve.return_value = SimpleNamespace(active=True, currency='eur', unit_amount=39900, tax_behavior='exclusive',
         recurring=SimpleNamespace(interval='month', interval_count=1))
     client.v1.subscriptions.list.return_value.auto_paging_iter.return_value = []
     client.v1.checkout.sessions.list.return_value.auto_paging_iter.return_value = []
@@ -135,6 +136,18 @@ def test_checkout_timeout_keeps_customer_mapping_for_retry(db, client):
     assert billing.checkout(billing.CheckoutChoice(interval='monthly'), user, db)['url'].endswith('/recovered')
     assert client.v1.customers.create.call_count == 1
     assert client.v1.checkout.sessions.create.call_count == 1
+
+
+def test_checkout_rejects_inclusive_tax_and_portal_uses_sr1_configuration(db, client):
+    user = owner(db)
+    client.v1.prices.retrieve.return_value.tax_behavior = 'inclusive'
+    with pytest.raises(HTTPException) as error:
+        billing.checkout(billing.CheckoutChoice(interval='monthly'), user, db)
+    assert error.value.status_code == 503
+    db.rollback()
+    client.v1.billing_portal.sessions.create.return_value = SimpleNamespace(url='https://billing.stripe.com/test')
+    assert billing.portal(user)['url'] == 'https://billing.stripe.com/test'
+    assert client.v1.billing_portal.sessions.create.call_args.kwargs['params']['configuration'] == 'bpc_sr1_test'
 
 
 def subscription(id='sub_new', status='active', created=200):

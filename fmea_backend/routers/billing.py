@@ -46,6 +46,7 @@ def _price(client, interval: str) -> str:
     expected_amount = 39900 if interval == "monthly" else 399000
     expected_interval = "month" if interval == "monthly" else "year"
     if (not price.active or price.currency != "eur" or price.unit_amount != expected_amount
+            or price.tax_behavior != "exclusive"
             or not price.recurring or price.recurring.interval != expected_interval
             or price.recurring.interval_count != 1):
         raise HTTPException(503, "The configured EUR price does not match the published plan")
@@ -140,8 +141,12 @@ def portal(user: User = Depends(get_current_user)):
     origin = os.getenv("SR1_FRONTEND_ORIGIN", "")
     if not user.stripe_customer_id or not origin.startswith("https://"):
         raise HTTPException(400, "No billing account")
+    configuration = os.getenv("STRIPE_PORTAL_CONFIGURATION")
+    if not configuration:
+        raise HTTPException(503, "Billing portal is not configured")
     session = client.v1.billing_portal.sessions.create(
-        params={"customer": user.stripe_customer_id, "return_url": f"{origin.rstrip('/')}/billing"}
+        params={"customer": user.stripe_customer_id, "configuration": configuration,
+                "return_url": f"{origin.rstrip('/')}/billing"}
     )
     return {"url": session.url}
 
