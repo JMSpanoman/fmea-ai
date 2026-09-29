@@ -9,7 +9,7 @@ The owner requested that all completed work be saved. This checkpoint records ve
 - Auth0: SmartRisk 1 SPA, API, rotating refresh-token configuration, verified-email Action, email/password connection, and production/sandbox allowed origins are saved in the development tenant.
 - Stripe sandbox: EUR monthly/yearly prices, customer portal configuration, and enabled signed webhook endpoint are saved. Live billing is disabled and the live catalog remains inactive.
 
-Before the Check access correction, all 743 local source files matched their GitHub branch blob hashes, with no missing or extra source files. The backend remains on application commit `c5021e2`, with the matching billing settings already applied through Render. This checkpoint includes a frontend-only billing-page correction, to be deployed explicitly to the sandbox because automatic deploys are off.
+Before the Check access correction, all 743 local source files matched their GitHub branch blob hashes, with no missing or extra source files. The backend remains on application commit `c5021e2`, with the matching billing settings already applied through Render. The frontend-only Check access correction is saved in commit `baed3ba61721078e4ade627d6a5b5201fbc94dcd` and deployed to the sandbox. Render reports deployment `dep-dau4k8egekts73cuhsq0` live at 2026-09-29 23:31:39 UTC. Automatic deploys remain off.
 
 ## Current offer
 
@@ -39,7 +39,7 @@ At the updated checkpoint, the Checkout Session is **complete and paid**, and St
 
 ## Check access correction
 
-The tester reported that Check access was visible but not clickable. Backend status requests were returning 200. The button shared the busy state used while opening Stripe, and a completed check had no visible feedback. The correction gives access checks a separate busy state, displays Checking access and a completion message, releases controls after navigation attempts, and refreshes status when Safari restores a cached billing page. Concurrent checks share one request; the account profile is refreshed only when its plan changes. Regression checks cover progress, unchanged and changed plans, the cached return, a pending Stripe action, and recovery after a failed status request. The tester's browser confirmation remains pending after deployment.
+The tester reported that Check access was visible but not clickable. Backend status requests were returning 200. The button shared the busy state used while opening Stripe, and a completed check had no visible feedback. The correction gives access checks a separate busy state, displays Checking access and a completion message, releases controls after navigation attempts, and refreshes status when Safari restores a cached billing page. Concurrent checks share one request; the account profile is refreshed only when its plan changes. Regression checks cover progress, unchanged and changed plans, the cached return, a pending Stripe action, and recovery after a failed status request. The sandbox frontend health and billing routes returned 200, and its served JavaScript contains the new progress/result messages and cached-return handler. The tester's browser confirmation remains pending.
 
 ## Next acceptance steps
 
