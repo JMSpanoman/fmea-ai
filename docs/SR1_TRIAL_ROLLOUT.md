@@ -29,12 +29,9 @@ All existing projects count toward the limit; there is no archive workflow. A sa
 
 ## Render prerequisites and verified deployment state
 
-Render connector access is working as of 2026-09-29. Both SR1 services deploy `JMSpanoman/fmea-ai`, branch `main`, using the corresponding Dockerfile with automatic deployment enabled.
+Render connector access is working as of 2026-09-29. The existing backend has a persistent database disk. Preserve and back up its contents before rollout.
 
-- Frontend: `fmea-frontend-dczh`, service `srv-d35rg2juibrs73diuctg`, currently live on `768bca79b6b8faf71b9e26d16664a80df51dff81`.
-- Backend: `fmea-backend-dczh`, service `srv-d35rg2juibrs73diucu0`. Latest deployment of `768bca79...` failed; the last live version is `9d746e109b6ea00a3c6e345ec56cf3831e54d98c`.
-- Backend has a 1 GB persistent disk `dsk-dak6b4m1egvs7399fobg` mounted at `/app/db`. Preserve this mount and its database during rollout.
-- Logs identify a Python 3.9/FastAPI annotation failure and a missing `db.runtime_migrations` import because the data disk hides that source directory. This draft upgrades the Docker runtime to Python 3.11 and moves migrations to `schema_migrations.py`, outside the data mount. Schema failures now stop startup.
+Deployment diagnostics identified two startup problems: Python 3.9 cannot evaluate newer type annotations, and the data disk hides migration source code located below its mount path. This draft uses Python 3.11, moves migrations outside database storage, and stops startup on schema failures. These fixes remain on the draft branch.
 
 Before deployment:
 
@@ -78,13 +75,19 @@ STRIPE_PRICE_YEARLY=YOUR_SANDBOX_YEARLY_PRICE_ID
 
 Set `STRIPE_RESTRICTED_KEY` (preferred) and `STRIPE_WEBHOOK_SECRET` through Render secret environment settings. Never add actual secrets to this document, git, chat, or frontend build arguments. The fallback key variable is `STRIPE_SECRET_KEY`. The restricted key must allow the integration's Customer, Price, Subscription, Checkout Session, invoice-read, and billing-portal operations. `ENABLE_LIVE_BILLING` must match the key's mode; separate sandbox/live secrets and resources.
 
-## Stripe setup still required
+## Stripe sandbox configuration — verified 2026-09-29
 
-1. Expose a Stripe sandbox through the connected account. The connector currently returns only Foton Consulting **live** account `acct_1U8pGb2NDAwXFR5E`.
-2. Create the sandbox Team product and exact recurring EUR prices: 39,900 cents every month and 399,000 cents every year, quantity one per team.
-3. Confirm inclusive/exclusive tax treatment and applicable Stripe Tax registrations before activation. Automatic Tax has not been enabled.
-4. Configure the customer portal: payment-method updates, invoice history, cancellation at period end. Restrict subscription changes to supported Team prices/quantity; verify the displayed renewal and cancellation terms.
-5. Create a signed webhook destination at `https://YOUR_BACKEND/billing/stripe/webhook`, with:
+- The sandbox is connected. The SmartRisk 1 Team product has active recurring EUR prices: 39,900 cents per month and 399,000 cents per year, quantity one per team. Lookup keys are `sr1_team_eur_monthly` and `sr1_team_eur_yearly`.
+- The default sandbox customer portal permits payment-method updates, invoice history, and cancellation at the end of the paid period. Plan and quantity changes are disabled pending their own acceptance tests.
+- Stripe accepted a subscription Checkout Session for each price with the expected EUR total and accepted a portal session using this configuration. These checks used a synthetic sandbox customer without a real email address. No payment was completed and no app entitlement was granted. The test sessions will expire automatically.
+- Tax behavior remains unspecified and Automatic Tax remains off. Confirm inclusive/exclusive pricing and applicable tax registrations before live activation.
+- The live catalog remains inactive.
+
+Still required:
+
+1. Configure an isolated app environment and verified Auth0 signup. The connected browser has no authenticated Stripe or Auth0 session available for further settings work.
+2. Store the sandbox restricted API key in Render. Connector authorization is separate from the application's API credentials; the available connector operations cannot issue that key.
+3. Create the signed webhook destination when the isolated backend URL is available: `https://YOUR_BACKEND/billing/stripe/webhook`, subscribing to:
    - `checkout.session.completed`
    - `checkout.session.async_payment_succeeded`
    - `customer.subscription.created`
@@ -92,14 +95,8 @@ Set `STRIPE_RESTRICTED_KEY` (preferred) and `STRIPE_WEBHOOK_SECRET` through Rend
    - `customer.subscription.deleted`
    - `invoice.paid`
    - `invoice.payment_failed`
-6. Enter the sandbox API key, signing secret and price IDs in Render. Confirm webhook deliveries return 2xx and the app status follows Stripe.
-
-Inactive live catalog already prepared, awaiting validation:
-
-- Product `prod_VLVYE5BsLd8IuV` — SmartRisk 1 Team.
-- Monthly `price_1UKoXi2NDAwXFR5Ex8FPrsSg` — €399/month, lookup `sr1_team_eur_monthly`.
-- Annual `price_1UKoY52NDAwXFR5EAP7AoIQH` — €3,990/year, lookup `sr1_team_eur_yearly`.
-- Product and both prices are inactive. No live payment was taken. Tax behavior remains unspecified.
+4. Store its signing secret and the sandbox price IDs in Render. Verify 2xx deliveries and that app access follows Stripe. Never publish API keys or signing secrets in source.
+5. Complete the deployed acceptance test below. Successful session creation is not proof of payment, webhook delivery, or the full account-to-access journey.
 
 ## Verification completed locally
 
