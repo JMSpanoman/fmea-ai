@@ -1,6 +1,6 @@
 # SR1 saved checkpoint — 30 September 2026, Athens
 
-The owner requested that all completed work be saved. This checkpoint records verified progress without treating an open Checkout Session as a completed payment.
+The owner requested that all completed work be saved. This checkpoint records verified progress, updated after the tester completed the declined and successful sandbox payment cases.
 
 ## Saved locations
 
@@ -28,17 +28,21 @@ Before adding this documentation checkpoint, all 742 local source files matched 
 | Sample project | `/projects/sample` returned 201; saved sample FMEA retrieved with 200 |
 | Plan comparison | App displays the approved EUR prices, limits, renewal, cancellation, and VAT wording |
 | Monthly Checkout | App endpoint returned 200; Stripe session is sandbox, EUR 399, subscription mode |
+| Declined payment | Stripe recorded an issuer decline with insufficient funds for EUR 399 |
+| Successful payment | The same PaymentIntent then succeeded for EUR 399; Checkout is complete and paid |
+| Subscription | Stripe confirms an active sandbox subscription, one unit of the approved monthly price, linked to the app account |
+| Stripe webhook delivery | Three Stripe-origin webhook requests returned 200 at 23:08:46–23:08:47 UTC; no backend errors in this payment window |
 | Webhook configuration | Enabled Stripe endpoint; signed synthetic probe/replay accepted, invalid signature and wrong-mode events rejected |
 | Local regression checks | 19 backend and five frontend tests passed; frontend build passed; baseline typecheck issues remain |
 
-The latest observed Checkout Session is **open and unpaid**, with no subscription created. Actual Stripe payment-event delivery and resulting paid access are not yet verified. The screenshot is proof of reaching Checkout, not proof of payment.
+At the updated checkpoint, the Checkout Session is **complete and paid**, and Stripe confirms an **active** sandbox Team subscription. The failed charge was recorded at 2026-09-29 23:08:18 UTC and the successful charge at 23:08:43 UTC. The application's webhook accepted all three observed Stripe-origin requests. The tester still needs to confirm that the SR1 UI displays active Team access and that saved work remains available. Successful webhook delivery alone is not direct observation of the account's resulting application permissions.
 
 ## Next acceptance steps
 
-1. In the already-open sandbox Checkout, select Card and disable optional Link information saving. Test a decline with Stripe test card `4000 0000 0000 9995`, then a successful payment with `4242 4242 4242 4242`. Use a future expiry and any three-digit CVC. Use test cards only. Reference: https://docs.stripe.com/testing.
-2. Verify the Stripe payment/subscription, 2xx delivery of actual Stripe events, SR1's active Team state, and continued access to the same saved project. Do not grant access based on the success redirect alone.
+1. In SR1 plans, select Check access and confirm that the Team subscription is active. Open the same sample project and confirm the previously saved edit remains. Stripe payment/subscription and 2xx webhook delivery have been verified; application access still needs the tester's observation. Do not grant access based on the success redirect alone.
+2. Open Manage subscription through SR1, verify the customer portal, and test cancellation at the end of the paid period. Confirm the scheduled cancellation in Stripe and retained app access until that period ends.
 3. Verify edited-row persistence across reload and sign-out/return login, three-project and five-seat limits, repeated-click protection, Checkout cancellation, and the app-created billing portal.
-4. Test cancellation at period end and actual termination, failed renewal and recovery, trial expiry, and direct API access restrictions while retaining saved work.
+4. Test actual subscription termination, failed renewal and recovery, trial expiry, and direct API access restrictions while retaining saved work. The initial card decline followed by successful payment is already verified; it does not replace a failed-renewal test.
 5. Confirm production email delivery setup and tax treatment/registrations, supply production credentials securely, back up the existing database, and complete production readiness before merging or enabling live payments.
 6. Verify the public marketing site's Try/Create account/plan links against the approved production journey before launch.
 

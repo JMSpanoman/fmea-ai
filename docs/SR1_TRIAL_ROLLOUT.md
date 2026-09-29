@@ -1,6 +1,6 @@
 # SR1 customer signup and Stripe rollout
 
-Status: implemented in draft PR #1 and deployed to an isolated Render sandbox. Fresh signup, verified-email login, sample-project creation, and app-created monthly Checkout have been verified. Payment completion and the remaining acceptance checks are pending; production is not ready for live payment acceptance. See `docs/SR1_SESSION_CHECKPOINT.md` for the latest saved checkpoint.
+Status: implemented in draft PR #1 and deployed to an isolated Render sandbox. Fresh signup, verified-email login, sample-project creation, app-created monthly Checkout, declined/successful test payments, active Stripe subscription, and actual Stripe webhook delivery have been verified. Resulting application access and the remaining acceptance checks are pending; production is not ready for live payment acceptance. See `docs/SR1_SESSION_CHECKPOINT.md` for the latest saved checkpoint.
 
 ## Offer
 
@@ -128,12 +128,13 @@ The Blueprint was checked against Render's published JSON Schema locally and was
 - The live catalog remains inactive. No real payment has been taken.
 - The sandbox webhook is enabled at `https://sr1-sandbox-backend-dczh.onrender.com/billing/stripe/webhook`, pinned to API version `2026-08-26.dahlia`. Its signing secret was transferred directly into the sandbox backend's Render environment. No secret is stored in this repository.
 - The backend redeployed successfully with sandbox billing enabled. Deployed HTTP checks accepted a signed synthetic probe and its replay (200), rejected an invalid signature (400), and rejected a correctly signed live-mode probe (400). These checks confirm signing-secret wiring and mode/replay handling. They do not prove Stripe-origin payment delivery, restricted-key API permissions, or account entitlement changes.
-- At 2026-09-29 23:00:40 UTC, `/billing/checkout` returned 200 using the application's restricted key. Stripe confirms an app-linked subscription Checkout Session with EUR 39,900 total, `livemode=false`, and the correct sandbox return flow. The tester's screenshot shows SmartRisk 1 Team at EUR 399 per month and a Sandbox badge. At the saved checkpoint, this session remains open and unpaid, with no subscription yet created.
+- At 2026-09-29 23:00:40 UTC, `/billing/checkout` returned 200 using the application's restricted key. Stripe confirms an app-linked subscription Checkout Session with EUR 39,900 total, `livemode=false`, and the correct sandbox return flow. The tester's screenshot shows SmartRisk 1 Team at EUR 399 per month and a Sandbox badge.
+- The tester completed an insufficient-funds decline followed by a successful EUR 399 sandbox payment at 23:08:18 and 23:08:43 UTC, respectively. Stripe confirms Checkout is complete/paid and the app-linked subscription is active, with quantity one of the approved monthly price. Three Stripe-origin webhook requests returned 200 at 23:08:46–23:08:47 UTC, with no backend errors in this window. SR1's resulting UI access, saved-work retention, and portal/cancellation still require deployed acceptance.
 
 Still required:
 
 1. Confirm that an edited FMEA entry survives reload and sign-out/return login; verify the trial project limit in the deployed environment.
-2. Complete app-created sandbox payments and the app-created customer portal flow to finish restricted-key permission validation. Connector authorization is separate from the application's API credentials; the available connector operations cannot issue or edit that key.
+2. Complete the app-created customer portal and failed-renewal flows to finish restricted-key permission validation. Initial declined/successful payments and subscription retrieval through the webhook have passed. Connector authorization is separate from the application's API credentials; the available connector operations cannot issue or edit that key.
 3. Verify Stripe delivery and access transitions for the configured event subscriptions:
    - `checkout.session.completed`
    - `checkout.session.async_payment_succeeded`
@@ -164,7 +165,7 @@ Last run: **19 backend tests passed on Python 3.11 with the pinned requirements;
 
 ## Deployed acceptance test — in progress
 
-Verified so far: fresh signup, verified email and signed-token API access, 14-day trial displayed, sample-project creation (201) and retrieval (200), plan comparison, and opening monthly sandbox Checkout. Saved-edit persistence after return login, payment attempts, actual payment webhooks, paid entitlement, portal cancellation, expiry, and team limits remain unverified in the deployed environment. Local automated tests do not replace these remaining checks.
+Verified so far: fresh signup, verified email and signed-token API access, 14-day trial displayed, sample-project creation (201) and retrieval (200), plan comparison, opening monthly sandbox Checkout, declined/successful payments, active Stripe subscription, and actual Stripe webhook delivery (200). Saved-edit persistence after return login, resulting paid entitlement in SR1, portal cancellation, failed renewal/recovery, expiry, and team limits remain unverified in the deployed environment. Local automated tests do not replace these remaining checks.
 
 Use an isolated database, sandbox Stripe resources, and newly created verified Auth0 identities:
 
