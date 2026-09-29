@@ -18,3 +18,14 @@ The frontend draft includes `/billing` plan comparison and `/billing/success` an
 Configure a Stripe Team product with monthly and annual EUR Prices in an isolated Stripe sandbox. Subscribe the webhook endpoint to `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, and `invoice.payment_failed`. Consider EU VAT and other tax obligations separately; `automatic_tax` is not enabled until Stripe Tax registration is confirmed. Test payment success, payment failure, retry success, cancellation at end of term, immediate cancellation, webhook replay, return login, and duplicate checkout before enabling live billing. Stripe price/account operations cannot be inferred merely from an installed app connector; verify actual sandbox resource IDs.
 
 Approved offer: 14 days, one user and one project, no card; Team €399/month or €3,990/year with five users and three active projects; a separate 30-day guided pilot by quote. Public checkout remains disabled until the paid entitlement path is verified.
+
+## Stripe catalog prepared on 2026-09-29
+
+Foton Consulting live account: `acct_1U8pGb2NDAwXFR5E`. These live resources are **inactive**, pending validation; they cannot substitute for sandbox resources.
+
+- Product: `prod_VLVYE5BsLd8IuV` — SmartRisk 1 Team.
+- Monthly: `price_1UKoXi2NDAwXFR5Ex8FPrsSg` — EUR 39,900 cents per month; lookup key `sr1_team_eur_monthly`.
+- Annual: `price_1UKoY52NDAwXFR5EAP7AoIQH` — EUR 399,000 cents per year; lookup key `sr1_team_eur_yearly`.
+- Tax behavior is unspecified. Decide inclusive/exclusive treatment before activation.
+
+The connector currently exposes the live account only. Render cloud-browser sign-in remains incomplete. No Stripe secrets, webhook destinations, or Render environment values have been connected yet.
