@@ -1,6 +1,6 @@
 # SR1 saved checkpoint — 30 September 2026, Athens
 
-The owner requested that all completed work be saved. This checkpoint records verified progress, updated after the tester completed the declined and successful sandbox payment cases and confirmed Subscription: active after the Check access button correction.
+The owner requested that all completed work be saved. This checkpoint records verified progress, updated after the tester completed the declined and successful sandbox payment cases confirmed Subscription: active after the Check access button correction, and verified saved-work retention after return login plus the app-created customer portal.
 
 ## Saved locations
 
@@ -31,12 +31,14 @@ Before the Check access correction, all 743 local source files matched their Git
 | Declined payment | Stripe recorded an issuer decline with insufficient funds for EUR 399 |
 | Successful payment | The same PaymentIntent then succeeded for EUR 399; Checkout is complete and paid |
 | Subscription | Stripe confirms an active sandbox subscription, one unit of the approved monthly price, linked to the app account |
-| SR1 subscription display | Tester confirmed Subscription: active after the Check access correction at 2026-09-30 02:33 Athens; saved-project and paid-limit acceptance remain pending |
+| SR1 subscription display | Tester confirmed Subscription: active after the Check access correction at 2026-09-30 02:33 Athens; paid-limit acceptance remains pending |
+| Saved work and return login | At 2026-09-30 02:37 Athens, tester confirmed a saved sample-project edit remained after sign-out and return login |
+| App-created customer portal | Tester confirmed Manage subscription opens Stripe; backend POST `/billing/portal` returned 200 at 2026-09-29 23:36:57 UTC |
 | Stripe webhook delivery | Three Stripe-origin webhook requests returned 200 at 23:08:46–23:08:47 UTC; no backend errors in this payment window |
 | Webhook configuration | Enabled Stripe endpoint; signed synthetic probe/replay accepted, invalid signature and wrong-mode events rejected |
 | Local regression checks | 19 backend and eight frontend tests passed; frontend build passed; baseline typecheck issues remain |
 
-At the updated checkpoint, the Checkout Session is **complete and paid**, and Stripe confirms an **active** sandbox Team subscription. The failed charge was recorded at 2026-09-29 23:08:18 UTC and the successful charge at 23:08:43 UTC. The application's webhook accepted all three observed Stripe-origin requests. At 2026-09-30 02:33 Athens, the tester confirmed that the corrected Check access flow displays Subscription: active in SR1. Saved-work retention and paid project/seat limits still need acceptance; the active subscription display alone does not verify every application permission.
+At the updated checkpoint, the Checkout Session is **complete and paid**, and Stripe confirms an **active** sandbox Team subscription. The failed charge was recorded at 2026-09-29 23:08:18 UTC and the successful charge at 23:08:43 UTC. The application's webhook accepted all three observed Stripe-origin requests. At 2026-09-30 02:33 Athens, the tester confirmed that the corrected Check access flow displays Subscription: active in SR1. At 02:37 Athens, the tester confirmed the saved sample edit remained after return login and the app-created Stripe portal opened. Paid project/seat limits and subscription lifecycle transitions still need acceptance.
 
 ## Check access correction
 
@@ -44,12 +46,11 @@ The tester reported that Check access was visible but not clickable. Backend sta
 
 ## Next acceptance steps
 
-1. Open the same sample project and confirm the previously saved edit remains. Sign out and return to verify persistence. Stripe payment/subscription, 2xx webhook delivery, and the SR1 active subscription display have been verified; saved-work and paid-limit checks remain pending. Do not grant access based on the success redirect alone.
-2. Open Manage subscription through SR1, verify the customer portal, and test cancellation at the end of the paid period. Confirm the scheduled cancellation in Stripe and retained app access until that period ends.
-3. Verify edited-row persistence across reload and sign-out/return login, three-project and five-seat limits, repeated-click protection, Checkout cancellation, and the app-created billing portal.
-4. Test actual subscription termination, failed renewal and recovery, trial expiry, and direct API access restrictions while retaining saved work. The initial card decline followed by successful payment is already verified; it does not replace a failed-renewal test.
-5. Confirm production email delivery setup and tax treatment/registrations, supply production credentials securely, back up the existing database, and complete production readiness before merging or enabling live payments.
-6. Verify the public marketing site's Try/Create account/plan links against the approved production journey before launch.
+1. In the app-created sandbox customer portal, test cancellation at the end of the paid period. Confirm the scheduled cancellation in Stripe and retained app access until that period ends.
+2. Verify three-project and five-seat limits, repeated-click protection, and Checkout cancellation. Saved edits across sign-out/return login and opening the app-created portal have passed by tester confirmation.
+3. Test actual subscription termination, failed renewal and recovery, trial expiry, and direct API access restrictions while retaining saved work. The initial card decline followed by successful payment is already verified; it does not replace a failed-renewal test.
+4. Confirm production email delivery setup and tax treatment/registrations, supply production credentials securely, back up the existing database, and complete production readiness before merging or enabling live payments.
+5. Verify the public marketing site's Try/Create account/plan links against the approved production journey before launch.
 
 ## Practical notes
 
