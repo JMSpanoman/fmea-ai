@@ -1,6 +1,6 @@
 # SR1 saved checkpoint — 30 September 2026, Athens
 
-The owner requested that all completed work be saved. This checkpoint records verified progress, updated after the tester completed the declined and successful sandbox payment cases and reported an unresponsive Check access button.
+The owner requested that all completed work be saved. This checkpoint records verified progress, updated after the tester completed the declined and successful sandbox payment cases and confirmed Subscription: active after the Check access button correction.
 
 ## Saved locations
 
@@ -31,19 +31,20 @@ Before the Check access correction, all 743 local source files matched their Git
 | Declined payment | Stripe recorded an issuer decline with insufficient funds for EUR 399 |
 | Successful payment | The same PaymentIntent then succeeded for EUR 399; Checkout is complete and paid |
 | Subscription | Stripe confirms an active sandbox subscription, one unit of the approved monthly price, linked to the app account |
+| SR1 subscription display | Tester confirmed Subscription: active after the Check access correction at 2026-09-30 02:33 Athens; saved-project and paid-limit acceptance remain pending |
 | Stripe webhook delivery | Three Stripe-origin webhook requests returned 200 at 23:08:46–23:08:47 UTC; no backend errors in this payment window |
 | Webhook configuration | Enabled Stripe endpoint; signed synthetic probe/replay accepted, invalid signature and wrong-mode events rejected |
 | Local regression checks | 19 backend and eight frontend tests passed; frontend build passed; baseline typecheck issues remain |
 
-At the updated checkpoint, the Checkout Session is **complete and paid**, and Stripe confirms an **active** sandbox Team subscription. The failed charge was recorded at 2026-09-29 23:08:18 UTC and the successful charge at 23:08:43 UTC. The application's webhook accepted all three observed Stripe-origin requests. The tester still needs to confirm that the SR1 UI displays active Team access and that saved work remains available. Successful webhook delivery alone is not direct observation of the account's resulting application permissions.
+At the updated checkpoint, the Checkout Session is **complete and paid**, and Stripe confirms an **active** sandbox Team subscription. The failed charge was recorded at 2026-09-29 23:08:18 UTC and the successful charge at 23:08:43 UTC. The application's webhook accepted all three observed Stripe-origin requests. At 2026-09-30 02:33 Athens, the tester confirmed that the corrected Check access flow displays Subscription: active in SR1. Saved-work retention and paid project/seat limits still need acceptance; the active subscription display alone does not verify every application permission.
 
 ## Check access correction
 
-The tester reported that Check access was visible but not clickable. Backend status requests were returning 200. The button shared the busy state used while opening Stripe, and a completed check had no visible feedback. The correction gives access checks a separate busy state, displays Checking access and a completion message, releases controls after navigation attempts, and refreshes status when Safari restores a cached billing page. Concurrent checks share one request; the account profile is refreshed only when its plan changes. Regression checks cover progress, unchanged and changed plans, the cached return, a pending Stripe action, and recovery after a failed status request. The sandbox frontend health and billing routes returned 200, and its served JavaScript contains the new progress/result messages and cached-return handler. The tester's browser confirmation remains pending.
+The tester reported that Check access was visible but not clickable. Backend status requests were returning 200. The button shared the busy state used while opening Stripe, and a completed check had no visible feedback. The correction gives access checks a separate busy state, displays Checking access and a completion message, releases controls after navigation attempts, and refreshes status when Safari restores a cached billing page. Concurrent checks share one request; the account profile is refreshed only when its plan changes. Regression checks cover progress, unchanged and changed plans, the cached return, a pending Stripe action, and recovery after a failed status request. The sandbox frontend health and billing routes returned 200, and its served JavaScript contains the new progress/result messages and cached-return handler. The tester subsequently confirmed Subscription: active in their own browser.
 
 ## Next acceptance steps
 
-1. In SR1 plans, select Check access and confirm that the Team subscription is active. Open the same sample project and confirm the previously saved edit remains. Stripe payment/subscription and 2xx webhook delivery have been verified; application access still needs the tester's observation. Do not grant access based on the success redirect alone.
+1. Open the same sample project and confirm the previously saved edit remains. Sign out and return to verify persistence. Stripe payment/subscription, 2xx webhook delivery, and the SR1 active subscription display have been verified; saved-work and paid-limit checks remain pending. Do not grant access based on the success redirect alone.
 2. Open Manage subscription through SR1, verify the customer portal, and test cancellation at the end of the paid period. Confirm the scheduled cancellation in Stripe and retained app access until that period ends.
 3. Verify edited-row persistence across reload and sign-out/return login, three-project and five-seat limits, repeated-click protection, Checkout cancellation, and the app-created billing portal.
 4. Test actual subscription termination, failed renewal and recovery, trial expiry, and direct API access restrictions while retaining saved work. The initial card decline followed by successful payment is already verified; it does not replace a failed-renewal test.
