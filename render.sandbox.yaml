@@ -1,7 +1,7 @@
 # Isolated SR1 acceptance environment. Deploy this file from
 # feature/sr1-trial-foundation, not the existing production render.yaml.
 # Backend Starter is required for the persistent SQLite disk. Frontend is free.
-# Billing stays disabled until the signed webhook is configured and verified.
+# Sandbox billing requires both the restricted key and signed webhook secret.
 # Confirm the assigned service URLs before allowing signup; Render can add suffixes.
 services:
   - type: web
@@ -42,10 +42,12 @@ services:
       - key: SR1_FRONTEND_ORIGIN
         value: https://sr1-sandbox-frontend-dczh.onrender.com
       - key: ENABLE_SR1_BILLING
-        value: "false"
+        value: "true"
       - key: ENABLE_LIVE_BILLING
         value: "false"
       - key: STRIPE_RESTRICTED_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
         sync: false
       - key: STRIPE_PRICE_MONTHLY
         value: price_1UL7ngRsvAk8lB5OEtxiHaEQ

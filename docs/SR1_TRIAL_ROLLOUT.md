@@ -1,6 +1,6 @@
 # SR1 customer signup and Stripe rollout
 
-Status: implemented in draft PR #1; not deployed or ready for live payment acceptance.
+Status: implemented in draft PR #1 and deployed to an isolated Render sandbox. Fresh-user/payment acceptance is pending; production is not ready for live payment acceptance.
 
 ## Offer
 
@@ -33,6 +33,13 @@ All existing projects count toward the limit; there is no archive workflow. A sa
 
 Render connector access is working as of 2026-09-29. The existing backend has a persistent database disk. Preserve and back up its contents before rollout.
 
+The isolated Blueprint was created on 2026-09-29. Both Docker services deployed commit `c5021e2` successfully and returned HTTP 200 from `/health`:
+
+- Frontend: `https://sr1-sandbox-frontend-dczh.onrender.com`
+- Backend: `https://sr1-sandbox-backend-dczh.onrender.com`
+
+The backend uses its own persistent SQLite disk and staging settings. Its AI key is not configured; sample-project and billing acceptance do not require one. No existing production service was changed.
+
 Deployment diagnostics identified two startup problems: Python 3.9 cannot evaluate newer type annotations, and the data disk hides migration source code located below its mount path. This draft uses Python 3.11, moves migrations outside database storage, and stops startup on schema failures. These fixes remain on the draft branch.
 
 Before deployment:
@@ -53,9 +60,9 @@ Auth0 access was connected and the configuration below was verified on 2026-09-2
 - The SmartRisk 1 API has identifier `https://smartrisk.fotonconsulting.com/api`, RS256, a one-hour access-token lifetime, and offline access enabled for refresh tokens.
 - Email/password signup is enabled for SR1. The default Google development connection is disabled for this application; other applications are unchanged.
 - `docs/auth0/sr1-email-claims.js` is deployed on Node 22 and attached to the post-login flow. The backend requires its namespaced email and `email_verified: true`. Users verify their email and sign in again before their 14-day trial starts.
-- The production frontend origin is registered for callbacks, logout, and web origins. A PKCE authorization request with the SR1 audience reached the expected `login_required` response, confirming that Auth0 accepts those settings. This does not verify an actual signup or token exchange.
+- The production and actual assigned sandbox frontend origins are registered for callbacks, logout, web origins, and allowed origins. Opening sandbox `/create-account` reaches the SmartRisk 1 Auth0 signup form. This does not verify an actual signup or token exchange.
 
-After creating the isolated Render services, register the **actual assigned sandbox frontend origin** in Auth0 before testing. It is deliberately not allowlisted until Render confirms ownership. Verify email delivery with a fresh account; the tenant's development email setup has not been accepted for production delivery.
+Verify email delivery with a fresh account; the tenant's development email setup has not been accepted for production delivery. Signup requires the tester to choose a password and verify their email; do not bypass verification or replace this check with a pre-verified administrative identity.
 
 Frontend Docker build variables (public values, then rebuild):
 
@@ -93,10 +100,10 @@ Set `STRIPE_RESTRICTED_KEY` (preferred) and `STRIPE_WEBHOOK_SECRET` through Rend
 1. Open a new Render Blueprint for this repository. Select branch `feature/sr1-trial-foundation` and Blueprint Path `render.sandbox.yaml`. Do not use the production `render.yaml`.
 2. Enter the **sandbox** restricted API key (starting `rk_test_`) in the `STRIPE_RESTRICTED_KEY` secret field. Review the displayed resource cost and deploy the Blueprint. Never paste the key into chat or git.
 3. Compare the actual assigned URLs with the two planned sandbox URLs in the file. If Render adds a suffix, update `BACKEND_URL`, `CORS_ORIGINS`, `SR1_FRONTEND_ORIGIN`, and this Blueprint before testing. Add the actual frontend origin to the Auth0 callback/logout/web-origin lists, preserving the existing origin.
-4. Create the Stripe sandbox webhook listed below, store its signing secret on the sandbox backend, and enable `ENABLE_SR1_BILLING` only after all billing settings are present. Update the Blueprint flag too, so a later sync cannot undo the tested configuration.
+4. For a new environment, create its Stripe sandbox webhook and provide both secret fields before enabling billing. The existing sandbox webhook has been created and its signing secret stored; the Blueprint now preserves the enabled sandbox-billing setting. Live billing stays disabled.
 5. Trigger new sandbox deploys after configuration changes, check health and signed webhook delivery, then run the acceptance checklist.
 
-The Blueprint was checked against Render's published JSON Schema locally. Render's Dashboard must still validate account availability, service plans, repository access, and assigned URLs. The connected Render tool cannot create Docker services, so initial Blueprint creation requires the Dashboard. No sandbox resources have been provisioned by this file alone. AI-generation acceptance additionally requires a separate sandbox `OPENAI_API_KEY`; the saved sample-project and billing checks do not use it.
+The Blueprint was checked against Render's published JSON Schema locally and was successfully deployed through Render's Dashboard. The assigned URLs match the file. The connected Render tool cannot create Docker services, so future initial Blueprint creation requires the Dashboard. AI-generation acceptance additionally requires a separate sandbox `OPENAI_API_KEY`; the saved sample-project and billing checks do not use it.
 
 ## Stripe sandbox configuration — verified 2026-09-29
 
@@ -106,12 +113,14 @@ The Blueprint was checked against Render's published JSON Schema locally. Render
 - Both sandbox prices now use `tax_behavior=exclusive`. The inactive live prices also use exclusive tax behavior.
 - Tax settings in both environments are pending: no head office, default product tax code, or tax registrations are configured. Automatic Tax remains off. Record the owner's confirmed tax setup and applicable registrations before enabling tax calculation; never infer a registration from the owner's personal location.
 - The live catalog remains inactive. No real payment has been taken.
+- The sandbox webhook is enabled at `https://sr1-sandbox-backend-dczh.onrender.com/billing/stripe/webhook`, pinned to API version `2026-08-26.dahlia`. Its signing secret was transferred directly into the sandbox backend's Render environment. No secret is stored in this repository.
+- The backend redeployed successfully with sandbox billing enabled. Deployed HTTP checks accepted a signed synthetic probe and its replay (200), rejected an invalid signature (400), and rejected a correctly signed live-mode probe (400). These checks confirm signing-secret wiring and mode/replay handling. They do not prove Stripe-origin payment delivery, restricted-key API permissions, or account entitlement changes.
 
 Still required:
 
-1. Deploy `render.sandbox.yaml`, register its actual frontend origin in the configured Auth0 application, and verify signup/email delivery.
-2. Store the sandbox restricted API key in Render. Connector authorization is separate from the application's API credentials; the available connector operations cannot issue that key.
-3. Create the signed webhook destination when the isolated backend URL is available: `https://YOUR_BACKEND/billing/stripe/webhook`, subscribing to:
+1. Complete fresh-user signup and verify email delivery.
+2. Exercise app-created Checkout to verify the restricted API key's permissions. Connector authorization is separate from the application's API credentials; the available connector operations cannot issue that key.
+3. Verify Stripe delivery and access transitions for the configured event subscriptions:
    - `checkout.session.completed`
    - `checkout.session.async_payment_succeeded`
    - `customer.subscription.created`
@@ -119,7 +128,7 @@ Still required:
    - `customer.subscription.deleted`
    - `invoice.paid`
    - `invoice.payment_failed`
-4. Store its signing secret, sandbox price IDs, and the sandbox SR1 portal configuration ID in Render. Verify 2xx deliveries and that app access follows Stripe. Never publish API keys or signing secrets in source.
+4. Verify 2xx deliveries and that app access follows Stripe. Never publish API keys or signing secrets in source.
 5. Complete the deployed acceptance test below. Successful session creation is not proof of payment, webhook delivery, or the full account-to-access journey.
 
 ## Verification completed locally
