@@ -1,6 +1,6 @@
 # SR1 customer signup and Stripe rollout
 
-Status: implemented in draft PR #1 and deployed to an isolated Render sandbox. Fresh-user/payment acceptance is pending; production is not ready for live payment acceptance.
+Status: implemented in draft PR #1 and deployed to an isolated Render sandbox. Fresh signup, verified-email login, sample-project creation, and app-created monthly Checkout have been verified. Payment completion and the remaining acceptance checks are pending; production is not ready for live payment acceptance. See `docs/SR1_SESSION_CHECKPOINT.md` for the latest saved checkpoint.
 
 ## Offer
 
@@ -60,9 +60,9 @@ Auth0 access was connected and the configuration below was verified on 2026-09-2
 - The SmartRisk 1 API has identifier `https://smartrisk.fotonconsulting.com/api`, RS256, a one-hour access-token lifetime, and offline access enabled for refresh tokens.
 - Email/password signup is enabled for SR1. The default Google development connection is disabled for this application; other applications are unchanged.
 - `docs/auth0/sr1-email-claims.js` is deployed on Node 22 and attached to the post-login flow. The backend requires its namespaced email and `email_verified: true`. Users verify their email and sign in again before their 14-day trial starts.
-- The production and actual assigned sandbox frontend origins are registered for callbacks, logout, web origins, and allowed origins. Opening sandbox `/create-account` reaches the SmartRisk 1 Auth0 signup form. This does not verify an actual signup or token exchange.
+- The production and actual assigned sandbox frontend origins are registered for callbacks, logout, web origins, and allowed origins. A fresh tester signed up, verified their email, and signed in through the sandbox. Auth0 reports the identity as verified, and the backend accepted the real token at `/auth/me` at 2026-09-29 22:36:57 UTC.
 
-Verify email delivery with a fresh account; the tenant's development email setup has not been accepted for production delivery. Signup requires the tester to choose a password and verify their email; do not bypass verification or replace this check with a pre-verified administrative identity.
+Fresh-account verification succeeded in the development tenant; its email setup has not been accepted for production delivery. Signup requires the tester to choose a password and verify their email; do not bypass verification or replace this check with a pre-verified administrative identity.
 
 Frontend Docker build variables (public values, then rebuild):
 
@@ -93,6 +93,19 @@ STRIPE_PORTAL_CONFIGURATION=YOUR_SANDBOX_PORTAL_CONFIGURATION_ID
 
 Set `STRIPE_RESTRICTED_KEY` (preferred) and `STRIPE_WEBHOOK_SECRET` through Render secret environment settings. Never add actual secrets to this document, git, chat, or frontend build arguments. The fallback key variable is `STRIPE_SECRET_KEY`. The restricted key must allow the integration's Customer, Price, Subscription, Checkout Session, invoice-read, and billing-portal operations. `ENABLE_LIVE_BILLING` must match the key's mode; separate sandbox/live secrets and resources.
 
+Required restricted-key permissions for this implementation:
+
+| Resource | Permission |
+|---|---|
+| Prices | Read |
+| Customers | Write |
+| Checkout Sessions | Write |
+| Subscriptions | Read |
+| Invoices | Read |
+| Customer/Billing Portal | Write |
+
+Set other permissions to None unless another documented operation needs them. The initial deployed checkout failed because Prices Read and then Subscriptions Read were missing. The owner edited the existing sandbox key in Stripe; successful app-created Checkout was subsequently verified. Editing that same key's permissions did not require replacing the Render secret. Invoice/webhook and app-created portal permissions still need their acceptance checks.
+
 ### Create the isolated Render environment
 
 `render.sandbox.yaml` defines two new Docker services from the draft branch and a separate 1 GB SQLite disk. The backend needs the paid Starter plan for persistent disk storage; the frontend uses the free plan. This file does not manage existing production services. Automatic code deploys are off during acceptance.
@@ -115,11 +128,12 @@ The Blueprint was checked against Render's published JSON Schema locally and was
 - The live catalog remains inactive. No real payment has been taken.
 - The sandbox webhook is enabled at `https://sr1-sandbox-backend-dczh.onrender.com/billing/stripe/webhook`, pinned to API version `2026-08-26.dahlia`. Its signing secret was transferred directly into the sandbox backend's Render environment. No secret is stored in this repository.
 - The backend redeployed successfully with sandbox billing enabled. Deployed HTTP checks accepted a signed synthetic probe and its replay (200), rejected an invalid signature (400), and rejected a correctly signed live-mode probe (400). These checks confirm signing-secret wiring and mode/replay handling. They do not prove Stripe-origin payment delivery, restricted-key API permissions, or account entitlement changes.
+- At 2026-09-29 23:00:40 UTC, `/billing/checkout` returned 200 using the application's restricted key. Stripe confirms an app-linked subscription Checkout Session with EUR 39,900 total, `livemode=false`, and the correct sandbox return flow. The tester's screenshot shows SmartRisk 1 Team at EUR 399 per month and a Sandbox badge. At the saved checkpoint, this session remains open and unpaid, with no subscription yet created.
 
 Still required:
 
-1. Complete fresh-user signup and verify email delivery.
-2. Exercise app-created Checkout to verify the restricted API key's permissions. Connector authorization is separate from the application's API credentials; the available connector operations cannot issue that key.
+1. Confirm that an edited FMEA entry survives reload and sign-out/return login; verify the trial project limit in the deployed environment.
+2. Complete app-created sandbox payments and the app-created customer portal flow to finish restricted-key permission validation. Connector authorization is separate from the application's API credentials; the available connector operations cannot issue or edit that key.
 3. Verify Stripe delivery and access transitions for the configured event subscriptions:
    - `checkout.session.completed`
    - `checkout.session.async_payment_succeeded`
@@ -148,7 +162,9 @@ Install the pinned backend requirements first; `test_sr1_checkout.py` uses the a
 
 Last run: **19 backend tests passed on Python 3.11 with the pinned requirements; five frontend tests passed; production frontend build passed**. The startup test imports the full application, creates the commercial schema, preserves a saved identity across restart, rejects anonymous/demo access in customer mode, and fails startup on a migration error. This is not a Docker image or deployed-environment test. The baseline main branch reports 96 TypeScript errors; this branch reports 95, with no new diagnostics compared with that baseline; no errors are reported in the new signup/billing/team screens or changed API helper. These need a separate baseline cleanup and are not represented as a passing typecheck.
 
-## Deployed acceptance test — not yet run
+## Deployed acceptance test — in progress
+
+Verified so far: fresh signup, verified email and signed-token API access, 14-day trial displayed, sample-project creation (201) and retrieval (200), plan comparison, and opening monthly sandbox Checkout. Saved-edit persistence after return login, payment attempts, actual payment webhooks, paid entitlement, portal cancellation, expiry, and team limits remain unverified in the deployed environment. Local automated tests do not replace these remaining checks.
 
 Use an isolated database, sandbox Stripe resources, and newly created verified Auth0 identities:
 
