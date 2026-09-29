@@ -1,6 +1,6 @@
 # SR1 saved checkpoint — 30 September 2026, Athens
 
-The owner requested that all completed work be saved. This checkpoint records verified progress through declined/successful sandbox payments, the corrected active-subscription display, saved edits after return login, the app-created customer portal, and scheduled cancellation with retained project access.
+The owner requested that all completed work be saved. This checkpoint records verified progress through declined/successful sandbox payments, the corrected active-subscription display, saved edits after return login, the app-created customer portal, scheduled cancellation with retained project access, and the three-project Team limit.
 
 ## Saved locations
 
@@ -31,16 +31,17 @@ Before the Check access correction, all 743 local source files matched their Git
 | Declined payment | Stripe recorded an issuer decline with insufficient funds for EUR 399 |
 | Successful payment | The same PaymentIntent then succeeded for EUR 399; Checkout is complete and paid |
 | Subscription | Stripe confirms an active sandbox subscription, one unit of the approved monthly price, linked to the app account |
-| SR1 subscription display | Tester confirmed Subscription: active after the Check access correction at 2026-09-30 02:33 Athens; paid-limit acceptance remains pending |
+| SR1 subscription display | Tester confirmed Subscription: active after the Check access correction at 2026-09-30 02:33 Athens; seat-limit acceptance remains pending |
 | Saved work and return login | At 2026-09-30 02:37 Athens, tester confirmed a saved sample-project edit remained after sign-out and return login |
 | App-created customer portal | Tester confirmed Manage subscription opens Stripe; backend POST `/billing/portal` returned 200 at 2026-09-29 23:36:57 UTC |
 | Scheduled cancellation | Stripe reports active with `cancel_at=1793315323`, matching the current item period end: 2026-10-29 23:08:43 UTC / 30 October 01:08:43 Athens; `ended_at` is null |
 | Cancellation update and retained access | Cancellation was requested at 23:37:29 UTC; a Stripe-origin webhook returned 200 at 23:37:31. The original sample project and its documents returned 200 at 23:40:22–23:40:23 UTC after the tester returned to SR1 |
+| Team project limit | Tester confirmed the fourth project was blocked at 2026-09-30 02:45 Athens. Two additional POST `/projects` calls returned 201 at 23:44:33 and 23:44:50 UTC; the next returned 403 at 23:45:04 UTC, after the original sample project |
 | Stripe webhook delivery | Three Stripe-origin webhook requests returned 200 at 23:08:46–23:08:47 UTC; no backend errors in this payment window |
 | Webhook configuration | Enabled Stripe endpoint; signed synthetic probe/replay accepted, invalid signature and wrong-mode events rejected |
 | Local regression checks | 19 backend and eight frontend tests passed; frontend build passed; baseline typecheck issues remain |
 
-At the updated checkpoint, the Checkout Session is **complete and paid**, and Stripe confirms an **active** sandbox Team subscription. The failed charge was recorded at 2026-09-29 23:08:18 UTC and the successful charge at 23:08:43 UTC. The application's webhook accepted all three observed Stripe-origin requests. At 2026-09-30 02:33 Athens, the tester confirmed that the corrected Check access flow displays Subscription: active in SR1. At 02:37 Athens, the tester confirmed the saved sample edit remained after return login and the app-created Stripe portal opened. Stripe subsequently confirmed scheduled cancellation at the paid period end while the subscription remains active. SR1 accepted a Stripe-origin webhook during this change and served the same project afterward. Actual termination, failed renewal/recovery, and paid project/seat limits still need acceptance. Stripe represents this portal cancellation with an explicit `cancel_at` timestamp equal to the item period end; `cancel_at_period_end` is false, so that boolean alone must not be used to conclude that cancellation is absent.
+At the updated checkpoint, the Checkout Session is **complete and paid**, and Stripe confirms an **active** sandbox Team subscription. The failed charge was recorded at 2026-09-29 23:08:18 UTC and the successful charge at 23:08:43 UTC. The application's webhook accepted all three observed Stripe-origin requests. At 2026-09-30 02:33 Athens, the tester confirmed that the corrected Check access flow displays Subscription: active in SR1. At 02:37 Athens, the tester confirmed the saved sample edit remained after return login and the app-created Stripe portal opened. Stripe subsequently confirmed scheduled cancellation at the paid period end while the subscription remains active. SR1 accepted a Stripe-origin webhook during this change and served the same project afterward. The three-project Team limit has also passed: two new projects were created after the original sample, and the fourth attempt returned 403 with a limit message confirmed by the tester. Actual termination, failed renewal/recovery, and the five-seat limit still need acceptance. Stripe represents this portal cancellation with an explicit `cancel_at` timestamp equal to the item period end; `cancel_at_period_end` is false, so that boolean alone must not be used to conclude that cancellation is absent.
 
 ## Check access correction
 
@@ -48,7 +49,7 @@ The tester reported that Check access was visible but not clickable. Backend sta
 
 ## Next acceptance steps
 
-1. Verify three-project and five-seat limits, repeated-click protection, and Checkout cancellation. Saved edits across sign-out/return login, the app-created portal, scheduled subscription cancellation, and immediate retention of project access have passed.
+1. Verify the five-seat limit, invitation acceptance/removal and shared project access, repeated-click protection, and Checkout cancellation. The three-project owner limit has passed; members must also share that quota. Saved edits across sign-out/return login, the app-created portal, scheduled subscription cancellation, and immediate retention of project access have passed.
 2. Test actual subscription termination, failed renewal and recovery, trial expiry, and direct API access restrictions while retaining saved work. The initial card decline followed by successful payment is already verified; it does not replace a failed-renewal test.
 3. Confirm production email delivery setup and tax treatment/registrations, supply production credentials securely, back up the existing database, and complete production readiness before merging or enabling live payments.
 4. Verify the public marketing site's Try/Create account/plan links against the approved production journey before launch.
