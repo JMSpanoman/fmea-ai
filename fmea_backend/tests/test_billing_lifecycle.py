@@ -20,7 +20,7 @@ def subscription(status="active", price="price_month", invoice="in_1"):
 
 class FakeDB:
     def __init__(self):
-        self.user = SimpleNamespace(stripe_customer_id="cus_1", stripe_subscription_id="sub_1", plan="lite", subscription_status=None)
+        self.user = SimpleNamespace(id="owner", stripe_customer_id="cus_1", stripe_subscription_id="sub_1", plan="lite", subscription_status=None)
         self.events = {}
 
     def get(self, model, key):
@@ -51,10 +51,10 @@ def test_price_validation_prevents_wrong_currency_or_amount(monkeypatch):
     monkeypatch.setenv("STRIPE_PRICE_MONTHLY", "price_month")
     client = SimpleNamespace(v1=SimpleNamespace(prices=SimpleNamespace(
         retrieve=lambda key: SimpleNamespace(active=True, currency="eur", unit_amount=39900,
-                                             recurring=SimpleNamespace(interval="month")))))
+                                             recurring=SimpleNamespace(interval="month", interval_count=1)))))
     assert billing._price(client, "monthly") == "price_month"
     client.v1.prices.retrieve = lambda key: SimpleNamespace(active=True, currency="usd", unit_amount=39900,
-                                                             recurring=SimpleNamespace(interval="month"))
+                                                             recurring=SimpleNamespace(interval="month", interval_count=1))
     with pytest.raises(HTTPException) as exc:
         billing._price(client, "monthly")
     assert exc.value.status_code == 503
@@ -76,12 +76,16 @@ def test_signed_webhook_activation_failure_cancellation_and_replay(monkeypatch):
     event = {"id": "evt_1", "livemode": False, "type": "customer.subscription.created",
              "data": {"object": {"id": "sub_1", "customer": "cus_1"}}}
     stripe = SimpleNamespace(
-        StripeClient=lambda key, **kwargs: SimpleNamespace(v1=SimpleNamespace(subscriptions=SimpleNamespace(retrieve=lambda key: current))),
+        StripeClient=lambda key, **kwargs: SimpleNamespace(v1=SimpleNamespace(
+            subscriptions=SimpleNamespace(retrieve=lambda key: current),
+            invoices=SimpleNamespace(retrieve=lambda key: {"status": "open"}))),
         Webhook=SimpleNamespace(construct_event=lambda payload, sig, secret: event if sig == "valid" else (_ for _ in ()).throw(ValueError())),
-        error=SimpleNamespace(SignatureVerificationError=ValueError),
+        SignatureVerificationError=ValueError,
     )
     monkeypatch.setitem(sys.modules, "stripe", stripe)
     db = FakeDB()
+    monkeypatch.setattr(billing, "lock_owner", lambda db, key: db.user)
+    db.refresh = lambda user: None
     with pytest.raises(HTTPException) as exc:
         asyncio.run(billing.webhook(FakeRequest(), "invalid", db))
     assert exc.value.status_code == 400

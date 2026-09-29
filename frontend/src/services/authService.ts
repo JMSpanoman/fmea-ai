@@ -39,7 +39,6 @@ class AuthService {
       // Call the dev login endpoint
       console.log('AuthService: Calling window.fmeaApi.devLogin()...');
       const response = await window.fmeaApi.devLogin();
-      console.log('AuthService: devLogin response:', response);
       
       // Extract the token from the response
       if (response && response.access_token && typeof response.access_token === 'string') {
@@ -83,4 +82,4 @@ class AuthService {
   }
 }
 
-export default AuthService.getInstance(); 
+export default AuthService.getInstance();

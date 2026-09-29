@@ -37,14 +37,20 @@ def get_current_user(
             detail="Could not validate credentials - missing sub claim",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    is_auth0_token = jwt.get_unverified_header(token).get("alg") == "RS256"
+    claim_prefix = "https://smartrisk.fotonconsulting.com/"
+    identity_email = payload.get(claim_prefix + "email") or payload.get("email") or ""
+    email_verified = payload.get(claim_prefix + "email_verified", payload.get("email_verified")) is True
+    trial_enabled = os.getenv("ENABLE_SELF_SERVICE_TRIALS", "false").lower() == "true"
+    if is_auth0_token and trial_enabled and (not isinstance(identity_email, str) or not identity_email or not email_verified):
+        raise HTTPException(403, "Verify your email address and sign in again to start SmartRisk")
     
     # Get or create user from database
     user = user_crud.get_user_by_auth0_id(db, auth0_id)
     if user is None:
         # Create user if doesn't exist
-        email = payload.get("email", "") or ""
-        trial_enabled = os.getenv("ENABLE_SELF_SERVICE_TRIALS", "false").lower() == "true"
-        is_auth0_token = jwt.get_unverified_header(token).get("alg") == "RS256"
+        email = identity_email
         user = user_crud.create_user_from_auth0(db, auth0_id, email, start_trial=trial_enabled and is_auth0_token)
         if user is None:
             import logging
@@ -58,7 +64,9 @@ def get_current_user(
     
     # Attach ephemeral identity/role fields from the token payload (no schema change required).
     # This ensures /auth/me can reflect roles for dev tokens and keeps frontend auth consistent.
-    token_email = (payload.get("email") or "") or getattr(user, "email", "") or ""
+    token_email = identity_email or getattr(user, "email", "") or ""
+    user.is_verified = email_verified if is_auth0_token else str(auth0_id).startswith("dev:")
+    user.billing_owner = db.get(User, user.team_owner_id) if user.team_owner_id else user
     token_username = payload.get("username") or (token_email.split("@")[0] if "@" in token_email else None)
     token_role = payload.get("role") or "user"
 

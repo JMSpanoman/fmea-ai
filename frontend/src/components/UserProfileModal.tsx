@@ -1,4 +1,4 @@
-import { getStoredAccessToken } from '../axios';
+import { ensureValidToken } from '../axios';
 import React, { useState, useEffect } from 'react';
 import { resolveApiBaseUrl } from '../config/apiBaseUrl';
 import './UserProfileModal.css';
@@ -83,7 +83,7 @@ const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, on
     setSuccess('');
 
     try {
-      const token = getStoredAccessToken();
+      const token = await ensureValidToken();
       const response = await fetch(`${API_BASE_URL}/auth/me`, {
         method: 'PUT',
         headers: {

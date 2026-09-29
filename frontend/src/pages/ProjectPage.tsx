@@ -1,4 +1,4 @@
-import { getStoredAccessToken } from '../axios';
+import { ensureValidToken } from '../axios';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import projectService, { Project, ProjectCreate } from '../services/projectService';
@@ -52,7 +52,7 @@ const ProjectPage: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 100));
         
         console.log('[ProjectPage] Loading projects...');
-        const token = getStoredAccessToken();
+        const token = await ensureValidToken();
         console.log('[ProjectPage] Token available:', !!token);
         
         const projects = await projectService.getProjects();

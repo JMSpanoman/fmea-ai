@@ -1,3 +1,5 @@
+"""Schema upgrades kept outside /app/db, which Render mounts as a data disk."""
+
 from sqlalchemy import text
 from sqlalchemy.engine import Engine, Connection
 
@@ -58,9 +60,12 @@ def ensure_user_columns(engine: Engine) -> None:
             conn.execute(text("ALTER TABLE users ADD COLUMN trial_started_at DATETIME"))
         if not _has_column_sqlite(conn, "users", "trial_ends_at"):
             conn.execute(text("ALTER TABLE users ADD COLUMN trial_ends_at DATETIME"))
-        for column in ("stripe_customer_id", "stripe_subscription_id", "subscription_status"):
+        for column in ("stripe_customer_id", "stripe_subscription_id", "subscription_status", "team_owner_id"):
             if not _has_column_sqlite(conn, "users", column):
                 conn.execute(text(f"ALTER TABLE users ADD COLUMN {column} VARCHAR"))
+        for column in ("auth0_id", "stripe_customer_id", "stripe_subscription_id"):
+            conn.execute(text(f"CREATE UNIQUE INDEX IF NOT EXISTS ix_users_{column} ON users ({column})"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_users_team_owner_id ON users (team_owner_id)"))
 
 
 def ensure_library_reference_columns(engine: Engine) -> None:

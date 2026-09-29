@@ -50,7 +50,7 @@ class MaudeAdverseEvent(Base):
     manufacturer = Column(Text, nullable=True)
     brand_name = Column(Text, nullable=True)
     generic_name = Column(Text, nullable=True)
-    date_received = Column(Date, nullable=True, index=True)
+    date_received = Column(Date, nullable=True)
     product_code = Column(String(64), nullable=True, index=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

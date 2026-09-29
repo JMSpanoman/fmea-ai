@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session
 from models.project import Project
 from schemas.project import ProjectCreate, ProjectUpdate
 from typing import List, Optional
+from fastapi import HTTPException
+from business_logic.team_access import workspace_owner_id, lock_owner
 import uuid
 
 
@@ -33,9 +35,16 @@ def _next_sequential_project_name(db: Session, *, user_id: str, prefix: str = "F
             continue
     return f"{prefix}-{max_n + 1}"
 
-def create_project(db: Session, project: ProjectCreate, user_id: str) -> Project:
+def create_project(db: Session, project: ProjectCreate, user_id: str, *, commit: bool = True) -> Project:
     """Create a new project"""
     try:
+        user_id = workspace_owner_id(db, user_id)
+        owner = lock_owner(db, user_id)
+        if owner.trial_ends_at or owner.subscription_status:
+            from auth.plan import get_user_plan, enforce_trial_project_limit
+            if get_user_plan(owner) != "pro":
+                raise HTTPException(403, "Upgrade to create a project")
+            enforce_trial_project_limit(owner, db.query(Project).filter(Project.user_id == user_id).count())
         name = (project.name or "").strip()
         if not name:
             name = _next_sequential_project_name(db, user_id=user_id, prefix="FMEA")
@@ -47,7 +56,10 @@ def create_project(db: Session, project: ProjectCreate, user_id: str) -> Project
             user_id=user_id
         )
         db.add(db_project)
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
         db.refresh(db_project)
         return db_project
     except Exception as e:
@@ -59,13 +71,13 @@ def create_project(db: Session, project: ProjectCreate, user_id: str) -> Project
 
 def get_projects_by_user(db: Session, user_id: str) -> List[Project]:
     """Get all projects for a user"""
-    return db.query(Project).filter(Project.user_id == user_id).all()
+    return db.query(Project).filter(Project.user_id == workspace_owner_id(db, user_id)).all()
 
 def get_project(db: Session, project_id: str, user_id: str) -> Optional[Project]:
     """Get a specific project by ID for a user"""
     return db.query(Project).filter(
         Project.id == project_id,
-        Project.user_id == user_id
+        Project.user_id == workspace_owner_id(db, user_id)
     ).first()
 
 

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, status, UploadFile, File
+from fastapi import APIRouter, FastAPI, HTTPException, Depends, status, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -33,7 +33,7 @@ if os.getenv("ENVIRONMENT", "").lower() not in ("production", "prod"):
 from database import get_db
 from models.project import Project
 from models.user import BillingEvent
-from routers import billing
+from routers import billing, team
 from models.fmea import FMEARow
 # Legacy models (commented out for Phase 1)
 # from models.change_control import ChangeControl
@@ -51,6 +51,7 @@ from crud import change_control as change_control_crud
 from crud import nonconformance as nonconformance_crud
 
 from auth.dependencies import get_current_user
+from auth.plan import require_pro
 from routers import ai, auth, capa, change_control, mitigations, nonconformance, projects, tracibility, templates
 from routes.mastercontrol import router as mastercontrol_router
 # Phase 1 routers
@@ -144,22 +145,12 @@ async def lifespan(app: FastAPI):
     from models.postmarket_intelligence import PostmarketFmeaEvidenceLink, PostmarketProjectRun  # noqa: F401
     from models.risk_acceptability_criteria import RiskAcceptabilityCriteria, OrganizationRiskCriteriaConfig, ProjectRiskCriteriaOverride  # noqa: F401 - register tables
     from models.project_risk_criteria import ProjectRiskCriteria, RuleEvaluationAudit  # noqa: F401 - rule engine tables
-    from sqlalchemy.exc import OperationalError
-
-    try:
-        Base.metadata.create_all(bind=engine)
-        logger.info("Database tables initialized")
-    except OperationalError as e:
-        # SQLite can raise if an index/table already exists from a prior run or manual migration.
-        err = str(e).lower()
-        if "already exists" in err or "duplicate" in err:
-            logger.warning("Database create_all skipped (existing object): %s", e)
-        else:
-            raise
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables initialized")
 
     # SQLite runtime migrations (add missing columns on existing tables)
     try:
-        from db.runtime_migrations import ensure_component_columns, ensure_user_columns, ensure_library_reference_columns, ensure_hazard_generation_rule_columns, ensure_suggestion_set_project_id, ensure_hazard_library_columns, ensure_risk_acceptability_columns, ensure_hazard_analysis_item_columns, ensure_fmea_rule_engine_columns, ensure_fmea_postmarket_columns, ensure_project_profile_governance_columns, ensure_capa_workflow_schema, ensure_pms_generated_plans_schema
+        from schema_migrations import ensure_component_columns, ensure_user_columns, ensure_library_reference_columns, ensure_hazard_generation_rule_columns, ensure_suggestion_set_project_id, ensure_hazard_library_columns, ensure_risk_acceptability_columns, ensure_hazard_analysis_item_columns, ensure_fmea_rule_engine_columns, ensure_fmea_postmarket_columns, ensure_project_profile_governance_columns, ensure_capa_workflow_schema, ensure_pms_generated_plans_schema
         ensure_user_columns(engine)
         ensure_component_columns(engine)
         ensure_library_reference_columns(engine)
@@ -175,6 +166,7 @@ async def lifespan(app: FastAPI):
         ensure_pms_generated_plans_schema(engine)
     except Exception as mig_err:
         logger.error(f"Runtime migrations failed: {mig_err}", exc_info=True)
+        raise
 
     # Cleanup expired filesystem artifacts (best-effort, safe for multi-user)
     try:
@@ -233,92 +225,106 @@ app = FastAPI(
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(billing.router, prefix="/billing", tags=["Billing"])
+app.include_router(team.router)
+
+def require_customer_access(user=Depends(get_current_user)):
+    if os.getenv("ENABLE_SELF_SERVICE_TRIALS", "false").lower() == "true":
+        require_pro(user)
+    return user
+
+
+# All product APIs share the customer entitlement check; account and billing
+# routes remain available after expiry so a customer can renew or cancel.
+customer_routes = APIRouter(dependencies=[Depends(require_customer_access)])
 
 # Phase 1 routers (primary)
-app.include_router(projects_phase1.router, tags=["Projects"])
-app.include_router(components.router, tags=["Components"])
-app.include_router(project_profile.router, tags=["Project Profile"])
-app.include_router(project_initialize.router, tags=["Project Initialize"])
-app.include_router(fmea_phase1.router, tags=["FMEA"])
-app.include_router(ai_phase1.router, tags=["AI Phase 1"])
-app.include_router(export.router, tags=["Export"])
+customer_routes.include_router(projects_phase1.router, tags=["Projects"])
+customer_routes.include_router(components.router, tags=["Components"])
+customer_routes.include_router(project_profile.router, tags=["Project Profile"])
+customer_routes.include_router(project_initialize.router, tags=["Project Initialize"])
+customer_routes.include_router(fmea_phase1.router, tags=["FMEA"])
+customer_routes.include_router(ai_phase1.router, tags=["AI Phase 1"])
+customer_routes.include_router(export.router, tags=["Export"])
 
 # Phase 2 routers
-app.include_router(design_controls.router, tags=["Design Controls"])
-app.include_router(vv.router, tags=["V&V"])
-app.include_router(capa_phase2.router, tags=["CAPA Phase 2"])
-app.include_router(pms.router, tags=["PMS"])
-app.include_router(traceability.router, tags=["Traceability"])
-app.include_router(ai_phase2.router, tags=["AI Phase 2"])
+customer_routes.include_router(design_controls.router, tags=["Design Controls"])
+customer_routes.include_router(vv.router, tags=["V&V"])
+customer_routes.include_router(capa_phase2.router, tags=["CAPA Phase 2"])
+customer_routes.include_router(pms.router, tags=["PMS"])
+customer_routes.include_router(traceability.router, tags=["Traceability"])
+customer_routes.include_router(ai_phase2.router, tags=["AI Phase 2"])
 
 # Phase 3 routers
-app.include_router(document_control.router, tags=["Document Control"])
-app.include_router(document_guidance.router, tags=["Document Guidance"])
-app.include_router(traceability_impact.router, tags=["Traceability & Impact"])
-app.include_router(training_phase3.router, tags=["Training Phase 3"])
-app.include_router(change_control_phase3.router, tags=["Change Control Phase 3"])
-app.include_router(audit_phase3.router, tags=["Audit Phase 3"])
-app.include_router(supplier_phase3.router, tags=["Supplier Quality Phase 3"])
-app.include_router(ncr_phase3.router, tags=["NCR Phase 3"])
-app.include_router(complaint_phase3.router, tags=["Complaint Handling Phase 3"])
-app.include_router(equipment_phase3.router, tags=["Equipment Phase 3"])
-app.include_router(quality_event_phase3.router, tags=["Quality Events Phase 3"])
-app.include_router(approval_phase3.router, tags=["Approvals Phase 3"])
-app.include_router(ai_phase3.router, tags=["AI Phase 3"])
+customer_routes.include_router(document_control.router, tags=["Document Control"])
+customer_routes.include_router(document_guidance.router, tags=["Document Guidance"])
+customer_routes.include_router(traceability_impact.router, tags=["Traceability & Impact"])
+customer_routes.include_router(training_phase3.router, tags=["Training Phase 3"])
+customer_routes.include_router(change_control_phase3.router, tags=["Change Control Phase 3"])
+customer_routes.include_router(audit_phase3.router, tags=["Audit Phase 3"])
+customer_routes.include_router(supplier_phase3.router, tags=["Supplier Quality Phase 3"])
+customer_routes.include_router(ncr_phase3.router, tags=["NCR Phase 3"])
+customer_routes.include_router(complaint_phase3.router, tags=["Complaint Handling Phase 3"])
+customer_routes.include_router(equipment_phase3.router, tags=["Equipment Phase 3"])
+customer_routes.include_router(quality_event_phase3.router, tags=["Quality Events Phase 3"])
+customer_routes.include_router(approval_phase3.router, tags=["Approvals Phase 3"])
+customer_routes.include_router(ai_phase3.router, tags=["AI Phase 3"])
 
 # Risk Items router
-app.include_router(risk_items.router, tags=["Risk Items"])
+customer_routes.include_router(risk_items.router, tags=["Risk Items"])
 # Risk Management Plan router
-app.include_router(risk_management_plan.router, tags=["Risk Management Plan"])
+customer_routes.include_router(risk_management_plan.router, tags=["Risk Management Plan"])
 # Risk Management File router
-app.include_router(rmf.router, tags=["Risk Management File"])
+customer_routes.include_router(rmf.router, tags=["Risk Management File"])
 # Hazard Analysis router
-app.include_router(hazard_analysis.router, tags=["Hazard Analysis"])
+customer_routes.include_router(hazard_analysis.router, tags=["Hazard Analysis"])
 # Residual Risk Evaluation router
-app.include_router(residual_risk.router, tags=["Residual Risk Evaluation"])
+customer_routes.include_router(residual_risk.router, tags=["Residual Risk Evaluation"])
 # Risk Control Measures Documentation router
-app.include_router(risk_controls_doc.router, tags=["Risk Control Measures Documentation"])
+customer_routes.include_router(risk_controls_doc.router, tags=["Risk Control Measures Documentation"])
 # Reports - Risk Control Measures router
-app.include_router(reports_risk_control_measures.router, tags=["Reports - Risk Control Measures"])
+customer_routes.include_router(reports_risk_control_measures.router, tags=["Reports - Risk Control Measures"])
 # Reports - Design Inputs router
-app.include_router(reports_design_inputs.router, tags=["Reports - Design Inputs"])
+customer_routes.include_router(reports_design_inputs.router, tags=["Reports - Design Inputs"])
 # PMS Signal router
-app.include_router(pms_signal.router, tags=["PMS Signals"])
-app.include_router(pms_plan_generator.router, tags=["PMS Plan Generator"])
-app.include_router(postmarket.router, tags=["Post-Market — FDA Ingestion"])
+customer_routes.include_router(pms_signal.router, tags=["PMS Signals"])
+customer_routes.include_router(pms_plan_generator.router, tags=["PMS Plan Generator"])
+customer_routes.include_router(postmarket.router, tags=["Post-Market — FDA Ingestion"])
 # Same routes under /api/postmarket/... for clients whose base URL is .../api (direct to uvicorn).
 # Without this, POST .../api/postmarket/report 404s because FastAPI mounts postmarket at /postmarket, not /api/postmarket.
-app.include_router(
+customer_routes.include_router(
     postmarket.router,
     prefix="/api",
     tags=["Post-Market — FDA Ingestion"],
 )
 # Reports - V&V Evidence router
-app.include_router(reports_vv_evidence.router, tags=["Reports - V&V Evidence"])
+customer_routes.include_router(reports_vv_evidence.router, tags=["Reports - V&V Evidence"])
 # Risk Knowledge Base (Hazard, Harm, Risk Control, Verification libraries)
-app.include_router(risk_knowledge_base.router)
+customer_routes.include_router(risk_knowledge_base.router)
 # SmartRisk Device Architecture (hazard generation engine Phase 1)
-app.include_router(device_architecture.router)
+customer_routes.include_router(device_architecture.router)
 # SmartRisk Hazard Generation Rules (Phase 2) + generate-hazards in device_architecture
-app.include_router(hazard_generation_rules.router)
+customer_routes.include_router(hazard_generation_rules.router)
 # Phase 4: Structured risk outputs from project_risk_items
-app.include_router(project_risk_outputs.router)
+customer_routes.include_router(project_risk_outputs.router)
 # Device-scoped risk outputs and generated documents (API)
-app.include_router(devices_api.router)
-app.include_router(generated_documents_api.router)
-app.include_router(risk_acceptability_criteria_api.router)
-app.include_router(risk_acceptability_criteria_api.router_org)
-app.include_router(risk_rule_engine_api.router)
+customer_routes.include_router(devices_api.router)
+customer_routes.include_router(generated_documents_api.router)
+customer_routes.include_router(risk_acceptability_criteria_api.router)
+customer_routes.include_router(risk_acceptability_criteria_api.router_org)
+customer_routes.include_router(risk_rule_engine_api.router)
 
-# Legacy routers (for backward compatibility - can be removed later)
-app.include_router(ai.router, prefix="/fmea", tags=["AI (Legacy)"])
-app.include_router(tracibility.router, prefix="/api", tags=["Tracibility"])
-app.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
-app.include_router(mitigations.router, prefix="/fmea", tags=["Mitigations"])
-app.include_router(nonconformance.router, prefix="/fmea", tags=["Non-Conformance"])
-app.include_router(capa.router, prefix="/fmea", tags=["CAPA"])
-app.include_router(change_control.router, prefix="/fmea", tags=["Change Control"])
-app.include_router(mastercontrol_router)
+# Legacy routers: authenticated customers follow the same trial/subscription rules.
+customer_routes.include_router(ai.router, prefix="/fmea", tags=["AI (Legacy)"])
+customer_routes.include_router(tracibility.router, prefix="/api", tags=["Tracibility"])
+customer_routes.include_router(templates.router, prefix="/api/templates", tags=["Templates"])
+customer_routes.include_router(mitigations.router, prefix="/fmea", tags=["Mitigations"])
+customer_routes.include_router(nonconformance.router, prefix="/fmea", tags=["Non-Conformance"])
+customer_routes.include_router(capa.router, prefix="/fmea", tags=["CAPA"])
+customer_routes.include_router(change_control.router, prefix="/fmea", tags=["Change Control"])
+customer_routes.include_router(mastercontrol_router)
+
+
+app.include_router(customer_routes)
 
 
 # CORS middleware - must be added before other middleware
@@ -464,7 +470,7 @@ def create_change_control(
     project_id: int,
     change_control: change_control_schemas.ChangeControlCreate,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_customer_access)
 ):
     """Create a new change control entry for a project"""
     try:
@@ -478,7 +484,7 @@ def create_change_control(
 def get_change_controls(
     project_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_customer_access)
 ):
     """Get all change control entries for a project"""
     try:
@@ -518,7 +524,7 @@ def get_change_control(
     project_id: int,
     change_control_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_customer_access)
 ):
     """Get a specific change control entry by ID"""
     try:
@@ -539,7 +545,7 @@ def update_change_control(
     change_control_id: int,
     change_control: change_control_schemas.ChangeControlUpdate,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_customer_access)
 ):
     """Update a change control entry"""
     try:
@@ -559,7 +565,7 @@ def delete_change_control(
     project_id: int,
     change_control_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_customer_access)
 ):
     """Delete a change control entry"""
     try:
@@ -579,7 +585,7 @@ def create_nonconformance(
     project_id: int,
     nonconformance: nonconformance_schemas.NonConformanceCreate,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_customer_access)
 ):
     """Create a new Non-Conformance entry"""
     try:
@@ -594,7 +600,7 @@ def create_nonconformance(
 def get_nonconformances(
     project_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_customer_access)
 ):
     """Get all Non-Conformance entries for a project"""
     try:
@@ -640,7 +646,7 @@ def get_nonconformances(
 @app.post("/ai/suggestions")
 def get_ai_suggestions(
     request: fmea_schemas.AISuggestionRequest,
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_customer_access)
 ):
     """Get AI suggestions for FMEA entries"""
     try:
@@ -657,7 +663,7 @@ def get_ai_suggestions(
 def export_fmea_csv(
     project_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_customer_access)
 ):
     """Export FMEA data as CSV"""
     try:
@@ -672,7 +678,7 @@ def export_fmea_csv(
 def export_fmea_pdf(
     project_id: int,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_customer_access)
 ):
     """Export FMEA data as PDF"""
     try:
@@ -688,7 +694,7 @@ def import_fmea_csv(
     project_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user = Depends(require_customer_access)
 ):
     """Import FMEA data from a CSV file"""
     try:

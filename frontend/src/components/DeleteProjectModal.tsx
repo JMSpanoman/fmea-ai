@@ -1,4 +1,4 @@
-import { getStoredAccessToken } from '../axios';
+import { ensureValidToken } from '../axios';
 import React, { useState } from 'react';
 import { resolveApiBaseUrl } from '../config/apiBaseUrl';
 import './DeleteProjectModal.css';
@@ -34,7 +34,7 @@ const DeleteProjectModal: React.FC<DeleteProjectModalProps> = ({
     setError('');
 
     try {
-      const token = getStoredAccessToken();
+      const token = await ensureValidToken();
       
       if (!token) {
         setError('Authentication required. Please log in again.');

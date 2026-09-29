@@ -1,4 +1,4 @@
-import { getStoredAccessToken } from '../../axios';
+import { ensureValidToken } from '../../axios';
 import React from 'react';
 import { Box, Button, ButtonGroup } from '@mui/material';
 import { Download, PictureAsPdf, TableChart } from '@mui/icons-material';
@@ -12,7 +12,7 @@ interface ExportControlsProps {
 const ExportControls: React.FC<ExportControlsProps> = ({ projectId, projectName }) => {
   const handleExportCSV = async () => {
     try {
-      const token = getStoredAccessToken();
+      const token = await ensureValidToken();
       const url = exportApi.csv(projectId);
       
       const response = await fetch(url, {
@@ -40,7 +40,7 @@ const ExportControls: React.FC<ExportControlsProps> = ({ projectId, projectName 
 
   const handleExportPDF = async () => {
     try {
-      const token = getStoredAccessToken();
+      const token = await ensureValidToken();
       const url = exportApi.pdf(projectId);
       
       const response = await fetch(url, {

@@ -24,7 +24,7 @@ const api: AxiosInstance = axios.create({
 });
 
 // Helper function to get a fresh token via dev-login
-async function ensureValidToken(): Promise<string | null> {
+export async function ensureValidToken(): Promise<string | null> {
   if (customerAuthEnabled) {
     return getCustomerAccessToken();
   }
@@ -138,4 +138,4 @@ api.interceptors.response.use(
 );
 
 export default api;
-export { API_BASE_URL }; 
+export { API_BASE_URL };

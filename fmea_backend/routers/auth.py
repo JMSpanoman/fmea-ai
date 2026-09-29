@@ -413,4 +413,4 @@ def activate_user_account(
             detail="User not found"
         )
     
-    return {"message": "User activated successfully"} 
+    return {"message": "User activated successfully"}

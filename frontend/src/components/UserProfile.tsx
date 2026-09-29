@@ -1,4 +1,4 @@
-import { getStoredAccessToken } from '../axios';
+import { ensureValidToken } from '../axios';
 import React, { useState, useEffect } from 'react';
 import { resolveApiBaseUrl } from '../config/apiBaseUrl';
 import './UserProfile.css';
@@ -68,7 +68,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onLogout }) => {
     setSuccess('');
 
     try {
-      const token = getStoredAccessToken();
+      const token = await ensureValidToken();
       const response = await fetch(`${API_BASE_URL}/auth/me`, {
         method: 'PUT',
         headers: {

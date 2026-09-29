@@ -37,7 +37,6 @@ const FmeaFormWrapper: React.FC<FmeaFormWrapperProps> = ({ selectedProject }) =>
   useEffect(() => {
     console.log('FmeaFormWrapper mounted');
     console.log('window.fmeaApi available:', !!window.fmeaApi);
-    console.log('Authentication token:', getStoredAccessToken());
     
     // Wait a bit for fmeaApi to be available
     const checkFmeaApi = () => {
@@ -270,8 +269,6 @@ const FmeaFormWrapper: React.FC<FmeaFormWrapperProps> = ({ selectedProject }) =>
       // Always attempt to login first to ensure we have a fresh token
       console.log('Attempting to login...');
       const loginResponse = await window.fmeaApi.devLogin();
-      console.log('Login successful, token set:', window.fmeaApi.token);
-      console.log('Login response:', loginResponse);
       
       // Double-check token is set
       if (!window.fmeaApi.token) {
@@ -288,7 +285,6 @@ const FmeaFormWrapper: React.FC<FmeaFormWrapperProps> = ({ selectedProject }) =>
       }
       
       console.log('Making projects request with token:', window.fmeaApi.token ? 'Token present' : 'No token');
-      console.log('Token value:', window.fmeaApi.token);
       const response = await window.fmeaApi.getProjects();
       console.log('Projects response:', response);
       
@@ -816,4 +812,4 @@ const FmeaFormWrapper: React.FC<FmeaFormWrapperProps> = ({ selectedProject }) =>
   );
 };
 
-export default FmeaFormWrapper; 
+export default FmeaFormWrapper;

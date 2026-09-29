@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime
+from sqlalchemy import Column, String, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from database import Base
@@ -22,6 +22,7 @@ class User(Base):
     stripe_customer_id = Column(String, unique=True, nullable=True, index=True)
     stripe_subscription_id = Column(String, unique=True, nullable=True, index=True)
     subscription_status = Column(String, nullable=True)
+    team_owner_id = Column(String, ForeignKey("users.id"), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Phase 3 relationships
@@ -33,3 +34,14 @@ class BillingEvent(Base):
     __tablename__ = "billing_events"
     id = Column(String, primary_key=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class TeamInvitation(Base):
+    __tablename__ = "team_invitations"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    owner_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    email = Column(String, nullable=False)
+    token_hash = Column(String, nullable=False, unique=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    accepted_at = Column(DateTime(timezone=True), nullable=True)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)

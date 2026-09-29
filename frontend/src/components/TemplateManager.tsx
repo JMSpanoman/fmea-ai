@@ -1,4 +1,4 @@
-import { getStoredAccessToken } from '../axios';
+import { ensureValidToken } from '../axios';
 import React, { useState, useEffect } from 'react';
 
 interface TemplateInfo {
@@ -114,7 +114,7 @@ Version: {{ item.version }}
   const loadTemplates = async () => {
     setIsLoading(true);
     try {
-      const token = getStoredAccessToken();
+      const token = await ensureValidToken();
       const response = await fetch('/api/templates/list', {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
@@ -169,7 +169,7 @@ Version: {{ item.version }}
     formData.append('template_type', templateType);
 
     try {
-      const token = getStoredAccessToken();
+      const token = await ensureValidToken();
       const response = await fetch('/api/templates/upload', {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -202,7 +202,7 @@ Version: {{ item.version }}
 
   const handleDownload = async (filename: string) => {
     try {
-      const token = getStoredAccessToken();
+      const token = await ensureValidToken();
       const response = await fetch(`/api/templates/download/${filename}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
@@ -232,7 +232,7 @@ Version: {{ item.version }}
     }
 
     try {
-      const token = getStoredAccessToken();
+      const token = await ensureValidToken();
       const response = await fetch(`/api/templates/delete/${filename}`, {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,

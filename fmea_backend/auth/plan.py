@@ -12,7 +12,13 @@ from datetime import datetime, timezone
 
 def get_user_plan(user: User) -> str:
     """Resolve user's plan. Default to lite if not set."""
+    if getattr(user, "team_owner_id", None):
+        owner = getattr(user, "billing_owner", None)
+        return get_user_plan(owner) if owner is not None else PLAN_LITE
     plan = getattr(user, "plan", None) or PLAN_LITE
+    subscription_status = getattr(user, "subscription_status", None)
+    if subscription_status and subscription_status != "active":
+        return PLAN_LITE
     if str(plan).lower() == PLAN_PRO and getattr(user, "subscription_status", None) in (None, "active", "trialing"):
         return PLAN_PRO
     end = getattr(user, "trial_ends_at", None)

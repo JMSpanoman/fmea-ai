@@ -121,7 +121,6 @@ const CapaPage: React.FC = () => {
     try {
       const api = window.fmeaApi;
       console.log('Fetching projects...');
-      console.log('fmeaApi token:', api.token);
       console.log('fmeaApi available:', !!api);
       
       const response = await api.getProjects();
@@ -603,4 +602,4 @@ declare global {
   interface Window {
     fmeaApi: any;
   }
-} 
+}

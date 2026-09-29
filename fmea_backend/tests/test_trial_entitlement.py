@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy import create_engine, text
 
 from auth.plan import get_user_plan, enforce_trial_project_limit
-from db.runtime_migrations import ensure_user_columns
+from schema_migrations import ensure_user_columns
 
 
 def test_trial_entitlement_expires_at_14_days_and_does_not_rewrite_paid_plan():
