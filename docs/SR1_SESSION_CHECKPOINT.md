@@ -1,6 +1,6 @@
 # SR1 saved checkpoint — 30 September 2026, Athens
 
-The owner requested that all completed work be saved. This checkpoint records verified progress, updated after the tester completed the declined and successful sandbox payment cases.
+The owner requested that all completed work be saved. This checkpoint records verified progress, updated after the tester completed the declined and successful sandbox payment cases and reported an unresponsive Check access button.
 
 ## Saved locations
 
@@ -9,7 +9,7 @@ The owner requested that all completed work be saved. This checkpoint records ve
 - Auth0: SmartRisk 1 SPA, API, rotating refresh-token configuration, verified-email Action, email/password connection, and production/sandbox allowed origins are saved in the development tenant.
 - Stripe sandbox: EUR monthly/yearly prices, customer portal configuration, and enabled signed webhook endpoint are saved. Live billing is disabled and the live catalog remains inactive.
 
-Before adding this documentation checkpoint, all 742 local source files matched their GitHub branch blob hashes, with no missing or extra source files. Both running services use application commit `c5021e2`; later commits contain deployment configuration and documentation updates, with the matching billing settings already applied through Render.
+Before the Check access correction, all 743 local source files matched their GitHub branch blob hashes, with no missing or extra source files. The backend remains on application commit `c5021e2`, with the matching billing settings already applied through Render. This checkpoint includes a frontend-only billing-page correction, to be deployed explicitly to the sandbox because automatic deploys are off.
 
 ## Current offer
 
@@ -33,9 +33,13 @@ Before adding this documentation checkpoint, all 742 local source files matched 
 | Subscription | Stripe confirms an active sandbox subscription, one unit of the approved monthly price, linked to the app account |
 | Stripe webhook delivery | Three Stripe-origin webhook requests returned 200 at 23:08:46–23:08:47 UTC; no backend errors in this payment window |
 | Webhook configuration | Enabled Stripe endpoint; signed synthetic probe/replay accepted, invalid signature and wrong-mode events rejected |
-| Local regression checks | 19 backend and five frontend tests passed; frontend build passed; baseline typecheck issues remain |
+| Local regression checks | 19 backend and eight frontend tests passed; frontend build passed; baseline typecheck issues remain |
 
 At the updated checkpoint, the Checkout Session is **complete and paid**, and Stripe confirms an **active** sandbox Team subscription. The failed charge was recorded at 2026-09-29 23:08:18 UTC and the successful charge at 23:08:43 UTC. The application's webhook accepted all three observed Stripe-origin requests. The tester still needs to confirm that the SR1 UI displays active Team access and that saved work remains available. Successful webhook delivery alone is not direct observation of the account's resulting application permissions.
+
+## Check access correction
+
+The tester reported that Check access was visible but not clickable. Backend status requests were returning 200. The button shared the busy state used while opening Stripe, and a completed check had no visible feedback. The correction gives access checks a separate busy state, displays Checking access and a completion message, releases controls after navigation attempts, and refreshes status when Safari restores a cached billing page. Concurrent checks share one request; the account profile is refreshed only when its plan changes. Regression checks cover progress, unchanged and changed plans, the cached return, a pending Stripe action, and recovery after a failed status request. The tester's browser confirmation remains pending after deployment.
 
 ## Next acceptance steps
 

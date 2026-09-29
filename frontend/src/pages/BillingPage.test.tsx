@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, expect, test, vi } from 'vitest';
 import BillingPage from './BillingPage';
@@ -7,7 +7,7 @@ import TeamPage from './TeamPage';
 
 const mocks = vi.hoisted(() => ({ get: vi.fn(), post: vi.fn(), del: vi.fn(), refresh: vi.fn() }));
 vi.mock('../axios', () => ({ default: { get: mocks.get, post: mocks.post, delete: mocks.del } }));
-vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ refresh: mocks.refresh }) }));
+vi.mock('../contexts/AuthContext', () => ({ useAuth: () => ({ refresh: mocks.refresh, user: { plan: 'pro' } }) }));
 const status = { plan: 'pro', subscription_status: null, trial_ends_at: '2026-10-13T12:00:00Z', is_billing_owner: true, has_billing_account: false };
 
 beforeEach(() => {
@@ -32,6 +32,7 @@ test('past-due owner can reach portal and cannot buy a second subscription', asy
   show(<BillingPage />);
   expect(await screen.findByRole('button', { name: 'Manage subscription' })).toBeVisible();
   expect(screen.queryByRole('button', { name: 'Choose monthly' })).toBeNull();
+  expect(mocks.refresh).toHaveBeenCalledTimes(1);
 });
 
 test('team members cannot see checkout or portal controls', async () => {
@@ -47,6 +48,51 @@ test('success URL alone does not say payment succeeded', async () => {
   show(<BillingPage />);
   await screen.findByText('Subscription: No paid subscription.');
   expect(screen.getByRole('status')).toHaveTextContent('Waiting for payment confirmation');
+});
+
+test('manual access check shows progress and a result without repeatedly refreshing an unchanged account', async () => {
+  const paid = { ...status, subscription_status: 'active', has_billing_account: true };
+  mocks.get.mockResolvedValue({ data: paid });
+  show(<BillingPage />);
+  await screen.findByText('Subscription: active.');
+  let resolveCheck!: (value: unknown) => void;
+  mocks.get.mockImplementationOnce(() => new Promise(resolve => { resolveCheck = resolve; }));
+  fireEvent.click(screen.getByRole('button', { name: 'Check access' }));
+  expect(screen.getByRole('button', { name: 'Checking access…' })).toBeDisabled();
+  await act(async () => { resolveCheck({ data: paid }); });
+  expect(await screen.findByText('Access check complete.')).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Check access' })).toBeEnabled();
+  expect(mocks.get).toHaveBeenCalledTimes(2);
+  expect(mocks.refresh).not.toHaveBeenCalled();
+});
+
+test('access check remains available while a Stripe action is pending and after a cached browser return', async () => {
+  let rejectAction!: (reason: unknown) => void;
+  mocks.post.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectAction = reject; }));
+  show(<BillingPage />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Choose monthly' }));
+  expect(screen.getByRole('button', { name: 'Choose monthly' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Check access' })).toBeEnabled();
+  mocks.get.mockResolvedValue({ data: { ...status, subscription_status: 'active', has_billing_account: true } });
+  const restored = new Event('pageshow');
+  Object.defineProperty(restored, 'persisted', { value: true });
+  fireEvent(window, restored);
+  await screen.findByText('Subscription: active.');
+  expect(screen.getByRole('button', { name: 'Manage subscription' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Check access' })).toBeEnabled();
+  await act(async () => { rejectAction(new Error('Previous navigation ended')); });
+});
+
+test('an access-check failure releases its button and a retry can recover', async () => {
+  show(<BillingPage />);
+  await screen.findByText('Subscription: No paid subscription.');
+  mocks.get.mockRejectedValueOnce(new Error('Temporary connection failure'));
+  fireEvent.click(screen.getByRole('button', { name: 'Check access' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Unable to check your subscription');
+  expect(screen.getByRole('button', { name: 'Check access' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Check access' }));
+  expect(await screen.findByText('Access check complete.')).toBeVisible();
+  expect(screen.queryByRole('alert')).toBeNull();
 });
 
 test('invitation survives the signup redirect and is consumed only on success', async () => {
