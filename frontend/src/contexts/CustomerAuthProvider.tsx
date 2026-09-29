@@ -60,6 +60,9 @@ export function CustomerAuthProvider({ children }: { children: React.ReactNode }
   return <Auth0Provider
     domain={import.meta.env.VITE_AUTH0_DOMAIN}
     clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}
+    cacheLocation="memory"
+    useRefreshTokens
+    useRefreshTokensFallback
     authorizationParams={{ redirect_uri: window.location.origin, audience: import.meta.env.VITE_AUTH0_AUDIENCE, scope: 'openid profile email' }}
     onRedirectCallback={(appState) => {
       const path = appState?.returnTo;

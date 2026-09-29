@@ -1,0 +1,89 @@
+# Isolated SR1 acceptance environment. Deploy this file from
+# feature/sr1-trial-foundation, not the existing production render.yaml.
+# Backend Starter is required for the persistent SQLite disk. Frontend is free.
+# Billing stays disabled until the signed webhook is configured and verified.
+# Confirm the assigned service URLs before allowing signup; Render can add suffixes.
+services:
+  - type: web
+    name: sr1-sandbox-backend-dczh
+    runtime: docker
+    dockerfilePath: ./Dockerfile.backend
+    dockerContext: .
+    branch: feature/sr1-trial-foundation
+    autoDeployTrigger: "off"
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+    disk:
+      name: sr1-sandbox-sqlite
+      mountPath: /app/db
+      sizeGB: 1
+    envVars:
+      - key: ENVIRONMENT
+        value: staging
+      - key: DATABASE_URL
+        value: sqlite:////app/db/fmea.db
+      - key: AUTH0_DOMAIN
+        value: dev-h8xzqvip220o54ml.us.auth0.com
+      - key: API_AUDIENCE
+        value: https://smartrisk.fotonconsulting.com/api
+      - key: ENABLE_SELF_SERVICE_TRIALS
+        value: "true"
+      - key: ALLOW_DEV_LOGIN
+        value: "false"
+      - key: SMARTRISK_DEV_FORCE_PRO
+        value: "false"
+      - key: DEMO_ENSURE_PROJECT
+        value: "false"
+      - key: DEMO_REASSIGN_PROJECT
+        value: "false"
+      - key: CORS_ORIGINS
+        value: https://sr1-sandbox-frontend-dczh.onrender.com
+      - key: SR1_FRONTEND_ORIGIN
+        value: https://sr1-sandbox-frontend-dczh.onrender.com
+      - key: ENABLE_SR1_BILLING
+        value: "false"
+      - key: ENABLE_LIVE_BILLING
+        value: "false"
+      - key: STRIPE_RESTRICTED_KEY
+        sync: false
+      - key: STRIPE_PRICE_MONTHLY
+        value: price_1UL7ngRsvAk8lB5OEtxiHaEQ
+      - key: STRIPE_PRICE_YEARLY
+        value: price_1UL7nuRsvAk8lB5Oi39rKKgs
+      - key: STRIPE_PORTAL_CONFIGURATION
+        value: bpc_1UL7oQRsvAk8lB5OWrMgCkZn
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: GUNICORN_TIMEOUT
+        value: "120"
+      - key: PORT
+        value: "8000"
+
+  - type: web
+    name: sr1-sandbox-frontend-dczh
+    runtime: docker
+    dockerfilePath: ./Dockerfile.frontend
+    dockerContext: .
+    branch: feature/sr1-trial-foundation
+    autoDeployTrigger: "off"
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: BACKEND_URL
+        value: https://sr1-sandbox-backend-dczh.onrender.com
+      - key: VITE_AUTH0_DOMAIN
+        value: dev-h8xzqvip220o54ml.us.auth0.com
+      - key: VITE_AUTH0_CLIENT_ID
+        value: HqcPZuoP467wPOWFTWa2tpaTN18Bwx3B
+      - key: VITE_AUTH0_AUDIENCE
+        value: https://smartrisk.fotonconsulting.com/api
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"

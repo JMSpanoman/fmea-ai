@@ -47,7 +47,15 @@ Before deployment:
 
 Create/verify a Single Page Application and API identifier. The API uses RS256. Configure the customer origin as **Allowed Callback URLs**, **Allowed Logout URLs**, and **Allowed Web Origins**. For production this is `https://fmea-frontend-dczh.onrender.com`; add the exact sandbox origin separately.
 
-Deploy `docs/auth0/sr1-email-claims.js` as an Auth0 post-login Action and attach it to the Login flow. The access token must include the namespaced email and `email_verified: true`. A user verifies their email and signs in again before the 14-day trial starts. Do not substitute an unverified client email for these claims. The owner believes Auth0 has not been set up; tenant/application access remains unverified. Auth0 is available in the Stripe Projects catalog, but provisioning is blocked by this execution environment's unavailable credential store. Use the Auth0 Dashboard to establish account access before configuring the SPA, API, and Action.
+Auth0 access was connected and the configuration below was verified on 2026-09-29:
+
+- The SmartRisk 1 first-party Single Page Application uses Authorization Code flow, RS256, and rotating refresh tokens. Browser tokens remain in memory.
+- The SmartRisk 1 API has identifier `https://smartrisk.fotonconsulting.com/api`, RS256, a one-hour access-token lifetime, and offline access enabled for refresh tokens.
+- Email/password signup is enabled for SR1. The default Google development connection is disabled for this application; other applications are unchanged.
+- `docs/auth0/sr1-email-claims.js` is deployed on Node 22 and attached to the post-login flow. The backend requires its namespaced email and `email_verified: true`. Users verify their email and sign in again before their 14-day trial starts.
+- The production frontend origin is registered for callbacks, logout, and web origins. A PKCE authorization request with the SR1 audience reached the expected `login_required` response, confirming that Auth0 accepts those settings. This does not verify an actual signup or token exchange.
+
+After creating the isolated Render services, register the **actual assigned sandbox frontend origin** in Auth0 before testing. It is deliberately not allowlisted until Render confirms ownership. Verify email delivery with a fresh account; the tenant's development email setup has not been accepted for production delivery.
 
 Frontend Docker build variables (public values, then rebuild):
 
@@ -78,6 +86,18 @@ STRIPE_PORTAL_CONFIGURATION=YOUR_SANDBOX_PORTAL_CONFIGURATION_ID
 
 Set `STRIPE_RESTRICTED_KEY` (preferred) and `STRIPE_WEBHOOK_SECRET` through Render secret environment settings. Never add actual secrets to this document, git, chat, or frontend build arguments. The fallback key variable is `STRIPE_SECRET_KEY`. The restricted key must allow the integration's Customer, Price, Subscription, Checkout Session, invoice-read, and billing-portal operations. `ENABLE_LIVE_BILLING` must match the key's mode; separate sandbox/live secrets and resources.
 
+### Create the isolated Render environment
+
+`render.sandbox.yaml` defines two new Docker services from the draft branch and a separate 1 GB SQLite disk. The backend needs the paid Starter plan for persistent disk storage; the frontend uses the free plan. This file does not manage existing production services. Automatic code deploys are off during acceptance.
+
+1. Open a new Render Blueprint for this repository. Select branch `feature/sr1-trial-foundation` and Blueprint Path `render.sandbox.yaml`. Do not use the production `render.yaml`.
+2. Enter the **sandbox** restricted API key (starting `rk_test_`) in the `STRIPE_RESTRICTED_KEY` secret field. Review the displayed resource cost and deploy the Blueprint. Never paste the key into chat or git.
+3. Compare the actual assigned URLs with the two planned sandbox URLs in the file. If Render adds a suffix, update `BACKEND_URL`, `CORS_ORIGINS`, `SR1_FRONTEND_ORIGIN`, and this Blueprint before testing. Add the actual frontend origin to the Auth0 callback/logout/web-origin lists, preserving the existing origin.
+4. Create the Stripe sandbox webhook listed below, store its signing secret on the sandbox backend, and enable `ENABLE_SR1_BILLING` only after all billing settings are present. Update the Blueprint flag too, so a later sync cannot undo the tested configuration.
+5. Trigger new sandbox deploys after configuration changes, check health and signed webhook delivery, then run the acceptance checklist.
+
+The Blueprint was checked against Render's published JSON Schema locally. Render's Dashboard must still validate account availability, service plans, repository access, and assigned URLs. The connected Render tool cannot create Docker services, so initial Blueprint creation requires the Dashboard. No sandbox resources have been provisioned by this file alone. AI-generation acceptance additionally requires a separate sandbox `OPENAI_API_KEY`; the saved sample-project and billing checks do not use it.
+
 ## Stripe sandbox configuration — verified 2026-09-29
 
 - The sandbox is connected. The SmartRisk 1 Team product has active recurring EUR prices: 39,900 cents per month and 399,000 cents per year, quantity one per team. Lookup keys are `sr1_team_eur_monthly` and `sr1_team_eur_yearly`.
@@ -89,7 +109,7 @@ Set `STRIPE_RESTRICTED_KEY` (preferred) and `STRIPE_WEBHOOK_SECRET` through Rend
 
 Still required:
 
-1. Configure an isolated app environment and verified Auth0 signup. The connected browser has no authenticated Stripe or Auth0 session available for further settings work.
+1. Deploy `render.sandbox.yaml`, register its actual frontend origin in the configured Auth0 application, and verify signup/email delivery.
 2. Store the sandbox restricted API key in Render. Connector authorization is separate from the application's API credentials; the available connector operations cannot issue that key.
 3. Create the signed webhook destination when the isolated backend URL is available: `https://YOUR_BACKEND/billing/stripe/webhook`, subscribing to:
    - `checkout.session.completed`
