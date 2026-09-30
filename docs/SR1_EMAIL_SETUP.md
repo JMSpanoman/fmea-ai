@@ -1,14 +1,13 @@
 # SR1 transactional email setup
 
-Status: Resend sending domain verified on 1 October 2026 at 01:19 Europe/Athens. Auth0 integration and actual email delivery are not yet complete.
+Status: Auth0 is connected to Resend. Provider, verification-template and password-reset-template tests were delivered on 1 October 2026 between 01:39 and 01:48 Europe/Athens. Actual customer signup/reset link completion through the new provider remains a production acceptance step.
 
 ## Configured
 
 - Provider account: Resend `fotonconsulting`.
 - Sending domain: `notify.fotonconsulting.com`.
-- Resend domain ID: `23e3d4b7-4a5e-4c59-b4bf-1b16d034a84d`.
 - Region: North Virginia (`us-east-1`).
-- Sending enabled, receiving disabled, tracking not configured.
+- Sending enabled, receiving disabled. Click tracking and open tracking are both disabled, confirmed through the Resend connector.
 - Authoritative DNS is managed by Wix (`ns0.wixdns.net`, `ns1.wixdns.net`).
 
 The following exact provider-issued records were added with TTL 3600 using an additions-only update. All original DNS records were preserved; no root mail routing, SPF, website records or DNSSEC settings were changed.
@@ -19,24 +18,33 @@ The following exact provider-issued records were added with TTL 3600 using an ad
 | CNAME | `rsend.notify.fotonconsulting.com` | `rsend.forge.rmta.net` |
 | CNAME | `send.notify.fotonconsulting.com` | `send.forge.rmta.net` |
 
-The DKIM value above is a public verification key, not an API secret. No root DMARC policy was added or changed. Resend's domain page reports Verified; this is provider verification, not evidence that any email has been sent.
+The DKIM value above is a public verification key, not an API secret. No root DMARC policy was added or changed. Resend's domain page reports Verified. Separate delivery evidence is recorded below.
 
-## Prepared, not submitted
+## Auth0 provider configured
 
-The Resend API-key form is ready with:
+- Reused the existing Auth0 tenant and confirmed administrator access.
+- Branding → Email Provider: **Use my own email provider** enabled, **Resend** selected and saved.
+- From: `SmartRisk <accounts@notify.fotonconsulting.com>`.
+- Permission: **Sending access**, limited to `notify.fotonconsulting.com`.
+- Following the owner's specific approval, a scoped sending credential was transferred directly into Auth0 and saved there. Credential values and metadata are omitted from this document. Temporary browser clipboards were cleared.
+- Verification Email (Link) and Change Password (Link) templates are enabled. Default templates remain unchanged and inherit the provider sender. No Reply-To was configured; the provider form has no Reply-To field.
 
-- Name: `SR1 Auth0 transactional email`.
-- Permission: `Sending access`.
-- Domain: `notify.fotonconsulting.com` only.
+## Delivery verification
 
-No key was created. Browser creation of a persistent credential requires action-time approval; keep its value out of chat, repository files, screenshots and command logs. Ensure the Auth0 destination is accessible before creating a one-time-visible key.
+The owner approved setup messages to an owner-controlled business mailbox. Resend reports all three **delivered**:
 
-## Remaining integration
+| Test | Result |
+| --- | --- |
+| Email Provider Configuration Test | Delivered |
+| Verify your email — template Try test | Delivered |
+| Reset your password — template Try test | Delivered |
 
-1. Reuse the existing Auth0 tenant `dev-h8xzqvip220o54ml.us.auth0.com`; do not create a replacement tenant or authentication system. The administrator login email has not been established.
-2. Configure Branding → Email Provider → Resend with the scoped sending key. Proposed From identity: `SmartRisk <accounts@notify.fotonconsulting.com>`. This setting is not yet saved. Where supported, use the monitored `john@fotonconsulting.com` as Reply-To/support contact.
-3. Save the provider settings and verify actual delivery of a provider test, a signup-verification email and a password-reset email with an owner-controlled account. Obtain explicit authorization for any assistant-triggered message. Password choice/reset entry remains with the user.
-4. Inspect delivery in Resend and Auth0, verify links return to the correct SR1 environment, and retain the existing verified-email requirement.
-5. Continue the separately documented live Stripe credentials/webhook and production rollout. Do not activate public trial links or live checkout solely because the sending domain is verified.
+Delivered means the receiving mail server accepted each message. It does not prove inbox reading or completion of a verification/reset link. The approved recipient is the Auth0 administrator and has no SR1 customer identity in this tenant. Consequently these are Auth0 template tests, not a new customer signup or a real customer's password reset. No customer passwords or identities were changed.
+
+## Remaining launch checks
+
+1. During production acceptance, complete signup verification and password reset from SR1 using an owner-controlled customer account. Confirm delivery and correct application return links. Password creation/reset entry remains with the user. Retain the existing verified-email requirement.
+2. Complete the separately documented live Stripe restricted key, webhook secret and production runtime configuration; deploy the reviewed release with its verified database backup.
+3. Verify the production journey before activating public trial/signup links. Email-provider delivery alone does not complete the live product launch.
 
 Official integration instructions: https://auth0.com/docs/customize/email/smtp-email-providers/resend
