@@ -140,6 +140,14 @@ The tester reported that Check access was visible but not clickable. Backend sta
 - Queried sandbox backend request logs from 21:20 UTC through the report. The returned records contained the assistant's anonymous/demo-login/CORS probes at 21:23–21:24 UTC, but no new /team/accept, member-removal, or authenticated project requests. Therefore no server timestamps or second-user identity are asserted for this manual result. The user's confirmation is preserved without inventing corroboration.
 - Production email-provider configuration is the next unresolved setup item. The selected provider and sender must be inspected in the existing Auth0 tenant before choosing an integration or requesting provider credentials. Keep all passwords/API keys in the provider/Render settings, never in chat.
 
+## Resend sending domain verified — 1 October 2026, 01:19 Athens
+
+- The owner confirmed Auth0's production email provider was not configured and approved using the Resend dashboard. The Resend `fotonconsulting` account is now visibly signed in. No verification codes or secrets are stored in this checkpoint.
+- Created `notify.fotonconsulting.com` in Resend, domain ID `23e3d4b7-4a5e-4c59-b4bf-1b16d034a84d`, region `us-east-1`. Resend visibly reports **Verified** and ready to send at 01:19 Athens. Sending is enabled; receiving remains disabled; tracking has not been configured.
+- Added only the three Resend-issued DNS records through the authenticated Wix account: one DKIM TXT and two sending CNAMEs. The update response contains every original record with its prior values and TTL, including Google Workspace MX/SPF and the public website CNAME. See `SR1_EMAIL_SETUP.md` for exact records.
+- Prepared, but did not submit, a Resend API-key form named `SR1 Auth0 transactional email`, permission `Sending access`, limited to `notify.fotonconsulting.com`. Creating a persistent credential through the browser requires action-time approval. No API key has been generated or copied.
+- Auth0 email-provider credentials, sender settings, verification/reset delivery tests and production live-billing rollout remain outstanding. Domain verification alone does not configure Auth0 or complete the launch.
+
 ## Practical notes
 
 - Sandbox signup: https://sr1-sandbox-frontend-dczh.onrender.com/create-account
