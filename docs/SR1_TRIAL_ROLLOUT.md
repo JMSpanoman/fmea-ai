@@ -154,7 +154,9 @@ PYTHONPATH=fmea_backend python -m pytest -q --disable-warnings \
   fmea_backend/tests/test_team_access.py \
   fmea_backend/tests/test_billing_lifecycle.py \
   fmea_backend/tests/test_sr1_checkout.py \
-  fmea_backend/tests/test_customer_startup.py
+  fmea_backend/tests/test_customer_startup.py \
+  fmea_backend/tests/test_schema_backup.py \
+  fmea_backend/tests/test_customer_access_journey.py
 npm test --prefix frontend -- src/pages/BillingPage.test.tsx
 npm run build --prefix frontend
 ```
@@ -164,6 +166,29 @@ Install the pinned backend requirements first; `test_sr1_checkout.py` uses the a
 Last run: **21 backend tests passed on Python 3.11 with the pinned requirements; eight frontend tests passed; production frontend build passed**. Hosted SQLite startup now verifies a private backup on the persistent disk before schema writes; backup or integrity failures stop startup. The startup test imports the full application, creates the commercial schema, preserves a saved identity across restart, rejects anonymous/demo access in customer mode, and fails startup on a migration error. This is not a Docker image or deployed-environment test. The baseline main branch reports 96 TypeScript errors; this branch reports 95, with no new diagnostics compared with that baseline; no errors are reported in the new signup/billing/team screens or changed API helper. These need a separate baseline cleanup and are not represented as a passing typecheck.
 
 ## Deployed acceptance test — in progress
+
+Latest final-check update (1 October): recovered account/project/document requests returned 200 at 00:18 Athens. Deployed anonymous-access, demo-login, unsigned-webhook and CORS probes passed. The new full-application local HTTP journey for invitations, sharing, member removal, quotas, payment-state access and trial expiry passed separately from the previous 21-test backend run. It uses a temporary database and test identities; the deployed second-account journey still requires a verified second email. Earlier pending-recovery wording below is historical and superseded by these observed project/document responses.
+
+### Prepared production configuration
+
+These are reviewed target values, not a claim that production currently uses them. Apply the complete configuration with the reviewed release; changing Render environment values immediately triggers deployment, including on the currently failing old main branch. Do not enable live checkout before required secrets, email delivery, backup and deployment are ready.
+
+| Setting | Target value |
+|---|---|
+| Production backend | `srv-d35rg2juibrs73diucu0` |
+| Production frontend | `srv-d35rg2juibrs73diuctg` |
+| Live Stripe account | `acct_1U8pGb2NDAwXFR5E` |
+| `STRIPE_PRICE_MONTHLY` | `price_1UKoXi2NDAwXFR5Ex8FPrsSg` — currently inactive |
+| `STRIPE_PRICE_YEARLY` | `price_1UKoY52NDAwXFR5EAP7AoIQH` — currently inactive |
+| `STRIPE_PORTAL_CONFIGURATION` | `bpc_1ULV0n2NDAwXFR5EQw3J8W3r` — prepared with the tested portal features |
+| `SR1_FRONTEND_ORIGIN` / `CORS_ORIGINS` | `https://fmea-frontend-dczh.onrender.com` |
+| Live webhook URL | `https://fmea-backend-dczh.onrender.com/billing/stripe/webhook` — not yet registered |
+| `STRIPE_RESTRICTED_KEY` | Owner enters the live restricted key securely in Render; use the permission table above, including Invoices Read |
+| `STRIPE_WEBHOOK_SECRET` | Securely provision the signing secret from the future live endpoint; never reuse the sandbox secret |
+| Trial and account safety | `ENABLE_SELF_SERVICE_TRIALS=true`, `ALLOW_DEV_LOGIN=false`, `SMARTRISK_DEV_FORCE_PRO=false`, `DEMO_ENSURE_PROJECT=false`, `DEMO_REASSIGN_PROJECT=false` |
+| Live activation | `ENABLE_SR1_BILLING=true` and `ENABLE_LIVE_BILLING=true` only for the completed production configuration with live secrets and active approved prices |
+
+Production email requires an authenticated review of Auth0's email-provider settings and verified delivery of signup verification and password-reset messages. No provider or credentials were supplied or inferred. Existing demo data must be preserved and legitimate demo identities migrated deliberately before retiring the old login. The startup snapshot protects schema migration; maintain a separate off-service backup for disaster recovery.
 
 Verified so far: fresh signup, verified email and signed-token API access, 14-day trial displayed, sample-project creation (201) and retrieval (200), plan comparison, opening monthly sandbox Checkout, declined/successful payments, active Stripe subscription, and actual Stripe webhook delivery (200). The tester also confirmed the active subscription display in SR1 after the Check access correction. Saved-edit persistence after return login and opening the app-created portal have passed by tester confirmation, with portal creation returning 200. Scheduled cancellation at the paid period end, a Stripe-origin webhook during the change, and retained project access afterward are verified. The three-project Team owner limit is verified by tester confirmation and server responses (two additional 201 creations, then 403 for the fourth attempt). On 30 September at 23:13 Athens, the tester confirmed four invitations disabled the creation button, revoking one enabled it again, and all test invitations were removed; backend responses corroborate four creations (201) and four revocations (204). The sandbox subscription was intentionally ended at 20:14:44 UTC and its webhook returned 200 at 20:14:45 UTC. The owner subsequently reported all cancellation/re-upgrade steps passed at 23:31 Athens: canceled status, blocked projects, leaving Checkout without paying, new successful monthly payment, active status and retained edits. The server returned 403 for projects while canceled and 200 for projects/documents after three successful webhooks for the replacement subscription. Stripe confirms that replacement is active and its app-linked EUR 399 monthly Checkout is complete/paid. The renewal-decline test subsequently produced past_due and a server-side project-access 403, confirmed by the tester. It also exposed a missing Invoices Read permission on the sandbox restricted key: the invoice handler returned 500 while the separate subscription event returned 200. That permission was corrected on 1 October around 00:01 Athens. A fresh 0341 decline returned webhook 200 at 21:08:18.935 UTC; recovery paid the same EUR 398.88 test-adjusted invoice with 4242 at 21:11:41 UTC. Stripe is active and two recovery webhooks returned 200. Post-recovery app display and saved-project access still await tester confirmation. Forced sixth-seat API rejection, member access to the shared quota, and expiry remain unverified in the deployed environment; existing local coverage is recorded separately.
 
