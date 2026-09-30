@@ -137,6 +137,10 @@ async def lifespan(app: FastAPI):
     logger.info("Starting Smart FMEA Builder API")
     # Create database tables if they don't exist
     from database import engine, Base
+    from schema_backup import backup_before_schema_change
+    # Fail startup before touching the schema if an existing database cannot
+    # be backed up. The snapshot lives alongside the database on its disk.
+    backup_before_schema_change(engine)
     # Import all models to ensure they're registered
     from models import user, project, fmea, component, project_profile as _project_profile, risk_item, risk_item_version, risk_control, approval, trace_link, ai_event, audit_log_event, design_input, design_output, vv_test, risk_management_plan, pms_signal, pms_generated_plan as _pms_generated_plan, generated_artifact, hazard_library, harm_library, risk_control_library, verification_library, device_architecture as _device_architecture, hazard_generation_rule as _hazard_generation_rule, suggested_risk_analysis as _suggested_risk_analysis, device as _device, project_risk_item as _project_risk_item, project_risk_control as _project_risk_control, project_verification as _project_verification
     from models.hazard_analysis_item import HazardAnalysisItem  # noqa: F401 - register table

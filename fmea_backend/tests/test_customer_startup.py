@@ -26,6 +26,8 @@ from sqlalchemy import inspect, text
 from main import app
 from database import engine
 from auth.dependencies import get_current_user
+from pathlib import Path
+import sqlite3
 
 for attempt in range(2):
     with TestClient(app) as client:
@@ -50,6 +52,11 @@ with TestClient(app) as client:
     assert client.get("/billing/status").status_code == 200
     app.dependency_overrides.clear()
 
+snapshots = list((Path(engine.url.database).parent / "backups").glob("pre-schema-*.sqlite3"))
+assert snapshots, "Restart must back up the existing database before schema changes"
+with sqlite3.connect(snapshots[-1]) as snapshot:
+    assert snapshot.execute("PRAGMA integrity_check").fetchone() == ("ok",)
+
 inspector = inspect(engine)
 assert {"trial_ends_at", "stripe_customer_id", "stripe_subscription_id", "team_owner_id"} <= {c["name"] for c in inspector.get_columns("users")}
 assert {"billing_events", "team_invitations"} <= set(inspector.get_table_names())
@@ -60,6 +67,13 @@ with patch("schema_migrations.ensure_user_columns", side_effect=RuntimeError("mi
             raise AssertionError("Startup must reject an incomplete schema")
     except RuntimeError as exc:
         assert str(exc) == "migration unavailable"
+
+with patch("schema_backup.backup_before_schema_change", side_effect=RuntimeError("backup unavailable")):
+    try:
+        with TestClient(app):
+            raise AssertionError("Startup must stop if the required backup fails")
+    except RuntimeError as exc:
+        assert str(exc) == "backup unavailable"
 '''],
         cwd=tmp_path, env=env, capture_output=True, text=True, timeout=60,
     )
