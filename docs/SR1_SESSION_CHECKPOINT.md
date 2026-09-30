@@ -4,6 +4,8 @@ The owner requested that all completed work be saved. This checkpoint records ve
 
 Current state at the 1 October final-check review: the sandbox Invoices Read permission fix is verified, the same renewal invoice is paid, and the subscription is active. Post-recovery GET /auth/me, /projects, the existing project, and its documents returned 200 at 21:18:34–21:18:35 UTC / 00:18 Athens. A new local full-application HTTP journey passes member sharing, limits, removal, isolation, payment-state gating, and trial expiry. Live portal configuration is prepared; the live webhook and portal were absent at review, and the webhook still needs configuration. Production remains unlaunched.
 
+At 1 October 00:33 Athens the owner reported the five-step second-account browser test passed: verified signup, one-project trial limit, invitation creation/acceptance, shared project access, and loss of owner-project access after member removal. Recorded as tester-confirmed; the available log query has not independently corroborated those new requests. Proceed to production prerequisites without asking the owner to repeat these same checks.
+
 ## Saved locations
 
 - Source, regression tests, Auth0 Action source, deployment Blueprint, and rollout documentation: branch `feature/sr1-trial-foundation`, draft [PR #1](https://github.com/JMSpanoman/fmea-ai/pull/1).
@@ -117,8 +119,8 @@ The tester reported that Check access was visible but not clickable. Backend sta
 
 ## Next acceptance steps
 
-1. Verify invitation acceptance/member removal and shared project access, direct API rejection of a sixth seat and repeated-click protection. Checkout cancellation has passed by tester confirmation. Invitation reservation/revocation and its UI limit have passed. The three-project owner limit has passed; members must also share that quota. Saved edits across sign-out/return login, the app-created portal, scheduled subscription cancellation, and immediate retention of project access have passed.
-2. Recovery and existing-project access are now verified. Complete the remaining deployed member check with a second verified email; do not repeat already passed billing tests without a concrete risk. Local HTTP route checks for sixth-seat rejection, shared quota, removal, and trial expiry pass as recorded below.
+1. The owner has now confirmed the second-account browser test passed, including verified signup, trial project limit, invitation acceptance, shared projects and member removal. Existing billing/cancellation/recovery checks remain passed. No repeat of that five-step manual test is needed.
+2. Local HTTP checks for sixth-seat rejection, shared quota, removal and trial expiry pass; repeated-checkout handling has prior local coverage. Keep local and deployed evidence distinct. Only add another acceptance test for a concrete unresolved release risk.
 3. Confirm production email delivery setup, supply production credentials securely, and complete production readiness before merging or enabling live payments. The owner has confirmed US business location and no current tax registrations; only configure tax collection for confirmed applicable registrations. The startup backup must protect the existing database before migration.
 4. Verify the public marketing site's Try/Create account/plan links against the approved production journey before launch.
 
@@ -130,7 +132,13 @@ The tester reported that Check access was visible but not clickable. Backend sta
 - Prior 21 backend checks, eight frontend checks and frontend build remain at their previously recorded passing results. Typecheck remains at the documented baseline errors. The new focused journey passed separately; no new all-suite or frontend rerun is claimed.
 - Production backend is still on main `768bca79b6b8faf71b9e26d16664a80df51dff81`. Its latest deployment `dep-daumpi17lnhs7395k2ng` failed at 2026-09-30T20:11:34Z. The reviewed release is not deployed to production. No claim is made that this review reproduced the exact cause of that latest failure; the earlier migration-import failure and release fix remain recorded above.
 - Live Stripe review found the approved EUR 399/month and EUR 3,990/year exclusive-tax prices inactive; no live webhook or billing portal configuration existed. Created the live portal configuration `bpc_1ULV0n2NDAwXFR5EQw3J8W3r`, with card updates, invoice history and cancellation at period end. Plan/quantity updates and public portal login remain off. The return URL is the production /billing route. No customer session, subscription or live payment was created.
-- Remaining owner-dependent work: a second verified account's deployed invitation/acceptance/removal check; production Auth0 email-provider setup and delivery verification; secure entry of the live restricted key into the production backend. The connector cannot create/edit restricted API keys or inspect Auth0's email-provider settings. After those are ready, configure the live webhook secret and runtime settings together, deploy the reviewed release with its database backup, verify production signup/checkout, and connect the public website links.
+- Remaining owner-dependent work after the tester's second-account confirmation: production Auth0 email-provider setup and delivery verification; secure entry of the live restricted key into the production backend. The connector cannot create/edit restricted API keys or inspect Auth0's email-provider settings. After those are ready, configure the live webhook secret and runtime settings together, deploy the reviewed release with its database backup, verify production signup/checkout, and connect the public website links.
+
+## Second-account acceptance reported passed — 1 October, 00:33 Athens
+
+- The owner replied "passed" to the explicit five-step test. This confirms, by tester report, the private-window signup with a second verified email, a sample project with rejection of a second trial project, creation and acceptance of the owner's invitation, shared project access, and loss of the owner's project access after removal and refresh.
+- Queried sandbox backend request logs from 21:20 UTC through the report. The returned records contained the assistant's anonymous/demo-login/CORS probes at 21:23–21:24 UTC, but no new /team/accept, member-removal, or authenticated project requests. Therefore no server timestamps or second-user identity are asserted for this manual result. The user's confirmation is preserved without inventing corroboration.
+- Production email-provider configuration is the next unresolved setup item. The selected provider and sender must be inspected in the existing Auth0 tenant before choosing an integration or requesting provider credentials. Keep all passwords/API keys in the provider/Render settings, never in chat.
 
 ## Practical notes
 
