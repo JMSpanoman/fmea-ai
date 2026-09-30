@@ -59,11 +59,19 @@ The tester reported that Check access was visible but not clickable. Backend sta
 - The available cloud Stripe tab is at its sign-in page and SR1 is awaiting sign-in to the existing sandbox account; the prior signed-in tabs are not present. Render and Stripe connectors continue to work. No passwords or API secrets were requested in chat. Auth0 CLI authentication is not available in this execution session.
 - Website routes were checked: Try SR1 goes through request-access pages to the contact form; the public login still targets the existing production workspace. The new trial journey has not been published there.
 
+## Owner confirmation and website update — 30 September, 22:55 Athens
+
+- The owner confirmed Foton's business is in the United States and currently has no VAT or sales-tax registrations. This records current registration status; it is not a determination of where registration or collection is required. No registration, exemption, product tax code, or head-office street address was invented or added. Automatic Tax remains disabled.
+- The owner confirmed the team-seat test has not been run. Four pending invitations plus the owner must exhaust the five-seat allowance. Revoking one pending invitation must free a seat. Invitation creation only produces a copyable link; the application sends no invitation email.
+- Marketing website version 18 was published successfully at https://www.fotonconsulting.com from Site source commit `1a1de3f01f91750dd1324b33a5436553cf170852`. The existing SR1 and trial pages now clarify EUR 399/month or EUR 3,990/year excluding VAT, five users including the owner, three shared projects in total, the sample project's use of a project slot, saved-work continuity, automatic renewal, and cancellation terms. The misleading Team "by quote" label was removed; implementation/enterprise options remain separate discussions.
+- The website build passed and existing page routes remain in the build. Public access requests, guided demos, and SR2 design-partner positioning are unchanged. Production self-service signup and live checkout are still not connected.
+- Production email setup, secure production billing credentials, and the remaining deployed account/billing acceptance checks remain outstanding. The cloud SR1 sign-in attempt was interrupted; the tester's own-browser login does not provide an assistant session.
+
 ## Next acceptance steps
 
 1. Verify the five-seat limit, invitation acceptance/removal and shared project access, repeated-click protection, and Checkout cancellation. The three-project owner limit has passed; members must also share that quota. Saved edits across sign-out/return login, the app-created portal, scheduled subscription cancellation, and immediate retention of project access have passed.
 2. Test actual subscription termination, failed renewal and recovery, trial expiry, and direct API access restrictions while retaining saved work. The initial card decline followed by successful payment is already verified; it does not replace a failed-renewal test.
-3. Confirm production email delivery setup and tax treatment/registrations, supply production credentials securely, back up the existing database, and complete production readiness before merging or enabling live payments.
+3. Confirm production email delivery setup, supply production credentials securely, and complete production readiness before merging or enabling live payments. The owner has confirmed US business location and no current tax registrations; only configure tax collection for confirmed applicable registrations. The startup backup must protect the existing database before migration.
 4. Verify the public marketing site's Try/Create account/plan links against the approved production journey before launch.
 
 ## Practical notes
@@ -73,6 +81,6 @@ The tester reported that Check access was visible but not clickable. Backend sta
 - The tester uses their own browser. Its login session does not transfer to the assistant; passwords and codes must not be shared in chat.
 - The initial Checkout blocker was insufficient restricted-key permissions. Required permissions and the resolution are recorded in `SR1_TRIAL_ROLLOUT.md`. The Stripe connector cannot edit API-key permissions.
 - The sandbox AI-generation key is not configured. Sample-project and billing tests do not require it.
-- VAT-exclusive prices are configured; automatic VAT calculation remains off. Confirm the legal entity's tax setup before live activation.
+- VAT-exclusive prices are configured; automatic tax calculation remains off. The owner reports a US business with no current VAT or sales-tax registrations. Do not represent this as a tax exemption or invent registrations.
 - The previously exposed sandbox secret key's rotation has not been confirmed. Verify that it has been rotated or revoked before further use; the app uses a separate restricted key.
 - The draft is saved and deployed for testing. It is not a completed live launch.
