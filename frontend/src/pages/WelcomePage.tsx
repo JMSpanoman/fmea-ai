@@ -1,3 +1,4 @@
+import { getStoredAccessToken } from '../axios';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
@@ -7,7 +8,7 @@ const WelcomePage: React.FC = () => {
   const [authStatus, setAuthStatus] = useState<string>('Checking...');
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getStoredAccessToken();
     const user = localStorage.getItem('user');
     if (token && user) {
       setAuthStatus('Authenticated');
@@ -113,7 +114,7 @@ const WelcomePage: React.FC = () => {
                 key={index}
                 onClick={() => {
                   console.log('Navigating to:', action.path);
-                  console.log('Current authentication state:', localStorage.getItem('token') ? 'Authenticated' : 'Not authenticated');
+                  console.log('Current authentication state:', getStoredAccessToken() ? 'Authenticated' : 'Not authenticated');
                   navigate(action.path);
                 }}
                 className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer border border-gray-200"

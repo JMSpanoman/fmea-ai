@@ -1,3 +1,4 @@
+import { getStoredAccessToken } from '../../axios';
 import React, { useState, useEffect } from 'react';
 import FmeaForm from './FmeaForm';
 import { FmeaRow } from '../../types';
@@ -36,7 +37,6 @@ const FmeaFormWrapper: React.FC<FmeaFormWrapperProps> = ({ selectedProject }) =>
   useEffect(() => {
     console.log('FmeaFormWrapper mounted');
     console.log('window.fmeaApi available:', !!window.fmeaApi);
-    console.log('Authentication token:', localStorage.getItem('token'));
     
     // Wait a bit for fmeaApi to be available
     const checkFmeaApi = () => {
@@ -269,8 +269,6 @@ const FmeaFormWrapper: React.FC<FmeaFormWrapperProps> = ({ selectedProject }) =>
       // Always attempt to login first to ensure we have a fresh token
       console.log('Attempting to login...');
       const loginResponse = await window.fmeaApi.devLogin();
-      console.log('Login successful, token set:', window.fmeaApi.token);
-      console.log('Login response:', loginResponse);
       
       // Double-check token is set
       if (!window.fmeaApi.token) {
@@ -287,7 +285,6 @@ const FmeaFormWrapper: React.FC<FmeaFormWrapperProps> = ({ selectedProject }) =>
       }
       
       console.log('Making projects request with token:', window.fmeaApi.token ? 'Token present' : 'No token');
-      console.log('Token value:', window.fmeaApi.token);
       const response = await window.fmeaApi.getProjects();
       console.log('Projects response:', response);
       
@@ -484,7 +481,7 @@ const FmeaFormWrapper: React.FC<FmeaFormWrapperProps> = ({ selectedProject }) =>
               <h3 className="text-sm font-medium text-blue-800">Debug Info</h3>
               <div className="mt-2 text-sm text-blue-700">
                 <p>{debugInfo}</p>
-                <p className="mt-1">Token: {localStorage.getItem('token') ? 'Present' : 'Missing'}</p>
+                <p className="mt-1">Token: {getStoredAccessToken() ? 'Present' : 'Missing'}</p>
                 <p className="mt-1">fmeaApi: {window.fmeaApi ? 'Available' : 'Not available'}</p>
               </div>
             </div>
@@ -815,4 +812,4 @@ const FmeaFormWrapper: React.FC<FmeaFormWrapperProps> = ({ selectedProject }) =>
   );
 };
 
-export default FmeaFormWrapper; 
+export default FmeaFormWrapper;

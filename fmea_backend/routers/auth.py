@@ -8,6 +8,7 @@ from schemas.user import UserCreate, UserLogin, UserOut, UserProfile, Token, Use
 from crud import user as user_crud
 from auth.security import create_access_token, verify_token, get_password_hash, verify_password
 from auth.dependencies import get_current_user
+from auth.plan import get_user_plan
 from datetime import datetime, timedelta, timezone
 import os
 
@@ -115,6 +116,11 @@ def dev_login(
     env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
     is_prod_like = env in ("production", "prod", "staging")
     allow_dev_login = str(os.getenv("ALLOW_DEV_LOGIN") or "").strip().lower() in ("1", "true", "yes", "on")
+    # A public trial must never share an email-only sign-in endpoint. Retire the
+    # demo path before activating self-service accounts, even if the old Render
+    # ALLOW_DEV_LOGIN setting has not yet been removed.
+    if is_prod_like and os.getenv("ENABLE_SELF_SERVICE_TRIALS", "false").lower() == "true":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Demo login is disabled")
     if is_prod_like and not allow_dev_login:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Demo login is disabled")
     # NOTE: This endpoint is intentionally email-gated in production-like environments:
@@ -230,7 +236,8 @@ def get_current_user_profile(current_user: User = Depends(get_current_user)):
         id=current_user.id,
         username=getattr(current_user, "username", None) or (getattr(current_user, "email", "") or "user").split("@")[0],
         email=getattr(current_user, "email", "") or "",
-        plan=getattr(current_user, "plan", None) or PLAN_LITE,
+        plan=get_user_plan(current_user),
+        trial_ends_at=getattr(current_user, "trial_ends_at", None),
         full_name=getattr(current_user, "full_name", None),
         role=getattr(current_user, "role", None) or "user",
         company=getattr(current_user, "company", None),
@@ -406,4 +413,4 @@ def activate_user_account(
             detail="User not found"
         )
     
-    return {"message": "User activated successfully"} 
+    return {"message": "User activated successfully"}

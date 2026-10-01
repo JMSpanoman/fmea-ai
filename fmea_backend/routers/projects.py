@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 import logging
 from database import get_db
 from auth.dependencies import get_current_user
-from auth.plan import require_pro
+from auth.plan import require_pro, enforce_trial_project_limit
 from models.user import User
 from schemas import project as project_schemas
 from crud import project as project_crud
@@ -48,12 +48,20 @@ def create_project(
             raise
 
         return created_project
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating project: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create project: {str(e)}"
         )
+
+@router.post("/sample", response_model=project_schemas.ProjectOut, status_code=201)
+def sample_project(db: Session = Depends(get_db), current_user: User = Depends(require_pro)):
+    from business_logic.sample_project import create_sample_project
+    return create_sample_project(db, current_user.id)
+
 
 @router.get("/{project_id}", response_model=project_schemas.ProjectOut)
 def get_project(

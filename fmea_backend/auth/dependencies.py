@@ -6,6 +6,7 @@ from models.user import User, PLAN_LITE, PLAN_PRO
 from crud import user as user_crud
 from auth.security import verify_token
 import os
+from jose import jwt
 
 security = HTTPBearer()
 
@@ -36,13 +37,21 @@ def get_current_user(
             detail="Could not validate credentials - missing sub claim",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    is_auth0_token = jwt.get_unverified_header(token).get("alg") == "RS256"
+    claim_prefix = "https://smartrisk.fotonconsulting.com/"
+    identity_email = payload.get(claim_prefix + "email") or payload.get("email") or ""
+    email_verified = payload.get(claim_prefix + "email_verified", payload.get("email_verified")) is True
+    trial_enabled = os.getenv("ENABLE_SELF_SERVICE_TRIALS", "false").lower() == "true"
+    if is_auth0_token and trial_enabled and (not isinstance(identity_email, str) or not identity_email or not email_verified):
+        raise HTTPException(403, "Verify your email address and sign in again to start SmartRisk")
     
     # Get or create user from database
     user = user_crud.get_user_by_auth0_id(db, auth0_id)
     if user is None:
         # Create user if doesn't exist
-        email = payload.get("email", "") or payload.get("email_verified", "") or ""
-        user = user_crud.create_user_from_auth0(db, auth0_id, email)
+        email = identity_email
+        user = user_crud.create_user_from_auth0(db, auth0_id, email, start_trial=trial_enabled and is_auth0_token)
         if user is None:
             import logging
             logger = logging.getLogger(__name__)
@@ -55,14 +64,16 @@ def get_current_user(
     
     # Attach ephemeral identity/role fields from the token payload (no schema change required).
     # This ensures /auth/me can reflect roles for dev tokens and keeps frontend auth consistent.
-    token_email = (payload.get("email") or "") or getattr(user, "email", "") or ""
+    token_email = identity_email or getattr(user, "email", "") or ""
+    user.is_verified = email_verified if is_auth0_token else str(auth0_id).startswith("dev:")
+    user.billing_owner = db.get(User, user.team_owner_id) if user.team_owner_id else user
     token_username = payload.get("username") or (token_email.split("@")[0] if "@" in token_email else None)
     token_role = payload.get("role") or "user"
 
     env = (os.getenv("ENVIRONMENT") or os.getenv("APP_ENV") or os.getenv("ENV") or "development").lower()
 
     # Special-case: John has admin access and Pro plan
-    if str(token_email).lower() == "john@fotonconsulting.com":
+    if str(auth0_id) == "dev:john@fotonconsulting.com" and str(token_email).lower() == "john@fotonconsulting.com":
         token_role = "admin"
         try:
             setattr(user, "plan", PLAN_PRO)
@@ -76,7 +87,7 @@ def get_current_user(
             pass
 
     # Production allowlist: only allow specific users (John + built-in demo identities).
-    if env in ("production", "prod", "staging"):
+    if env in ("production", "prod", "staging") and str(auth0_id).startswith("dev:"):
         from auth.security import get_dev_login_allowed_emails
 
         if token_email.lower() not in get_dev_login_allowed_emails():
@@ -87,6 +98,8 @@ def get_current_user(
                 setattr(user, "plan", PLAN_PRO)
             except Exception:
                 pass
+    elif env in ("production", "prod", "staging") and os.getenv("ENABLE_SELF_SERVICE_TRIALS", "false").lower() != "true":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Customer signup is not enabled")
 
     try:
         setattr(user, "email", token_email or getattr(user, "email", ""))

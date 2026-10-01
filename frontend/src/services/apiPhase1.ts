@@ -1,3 +1,4 @@
+import { ensureValidToken } from '../axios';
 // Phase 1 API Service
 import { resolveApiBaseUrl } from '../config/apiBaseUrl';
 import { Project, Component, FmeaRow, AIFMEASuggestRequest, AIFMEASuggestResponse, AIConsistencyCheckRequest, AIConsistencyCheckResponse } from '../types';
@@ -5,23 +6,23 @@ import { Project, Component, FmeaRow, AIFMEASuggestRequest, AIFMEASuggestRespons
 const API_BASE_URL = resolveApiBaseUrl();
 
 // Get auth token from localStorage or context
-const getAuthToken = (): string | null => {
+const getAuthToken = (): Promise<string | null> => {
   // Single source of truth: JWT stored under `token`
-  return localStorage.getItem('token') || localStorage.getItem('auth_token') || null;
+  return ensureValidToken();
 };
 
 const apiRequest = async <T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> => {
-  const token = getAuthToken();
-  const headers: HeadersInit = {
+  const token = await getAuthToken();
+  const headers = new Headers({
     'Content-Type': 'application/json',
-    ...options.headers,
-  };
+  });
+  new Headers(options.headers).forEach((value, key) => headers.set(key, value));
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers.set('Authorization', `Bearer ${token}`);
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -184,4 +185,3 @@ export const exportApi = {
   csv: (projectId: string): string => `${API_BASE_URL}/projects/${projectId}/export/csv`,
   pdf: (projectId: string): string => `${API_BASE_URL}/projects/${projectId}/export/pdf`,
 };
-

@@ -1,6 +1,8 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Login from './Login';
+import CustomerLogin from './CustomerLogin';
+import { customerAuthEnabled } from '../axios';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -40,7 +42,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!isAuthenticated) {
-    return <Login />;
+    return customerAuthEnabled ? <CustomerLogin /> : <Login />;
   }
 
   return <>{children}</>;

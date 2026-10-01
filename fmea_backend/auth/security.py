@@ -116,6 +116,9 @@ def verify_auth0_token(token: str) -> Optional[Dict]:
         try:
             header = jwt.get_unverified_header(token)
             if header.get("alg") == "HS256":
+                if _runtime_env_name() in ("production", "prod", "staging"):
+                    if os.getenv("ENABLE_SELF_SERVICE_TRIALS", "false").lower() == "true" or os.getenv("ALLOW_DEV_LOGIN", "false").lower() not in ("true", "1", "yes", "on"):
+                        return None
                 from jose import jwt as jose_jwt
                 SECRET_KEY = get_jwt_secret()
                 payload = jose_jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
@@ -124,7 +127,11 @@ def verify_auth0_token(token: str) -> Optional[Dict]:
         except Exception as header_err:
             logger.debug(f"[auth] Could not inspect token header: {header_err}")
 
+        if _runtime_env_name() in ("production", "prod", "staging") and (not AUTH0_DOMAIN or not AUTH0_AUDIENCE):
+            return None
         if not AUTH0_DOMAIN:
+            if _runtime_env_name() in ("production", "prod", "staging"):
+                return None
             # Fallback to simple JWT validation if Auth0 not configured
             from jose import jwt as jose_jwt
             SECRET_KEY = get_jwt_secret()

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 function initialsFromUser(email?: string, name?: string): string {
   const source = (name || email || 'U').trim();
@@ -51,6 +52,8 @@ export function UserAvatarButton() {
           role="menu"
           className="absolute right-0 mt-2 w-44 rounded-card border border-gray-200 bg-white py-1 shadow-elevated z-50"
         >
+          <Link role="menuitem" className="block px-4 py-2.5 text-sm hover:bg-gray-50" to="/billing" onClick={() => setOpen(false)}>Plans and billing</Link>
+          <Link role="menuitem" className="block px-4 py-2.5 text-sm hover:bg-gray-50" to="/team" onClick={() => setOpen(false)}>Manage team</Link>
           <button
             type="button"
             role="menuitem"

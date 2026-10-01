@@ -1,3 +1,4 @@
+import { getStoredAccessToken } from '../axios';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { resolveApiBaseUrl } from '../config/apiBaseUrl';
@@ -11,7 +12,7 @@ const TestAuth: React.FC = () => {
   const [user, setUser] = useState<string>('');
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
+    const storedToken = getStoredAccessToken();
     const storedUser = localStorage.getItem('user');
     
     setToken(storedToken || 'No token found');

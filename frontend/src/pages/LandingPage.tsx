@@ -1,9 +1,9 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProject } from '../contexts/ProjectContext';
 import { useAuth } from '../contexts/AuthContext';
 import { isProPlan } from '../config/features';
-import api from '../axios';
+import api, { customerAuthEnabled } from '../axios';
 
 /**
  * Landing behavior:
@@ -16,6 +16,20 @@ export default function LandingPage() {
   const { user, isLoading } = useAuth();
   const { currentProject, setCurrentProject, clearCurrentProject } = useProject();
   const ranRef = useRef(false);
+  const [chooseProject, setChooseProject] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const start = async (sample: boolean) => {
+    setBusy(true); setError('');
+    try {
+      const { data } = sample ? await api.post('/projects/sample') : await api.post('/projects', { name: 'FMEA-1', description: '' });
+      setCurrentProject(data);
+      navigate(`/projects/${data.id}/${sample ? 'fmea' : 'setup'}`, { replace: true });
+    } catch (err: any) {
+      setError(typeof err?.response?.data?.detail === 'string' ? err.response.data.detail : 'Unable to create your project. Please try again.');
+      setBusy(false);
+    }
+  };
 
   const plan = user?.plan ?? 'lite';
   const isPro = isProPlan(plan);
@@ -29,7 +43,7 @@ export default function LandingPage() {
       try {
         // Lite plan: no projects — go to standalone FMEA
         if (!isPro) {
-          navigate('/dfmea', { replace: true });
+          navigate(customerAuthEnabled ? '/billing' : '/dfmea', { replace: true });
           return;
         }
 
@@ -54,17 +68,7 @@ export default function LandingPage() {
 
         // 3) If none exist, create one and go to setup wizard
         if (!projects.length) {
-          const created = await api.post('/projects', {
-            name: 'FMEA-1',
-            description: 'Starter project created automatically. Complete Project Setup to begin.',
-          });
-          const p = created?.data;
-          if (p?.id) {
-            setCurrentProject(p);
-            navigate(`/projects/${p.id}/setup`, { replace: true });
-            return;
-          }
-          navigate('/projects', { replace: true });
+          setChooseProject(true);
           return;
         }
 
@@ -86,6 +90,16 @@ export default function LandingPage() {
     })();
   }, [clearCurrentProject, currentProject?.id, isLoading, isPro, navigate, setCurrentProject, user]);
 
+  if (chooseProject) return <section className="max-w-2xl mx-auto p-8 space-y-5">
+    <h1 className="text-3xl font-semibold">Start your first project</h1>
+    <p>Explore an editable sample FMEA or start with your own project. The sample counts toward your project allowance. Your saved work carries into Team when you upgrade.</p>
+    <p>The sample is fictional training data and needs review before use.</p>
+    {error && <p role="alert" className="text-red-700">{error}</p>}
+    <div className="flex flex-wrap gap-3">
+      <button disabled={busy} onClick={() => void start(true)} className="rounded bg-blue-700 text-white p-3 disabled:opacity-50">Explore sample project</button>
+      <button disabled={busy} onClick={() => void start(false)} className="rounded border p-3 disabled:opacity-50">Create my own project</button>
+    </div>
+  </section>;
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface-primary">
       <div className="flex flex-col items-center gap-3">
@@ -95,4 +109,3 @@ export default function LandingPage() {
     </div>
   );
 }
-

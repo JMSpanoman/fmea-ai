@@ -1,3 +1,4 @@
+import { ensureValidToken } from '../axios';
 import React, { useEffect, useState } from 'react';
 import Footer from '../components/Footer';
 import { resolveApiBaseUrl } from '../config/apiBaseUrl';
@@ -16,7 +17,7 @@ const AdminPage: React.FC = () => {
     setError(null);
     try {
       const res = await fetch(`${API_URL}/admin/users`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token') || localStorage.getItem('jwt')}` },
+        headers: { Authorization: `Bearer ${await ensureValidToken()}` },
       });
       if (!res.ok) throw new Error('Failed to fetch users');
       const data = await res.json();
@@ -44,7 +45,7 @@ const AdminPage: React.FC = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token') || localStorage.getItem('jwt')}`,
+          Authorization: `Bearer ${await ensureValidToken()}`,
         },
         body: JSON.stringify(roles),
       });
@@ -110,4 +111,4 @@ const AdminPage: React.FC = () => {
   );
 };
 
-export default AdminPage; 
+export default AdminPage;

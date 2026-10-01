@@ -3,13 +3,31 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import { resolveApiBaseUrl } from './config/apiBaseUrl';
 
 const API_BASE_URL = resolveApiBaseUrl();
+export const customerAuthEnabled = Boolean(import.meta.env.VITE_AUTH0_DOMAIN && import.meta.env.VITE_AUTH0_CLIENT_ID && import.meta.env.VITE_AUTH0_AUDIENCE);
+let customerTokenGetter: (() => Promise<string>) | null = null;
+let customerAccessToken: string | null = null;
+export function getStoredAccessToken(): string | null {
+  return customerAuthEnabled ? customerAccessToken : localStorage.getItem('token');
+}
+export async function getCustomerAccessToken(): Promise<string | null> {
+  if (!customerAuthEnabled || !customerTokenGetter) return null;
+  try { customerAccessToken = await customerTokenGetter(); return customerAccessToken; }
+  catch { customerAccessToken = null; return null; }
+}
+export function setCustomerTokenGetter(getter: (() => Promise<string>) | null) {
+  customerTokenGetter = getter;
+  if (!getter) customerAccessToken = null;
+}
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
 });
 
 // Helper function to get a fresh token via dev-login
-async function ensureValidToken(): Promise<string | null> {
+export async function ensureValidToken(): Promise<string | null> {
+  if (customerAuthEnabled) {
+    return getCustomerAccessToken();
+  }
   let token = localStorage.getItem('token');
   
   // If no token, try to get one via dev-login
@@ -97,7 +115,7 @@ api.interceptors.response.use(
 
       try {
         // Clear old token
-        localStorage.removeItem('token');
+        if (!customerAuthEnabled) localStorage.removeItem('token');
 
         // Get a fresh token
         const token = await ensureValidToken();
@@ -120,4 +138,4 @@ api.interceptors.response.use(
 );
 
 export default api;
-export { API_BASE_URL }; 
+export { API_BASE_URL };
