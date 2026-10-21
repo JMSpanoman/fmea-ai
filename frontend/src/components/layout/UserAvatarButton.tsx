@@ -18,6 +18,7 @@ export function UserAvatarButton() {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const initials = initialsFromUser(user?.email, user?.name || user?.username);
+  const ownerLabel = user?.entitlement?.unlimited ? (user.entitlement.label || 'Owner — Unlimited') : null;
 
   useEffect(() => {
     if (!open) return;
@@ -36,7 +37,8 @@ export function UserAvatarButton() {
   }, [open]);
 
   return (
-    <div className="relative" ref={rootRef}>
+    <div className="relative flex items-center gap-2" ref={rootRef}>
+      {ownerLabel ? <span className="hidden sm:inline text-sm font-medium text-navy whitespace-nowrap">{ownerLabel}</span> : null}
       <button
         type="button"
         className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-brand text-white text-sm font-semibold hover:bg-brand-hover"

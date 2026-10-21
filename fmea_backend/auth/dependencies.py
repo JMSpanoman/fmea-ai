@@ -5,6 +5,14 @@ from database import get_db
 from models.user import User, PLAN_LITE, PLAN_PRO
 from crud import user as user_crud
 from auth.security import verify_token
+from auth.entitlements import (
+    attach_entitlement,
+    evaluate_entitlement,
+    identity_from_token,
+    is_verified_owner_identity,
+    token_algorithm,
+)
+from business_logic.owner_identity_migration import apply_owner_identity_migration
 import os
 from jose import jwt
 
@@ -42,6 +50,9 @@ def get_current_user(
     claim_prefix = "https://smartrisk.fotonconsulting.com/"
     identity_email = payload.get(claim_prefix + "email") or payload.get("email") or ""
     email_verified = payload.get(claim_prefix + "email_verified", payload.get("email_verified")) is True
+    identity = identity_from_token(payload, token_algorithm(token) or ("RS256" if is_auth0_token else ""))
+    if is_auth0_token:
+        apply_owner_identity_migration(db, identity)
     trial_enabled = os.getenv("ENABLE_SELF_SERVICE_TRIALS", "false").lower() == "true"
     if is_auth0_token and trial_enabled and (not isinstance(identity_email, str) or not identity_email or not email_verified):
         raise HTTPException(403, "Verify your email address and sign in again to start SmartRisk")
@@ -99,7 +110,8 @@ def get_current_user(
             except Exception:
                 pass
     elif env in ("production", "prod", "staging") and os.getenv("ENABLE_SELF_SERVICE_TRIALS", "false").lower() != "true":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Customer signup is not enabled")
+        if not is_verified_owner_identity(identity):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Customer signup is not enabled")
 
     try:
         setattr(user, "email", token_email or getattr(user, "email", ""))
@@ -131,4 +143,5 @@ def get_current_user(
             except Exception:
                 pass
 
+    attach_entitlement(user, evaluate_entitlement(db, user, identity))
     return user

@@ -14,7 +14,7 @@ const TrialStatusBanner: React.FC = () => {
     }
   }, [user]);
 
-  if (!user || !trialStatus || !isVisible) {
+  if (!user || !trialStatus || !isVisible || user.entitlement?.unlimited) {
     return null;
   }
 

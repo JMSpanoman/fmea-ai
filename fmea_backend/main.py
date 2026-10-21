@@ -149,6 +149,7 @@ async def lifespan(app: FastAPI):
     from models.postmarket_intelligence import PostmarketFmeaEvidenceLink, PostmarketProjectRun  # noqa: F401
     from models.risk_acceptability_criteria import RiskAcceptabilityCriteria, OrganizationRiskCriteriaConfig, ProjectRiskCriteriaOverride  # noqa: F401 - register tables
     from models.project_risk_criteria import ProjectRiskCriteria, RuleEvaluationAudit  # noqa: F401 - rule engine tables
+    from models.account_entitlement import AccountEntitlement, IdentityMigration  # noqa: F401
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables initialized")
 

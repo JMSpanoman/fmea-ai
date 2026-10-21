@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
@@ -38,11 +38,28 @@ class UserOut(UserBase):
     class Config:
         from_attributes = True
 
+class EntitlementQuotas(BaseModel):
+    projects: Optional[int] = None
+    components: Optional[int] = None
+    fmea_analyses: Optional[int] = None
+    ai_generations: Optional[int] = None
+    reports: Optional[int] = None
+    exports: Optional[int] = None
+
+
+class EntitlementOut(BaseModel):
+    unlimited: bool = False
+    permanent: bool = False
+    label: Optional[str] = None
+    quotas: EntitlementQuotas = Field(default_factory=EntitlementQuotas)
+
+
 class UserProfile(BaseModel):
     id: str
     username: str
     email: str
     plan: str = "lite"  # "lite" | "pro" — SaaS tier
+    entitlement: EntitlementOut = Field(default_factory=EntitlementOut)
     trial_ends_at: Optional[datetime] = None
     full_name: Optional[str] = None
     role: str
