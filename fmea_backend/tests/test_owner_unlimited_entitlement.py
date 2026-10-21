@@ -196,3 +196,66 @@ def test_production_requires_explicit_auth0_configuration(monkeypatch):
     monkeypatch.setenv("API_AUDIENCE", SR1_API_AUDIENCE)
     assert production_auth0_configuration_error() is None
     assert verify_auth0_token("not-a-token") is None
+
+
+def authenticate_identity(db, monkeypatch, identity):
+    from auth import dependencies
+    from fastapi.security import HTTPAuthorizationCredentials
+
+    payload = {"sub": identity.subject, "iss": identity.issuer,
+               "email": identity.email, "email_verified": identity.email_verified}
+    # JWT verification is an upstream boundary; exercise the real account,
+    # migration, and entitlement path with its verified payload.
+    monkeypatch.setattr(dependencies, "verify_token", lambda token: payload)
+    monkeypatch.setattr(dependencies.jwt, "get_unverified_header", lambda token: {"alg": "RS256"})
+    return dependencies.get_current_user(
+        HTTPAuthorizationCredentials(scheme="Bearer", credentials="verified-test-token"), db
+    )
+
+
+def test_authentication_stops_before_granting_a_conflicting_identity(db, monkeypatch):
+    source = add_user(db, id="dev-source", auth0_id=DEV_OWNER_AUTH0_ID,
+                      email=OWNER_VERIFIED_EMAIL, plan="pro")
+    target = add_user(db, id="existing-target", auth0_id=SUBJECT,
+                      email="previous@example.com", plan="lite")
+    project = projects.create_project(db, ProjectCreate(name="Existing owner work"), source.id)
+
+    with pytest.raises(HTTPException) as conflict:
+        authenticate_identity(db, monkeypatch, owner_identity())
+
+    assert conflict.value.status_code == 409
+    db.refresh(source)
+    db.refresh(target)
+    assert source.auth0_id == DEV_OWNER_AUTH0_ID
+    assert target.email == "previous@example.com"
+    assert project.user_id == source.id
+    assert db.query(AccountEntitlement).count() == 0
+    assert db.query(IdentityMigration).filter_by(status="conflict").count() == 1
+
+
+def test_bound_owner_can_sign_in_after_email_change_when_signup_is_disabled(db, monkeypatch):
+    owner = add_user(db, auth0_id=SUBJECT, email=OWNER_VERIFIED_EMAIL, plan="lite")
+    evaluate_entitlement(db, owner, owner_identity())
+    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setenv("ENABLE_SELF_SERVICE_TRIALS", "false")
+    authenticated = authenticate_identity(db, monkeypatch, owner_identity(email="updated@example.com"))
+    assert authenticated.id == owner.id
+    assert get_user_plan(authenticated) == "pro"
+    assert authenticated.entitlement_decision.unlimited is True
+    assert db.query(AccountEntitlement).count() == 1
+
+
+def test_owner_can_use_team_features_without_subscription_in_a_fresh_session(db):
+    from business_logic import team_access as teams
+
+    owner = add_user(db, id="unlimited-team-owner", auth0_id=SUBJECT,
+                     email=OWNER_VERIFIED_EMAIL, plan="lite", subscription_status="canceled")
+    evaluate_entitlement(db, owner, owner_identity())
+    member = add_user(db, id="invited-member", auth0_id="auth0|invited-member",
+                      email="invited@example.com", plan="lite")
+    _, token = teams.invite(db, owner, member.email)
+    db.expunge_all()
+    member = db.get(User, "invited-member")
+    member.is_verified = True
+    assert teams.accept(db, member, token) == "unlimited-team-owner"
+    assert member.team_owner_id == "unlimited-team-owner"

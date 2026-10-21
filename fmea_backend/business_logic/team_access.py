@@ -34,9 +34,13 @@ def lock_owner(db: Session, owner_id: str) -> User:
     return owner
 
 
-def require_team_owner(user: User):
+def require_team_owner(user: User, db: Session):
     if user.team_owner_id or not user.auth0_id or user.auth0_id.startswith("dev:"):
         raise HTTPException(403, "Only the billing owner can manage this team")
+    from auth.entitlements import user_has_permanent_unlimited
+
+    if user_has_permanent_unlimited(db, user):
+        return
     if user.plan != "pro" or user.subscription_status != "active":
         raise HTTPException(403, "An active Team subscription is required")
 
@@ -50,7 +54,7 @@ def pending_invitations(db: Session, owner_id: str):
 
 
 def invite(db: Session, owner: User, email: str):
-    require_team_owner(owner)
+    require_team_owner(owner, db)
     email = email.strip().lower()
     if not email or "@" not in email or len(email) > 254:
         raise HTTPException(422, "Enter a valid email address")
@@ -79,7 +83,7 @@ def accept(db: Session, user: User, token: str):
     lock_owner(db, user.id)
     db.refresh(user)
     db.refresh(invitation)
-    require_team_owner(owner)
+    require_team_owner(owner, db)
     if invitation.accepted_at or invitation.revoked_at or as_utc(invitation.expires_at) <= utcnow():
         raise HTTPException(410, "This invitation has expired or was already used")
     if user.email.lower() != invitation.email:

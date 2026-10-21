@@ -8,6 +8,7 @@ from auth.security import verify_token
 from auth.entitlements import (
     attach_entitlement,
     evaluate_entitlement,
+    identity_has_permanent_unlimited,
     identity_from_token,
     is_verified_owner_identity,
     token_algorithm,
@@ -52,9 +53,15 @@ def get_current_user(
     email_verified = payload.get(claim_prefix + "email_verified", payload.get("email_verified")) is True
     identity = identity_from_token(payload, token_algorithm(token) or ("RS256" if is_auth0_token else ""))
     if is_auth0_token:
-        apply_owner_identity_migration(db, identity)
+        migration = apply_owner_identity_migration(db, identity)
+        if migration.status == "conflict":
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Owner account migration requires administrator resolution. Existing projects have not been moved.",
+            )
+    existing_owner_grant = identity_has_permanent_unlimited(db, identity)
     trial_enabled = os.getenv("ENABLE_SELF_SERVICE_TRIALS", "false").lower() == "true"
-    if is_auth0_token and trial_enabled and (not isinstance(identity_email, str) or not identity_email or not email_verified):
+    if is_auth0_token and trial_enabled and not existing_owner_grant and (not isinstance(identity_email, str) or not identity_email or not email_verified):
         raise HTTPException(403, "Verify your email address and sign in again to start SmartRisk")
     
     # Get or create user from database
@@ -110,7 +117,7 @@ def get_current_user(
             except Exception:
                 pass
     elif env in ("production", "prod", "staging") and os.getenv("ENABLE_SELF_SERVICE_TRIALS", "false").lower() != "true":
-        if not is_verified_owner_identity(identity):
+        if not (is_verified_owner_identity(identity) or existing_owner_grant):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Customer signup is not enabled")
 
     try:

@@ -146,6 +146,11 @@ def _grant_for_identity(db: Session, identity: VerifiedIdentity):
     )
 
 
+def identity_has_permanent_unlimited(db: Session, identity: VerifiedIdentity) -> bool:
+    """Recognize an existing grant by verified issuer and subject, not mutable email."""
+    return _grant_for_identity(db, identity) is not None
+
+
 def maybe_provision_owner_grant(db: Session, identity: VerifiedIdentity) -> None:
     if not is_verified_owner_identity(identity):
         return
