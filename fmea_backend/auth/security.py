@@ -106,6 +106,21 @@ def get_signing_key(token: str) -> Optional[str]:
     except Exception as e:
         raise Exception(f"Failed to get signing key: {e}")
 
+SR1_API_AUDIENCE = "https://smartrisk.fotonconsulting.com/api"
+
+
+def production_auth0_configuration_error() -> Optional[str]:
+    """Production must set the tenant and the SmartRisk 1 API audience explicitly."""
+    if _runtime_env_name() not in ("production", "prod", "staging"):
+        return None
+    if not (os.getenv("AUTH0_DOMAIN") or "").strip():
+        return "AUTH0_DOMAIN is not set"
+    audience = (os.getenv("API_AUDIENCE") or os.getenv("AUTH0_AUDIENCE") or "").strip()
+    if audience != SR1_API_AUDIENCE:
+        return "API_AUDIENCE is not the SmartRisk 1 API identifier"
+    return None
+
+
 def verify_auth0_token(token: str) -> Optional[Dict]:
     """Verify an Auth0 JWT token"""
     import logging
@@ -127,6 +142,10 @@ def verify_auth0_token(token: str) -> Optional[Dict]:
         except Exception as header_err:
             logger.debug(f"[auth] Could not inspect token header: {header_err}")
 
+        config_error = production_auth0_configuration_error()
+        if config_error:
+            logger.warning("[auth] %s", config_error)
+            return None
         if _runtime_env_name() in ("production", "prod", "staging") and (not AUTH0_DOMAIN or not AUTH0_AUDIENCE):
             return None
         if not AUTH0_DOMAIN:

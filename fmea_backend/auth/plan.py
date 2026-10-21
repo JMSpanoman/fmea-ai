@@ -12,6 +12,9 @@ from datetime import datetime, timezone
 
 def get_user_plan(user: User) -> str:
     """Resolve user's plan. Default to lite if not set."""
+    decision = getattr(user, "entitlement_decision", None)
+    if decision is not None and getattr(decision, "unlimited", False):
+        return PLAN_PRO
     if getattr(user, "team_owner_id", None):
         owner = getattr(user, "billing_owner", None)
         return get_user_plan(owner) if owner is not None else PLAN_LITE

@@ -26,7 +26,7 @@ export function ProGate({ plan: planProp, children, redirectLiteTo, message }: P
   const { user } = useAuth();
   const plan = planProp ?? user?.plan;
   const navigate = useNavigate();
-  const isPro = isProPlan(plan);
+  const isPro = isProPlan(plan) || user?.entitlement?.unlimited === true;
 
   React.useEffect(() => {
     if (!isPro && redirectLiteTo) {

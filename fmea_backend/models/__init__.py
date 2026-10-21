@@ -2,6 +2,7 @@
 from .project import Project
 from .fmea import FMEARow
 from .user import User
+from .account_entitlement import AccountEntitlement, IdentityMigration
 from .component import Component
 from .fmea_version import FMEAVersion
 # Phase 2 models
@@ -87,5 +88,6 @@ __all__ = [
     "SuggestedHazardousSituation",
     "SuggestedHarm",
     "SuggestedControl",
-    "SuggestedVerificationMethod",
+    "AccountEntitlement",
+    "IdentityMigration",
 ]

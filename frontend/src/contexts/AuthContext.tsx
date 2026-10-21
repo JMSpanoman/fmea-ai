@@ -8,6 +8,19 @@ interface User {
   id: string;
   email: string;
   plan?: string;  // "lite" | "pro" — SaaS tier from backend
+  entitlement?: {
+    unlimited: boolean;
+    permanent: boolean;
+    label: string | null;
+    quotas: {
+      projects: number | null;
+      components: number | null;
+      fmea_analyses: number | null;
+      ai_generations: number | null;
+      reports: number | null;
+      exports: number | null;
+    };
+  };
   username?: string;
   name?: string;
   role?: string;

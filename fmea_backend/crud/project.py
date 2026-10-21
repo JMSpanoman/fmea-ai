@@ -40,7 +40,8 @@ def create_project(db: Session, project: ProjectCreate, user_id: str, *, commit:
     try:
         user_id = workspace_owner_id(db, user_id)
         owner = lock_owner(db, user_id)
-        if owner.trial_ends_at or owner.subscription_status:
+        from auth.entitlements import user_has_permanent_unlimited
+        if not user_has_permanent_unlimited(db, owner) and (owner.trial_ends_at or owner.subscription_status):
             from auth.plan import get_user_plan, enforce_trial_project_limit
             if get_user_plan(owner) != "pro":
                 raise HTTPException(403, "Upgrade to create a project")
